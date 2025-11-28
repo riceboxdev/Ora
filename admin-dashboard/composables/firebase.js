@@ -10,11 +10,25 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Check if Firebase config is available
+const hasFirebaseConfig = firebaseConfig.apiKey && firebaseConfig.projectId;
 
-// Initialize Firebase Auth
-export const auth = getAuth(app);
+let app;
+let auth;
 
+if (hasFirebaseConfig) {
+  try {
+    // Initialize Firebase
+    app = initializeApp(firebaseConfig);
+    // Initialize Firebase Auth
+    auth = getAuth(app);
+  } catch (error) {
+    console.error('Firebase initialization error:', error);
+  }
+} else {
+  console.warn('Firebase configuration is missing. Some features may not work.');
+}
+
+export { auth };
 export default app;
 
