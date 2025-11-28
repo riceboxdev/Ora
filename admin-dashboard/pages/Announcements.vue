@@ -57,6 +57,12 @@
                       <div v-if="announcement.pages && announcement.pages.length > 0" class="text-sm text-gray-600 mb-3">
                         <p>{{ announcement.pages.length }} page(s)</p>
                       </div>
+                      <div v-if="announcement.targetAudience" class="text-sm text-gray-600 mb-3">
+                        <p>
+                          <span class="font-medium">Audience:</span> 
+                          {{ formatTargetAudience(announcement.targetAudience) }}
+                        </p>
+                      </div>
                       <div class="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
                         <div v-if="announcement.createdAt">
                           Created: <span class="font-medium text-gray-700">{{ formatDate(announcement.createdAt) }}</span>
@@ -64,10 +70,9 @@
                         <div v-if="announcement.updatedAt">
                           Updated: <span class="font-medium text-gray-700">{{ formatDate(announcement.updatedAt) }}</span>
                         </div>
-                      </div>
-                      <div v-if="announcement.stats" class="flex flex-wrap gap-4 pt-3 border-t border-gray-200 text-sm">
-                        <div class="text-gray-600">Views: <span class="font-medium text-gray-900">{{ announcement.stats.totalViews || 0 }}</span></div>
-                        <div class="text-gray-600">Recipients: <span class="font-medium text-gray-900">{{ announcement.stats.totalRecipients || 0 }}</span></div>
+                        <div v-if="announcement.version">
+                          Version: <span class="font-medium text-gray-700">{{ announcement.version }}</span>
+                        </div>
                       </div>
                     </div>
                     <div class="ml-4 flex-shrink-0 flex gap-2">
@@ -168,6 +173,28 @@ export default {
       return date.toLocaleString();
     };
 
+    const formatTargetAudience = (targetAudience) => {
+      if (!targetAudience) return 'Unknown';
+      
+      const type = targetAudience.type || 'all';
+      const filters = targetAudience.filters || {};
+      
+      switch (type) {
+        case 'all':
+          return 'All Users';
+        case 'role':
+          return `Role: ${filters.role || 'Unknown'}`;
+        case 'activity':
+          return `Activity: Last ${filters.days || 'N'} days`;
+        case 'custom':
+          return `Custom: ${filters.userIds?.length || 0} users`;
+        case 'segment':
+          return `Segment: ${filters.segmentId || 'Unknown'}`;
+        default:
+          return type;
+      }
+    };
+
     onMounted(() => {
       loadAnnouncements();
     });
@@ -184,7 +211,8 @@ export default {
       handleAnnouncementUpdated,
       handleEdit,
       handleDelete,
-      formatDate
+      formatDate,
+      formatTargetAudience
     };
   }
 };
