@@ -470,12 +470,227 @@ router.get('/settings', requireRole('super_admin', 'moderator', 'viewer'), async
   }
 });
 
+// Helper function to sync settings to Firebase Remote Config
+// Reference: https://firebase.google.com/docs/remote-config/automate-rc
+async function syncToFirebaseRemoteConfig(featureFlags, remoteConfig, maintenanceMode) {
+  console.log('syncToFirebaseRemoteConfig called with:', {
+    hasFeatureFlags: featureFlags !== undefined,
+    hasRemoteConfig: remoteConfig !== undefined,
+    hasMaintenanceMode: maintenanceMode !== undefined,
+    maintenanceModeValue: maintenanceMode
+  });
+  
+  const remoteConfigService = admin.remoteConfig();
+  const maxRetries = 3;
+  let lastError;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      console.log(`[Attempt ${attempt + 1}/${maxRetries}] Getting Remote Config template...`);
+      // Get current template (this includes the ETag for version control)
+      // The Firebase Admin SDK handles ETags automatically when publishing
+      const template = await remoteConfigService.getTemplate();
+      console.log('Template retrieved successfully');
+      
+      // Initialize parameters if they don't exist
+      if (!template.parameters) {
+        template.parameters = {};
+      }
+      
+      // Sync feature flags if provided
+      if (featureFlags !== undefined) {
+        // Map admin dashboard flags to iOS app expected format
+        // The iOS app expects specific keys: storiesEnabled, adsEnabled, waitlistEnabled
+        // But we also support any custom flags
+        const iosCompatibleFlags = {
+          // Map common flag names to iOS expected format
+          storiesEnabled: featureFlags.storiesEnabled ?? featureFlags.enableStories ?? false,
+          adsEnabled: featureFlags.adsEnabled ?? featureFlags.showAds ?? featureFlags.enableAds ?? true,
+          waitlistEnabled: featureFlags.waitlistEnabled ?? featureFlags.enableWaitlist ?? false,
+          // Include all other flags as-is for custom flags
+          ...Object.fromEntries(
+            Object.entries(featureFlags).filter(([key]) => 
+              !['storiesEnabled', 'adsEnabled', 'waitlistEnabled', 'enableStories', 'showAds', 'enableAds', 'enableWaitlist'].includes(key)
+            )
+          )
+        };
+        
+        // Convert to JSON string for the iOS app
+        // The iOS app reads this from the "featureFlags" key as a JSON string
+        const featureFlagsJSON = JSON.stringify(iosCompatibleFlags);
+        
+        // Update the featureFlags parameter (JSON format)
+        // Per Firebase docs: boolean values must be "true" or "false" (lowercase strings)
+        template.parameters['featureFlags'] = {
+          defaultValue: {
+            value: featureFlagsJSON
+          },
+          description: 'Feature flags managed from admin dashboard. JSON format with boolean values.'
+        };
+        
+        // Also update individual flags for backward compatibility
+        // These are read directly by the iOS app as separate keys
+        if (featureFlags.showAds !== undefined || featureFlags.adsEnabled !== undefined || featureFlags.enableAds !== undefined) {
+          const adsValue = featureFlags.showAds ?? featureFlags.adsEnabled ?? featureFlags.enableAds ?? true;
+          template.parameters['showAds'] = {
+            defaultValue: {
+              value: String(adsValue).toLowerCase() // Ensure "true" or "false"
+            },
+            description: 'Enable/disable ads display'
+          };
+        }
+        
+        if (featureFlags.waitlistEnabled !== undefined || featureFlags.enableWaitlist !== undefined) {
+          const waitlistValue = featureFlags.waitlistEnabled ?? featureFlags.enableWaitlist ?? false;
+          template.parameters['waitlistEnabled'] = {
+            defaultValue: {
+              value: String(waitlistValue).toLowerCase() // Ensure "true" or "false"
+            },
+            description: 'Enable/disable waitlist feature'
+          };
+        }
+        
+        if (featureFlags.storiesEnabled !== undefined || featureFlags.enableStories !== undefined) {
+          const storiesValue = featureFlags.storiesEnabled ?? featureFlags.enableStories ?? false;
+          template.parameters['storiesEnabled'] = {
+            defaultValue: {
+              value: String(storiesValue).toLowerCase() // Ensure "true" or "false"
+            },
+            description: 'Enable/disable stories feature'
+          };
+        }
+        
+        console.log('Updated feature flags in template:', iosCompatibleFlags);
+      }
+      
+      // Sync remote config key-value pairs if provided
+      if (remoteConfig !== undefined) {
+        // Update each remote config key-value pair
+        for (const [key, value] of Object.entries(remoteConfig)) {
+          // Convert value to string (Firebase Remote Config stores all values as strings)
+          // For booleans, ensure "true" or "false" (lowercase)
+          let stringValue = String(value);
+          if (typeof value === 'boolean') {
+            stringValue = value ? 'true' : 'false';
+          }
+          
+          template.parameters[key] = {
+            defaultValue: {
+              value: stringValue
+            },
+            description: `Remote config value managed from admin dashboard`
+          };
+          console.log(`Updated Remote Config parameter: ${key} = ${stringValue}`);
+        }
+      }
+      
+      // Sync maintenance mode if provided
+      if (maintenanceMode !== undefined) {
+        // Per Firebase docs: booleans must be "true" or "false" (lowercase strings)
+        template.parameters['maintenanceMode'] = {
+          defaultValue: {
+            value: maintenanceMode ? 'true' : 'false'
+          },
+          description: 'Maintenance mode flag - when true, app shows maintenance screen'
+        };
+        console.log(`Updated maintenance mode parameter in template: ${maintenanceMode} -> "${maintenanceMode ? 'true' : 'false'}"`);
+      }
+      
+      console.log('Validating Remote Config template...');
+      // Validate the template before publishing
+      // This checks for validation errors (e.g., too many parameters, invalid conditions)
+      const validatedTemplate = await remoteConfigService.validateTemplate(template);
+      console.log('Template validation successful');
+      
+      console.log('Publishing Remote Config template...');
+      // Publish the updated template
+      // The Firebase Admin SDK automatically handles ETags and If-Match headers
+      // If there's a version conflict (409), it will throw an error that we can catch and retry
+      const publishedTemplate = await remoteConfigService.publishTemplate(validatedTemplate);
+      
+      console.log('Remote Config template published successfully. Version:', publishedTemplate.version?.versionNumber);
+      if (featureFlags !== undefined) {
+        console.log('Synced feature flags');
+      }
+      if (remoteConfig !== undefined) {
+        console.log('Synced remote config keys:', Object.keys(remoteConfig));
+      }
+      if (maintenanceMode !== undefined) {
+        console.log('Synced maintenance mode:', maintenanceMode);
+      }
+      return publishedTemplate;
+      
+    } catch (error) {
+      lastError = error;
+      const errorCode = error.code || error.status || '';
+      const errorMessage = error.message || String(error);
+      
+      // Handle specific error codes per Firebase Remote Config API documentation
+      // Reference: https://firebase.google.com/docs/remote-config/automate-rc
+      // 400: Validation error (e.g., too many parameters, invalid template)
+      if (errorCode === 400 || errorMessage.includes('400') || errorMessage.includes('validation')) {
+        console.error('Remote Config validation error (400):', errorMessage);
+        throw new Error(`Remote Config validation failed: ${errorMessage}`);
+      }
+      
+      // 401: Authorization error (no access token or Remote Config API not enabled)
+      if (errorCode === 401 || errorMessage.includes('401') || errorMessage.includes('unauthorized')) {
+        console.error('Remote Config authorization error (401):', errorMessage);
+        throw new Error(`Remote Config authorization failed. Ensure Remote Config API is enabled in Firebase Console.`);
+      }
+      
+      // 403: Authentication error (wrong access token)
+      if (errorCode === 403 || errorMessage.includes('403') || errorMessage.includes('forbidden')) {
+        console.error('Remote Config authentication error (403):', errorMessage);
+        throw new Error(`Remote Config authentication failed. Check Firebase service account credentials.`);
+      }
+      
+      // 409: Version mismatch (ETag conflict) - retry with fresh template
+      // This happens when the template was updated between GET and PUT
+      if (errorCode === 409 || errorMessage.includes('409') || errorMessage.includes('conflict') || errorMessage.includes('version')) {
+        if (attempt < maxRetries - 1) {
+          console.warn(`Remote Config version conflict (409) on attempt ${attempt + 1}. Retrying with fresh template...`);
+          // Wait a bit before retrying to avoid immediate conflicts
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          continue; // Retry with fresh template
+        } else {
+          console.error('Remote Config version conflict (409) after max retries:', errorMessage);
+          throw new Error(`Remote Config update conflict. Template was modified by another process. Please try again.`);
+        }
+      }
+      
+      // 500: Internal server error
+      if (errorCode === 500 || errorMessage.includes('500') || errorMessage.includes('internal')) {
+        console.error('Remote Config internal server error (500):', errorMessage);
+        if (attempt < maxRetries - 1) {
+          console.warn(`Retrying after internal server error (attempt ${attempt + 1}/${maxRetries})...`);
+          await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1)));
+          continue; // Retry on server errors
+        } else {
+          throw new Error(`Remote Config server error. Please try again later or contact Firebase support.`);
+        }
+      }
+      
+      // For other errors, log and throw
+      console.error('Error syncing to Remote Config:', error);
+      throw error;
+    }
+  }
+  
+  // If we exhausted all retries, throw the last error
+  if (lastError) {
+    throw lastError;
+  }
+  
+  throw new Error('Failed to sync to Remote Config after multiple attempts');
+}
+
 // @route   POST /api/admin/settings
 // @desc    Update system settings
 // @access  Private (super_admin only)
 router.post('/settings', requireRole('super_admin'), async (req, res) => {
   try {
-    const { featureFlags, remoteConfig, maintenanceMode } = req.body;
+    const { featureFlags, remoteConfig, maintenanceMode, uiSettings } = req.body;
     const db = admin.firestore();
     const settingsRef = db.collection('system_settings').doc('main');
     
@@ -484,6 +699,40 @@ router.post('/settings', requireRole('super_admin'), async (req, res) => {
       updatedBy: req.admin.firebaseUid || req.admin._id.toString()
     };
     
+    // Determine if we should sync to Remote Config
+    const shouldSyncToRemoteConfig = featureFlags !== undefined || remoteConfig !== undefined || maintenanceMode !== undefined;
+    
+    let remoteConfigError = null;
+    
+    // Sync to Firebase Remote Config if needed
+    if (shouldSyncToRemoteConfig) {
+      try {
+        console.log('Attempting to sync to Firebase Remote Config...', {
+          hasFeatureFlags: featureFlags !== undefined,
+          hasRemoteConfig: remoteConfig !== undefined,
+          hasMaintenanceMode: maintenanceMode !== undefined
+        });
+        await syncToFirebaseRemoteConfig(featureFlags, remoteConfig, maintenanceMode);
+        console.log('Settings synced to Firebase Remote Config successfully');
+      } catch (rcError) {
+        console.error('Failed to sync to Remote Config:', rcError);
+        console.error('Remote Config error details:', {
+          message: rcError?.message,
+          code: rcError?.code,
+          status: rcError?.status,
+          stack: rcError?.stack
+        });
+        // Store the error to return to the user
+        // Settings are still saved to Firestore, but Remote Config sync failed
+        remoteConfigError = {
+          message: rcError?.message || 'Failed to sync to Firebase Remote Config',
+          code: rcError?.code,
+          status: rcError?.status
+        };
+      }
+    }
+    
+    // Update Firestore
     if (featureFlags !== undefined) {
       updateData.featureFlags = featureFlags;
     }
@@ -493,10 +742,27 @@ router.post('/settings', requireRole('super_admin'), async (req, res) => {
     if (maintenanceMode !== undefined) {
       updateData.maintenanceMode = maintenanceMode;
     }
+    if (uiSettings !== undefined) {
+      updateData.uiSettings = uiSettings;
+    }
     
     await settingsRef.set(updateData, { merge: true });
     
-    res.json({ success: true, settings: updateData });
+    // Verify the save by reading it back
+    const savedDoc = await settingsRef.get();
+    const savedData = savedDoc.data() || {};
+    
+    const response = {
+      success: true,
+      settings: savedData
+    };
+    
+    // Include Remote Config sync error if it occurred
+    if (remoteConfigError) {
+      response.remoteConfigError = remoteConfigError;
+    }
+    
+    res.json(response);
   } catch (error) {
     console.error('Error updating settings:', error);
     res.status(500).json({ message: error.message });
