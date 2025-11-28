@@ -65,19 +65,29 @@ const router = createRouter({
 
 // Navigation guard for authentication
 router.beforeEach((to, from, next) => {
-  const authStore = useAuthStore();
-  
-  // Initialize auth from localStorage on first load
-  if (!authStore.admin && localStorage.getItem('admin')) {
-    authStore.initializeFromStorage();
-  }
-  
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next('/login');
-  } else if (to.path === '/login' && authStore.isAuthenticated) {
-    next('/');
-  } else {
-    next();
+  try {
+    const authStore = useAuthStore();
+    
+    // Initialize auth from localStorage on first load
+    if (!authStore.admin && localStorage.getItem('admin')) {
+      authStore.initializeFromStorage();
+    }
+    
+    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+      next('/login');
+    } else if (to.path === '/login' && authStore.isAuthenticated) {
+      next('/');
+    } else {
+      next();
+    }
+  } catch (error) {
+    console.error('Router guard error:', error);
+    // If there's an error, allow navigation to login
+    if (to.path !== '/login') {
+      next('/login');
+    } else {
+      next();
+    }
   }
 });
 
