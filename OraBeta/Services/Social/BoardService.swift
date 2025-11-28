@@ -149,6 +149,51 @@ class BoardService {
         }
     }
     
+    /// Check if a post is already in a board
+    /// - Parameters:
+    ///   - postId: The post ID to check
+    ///   - boardId: The board ID to check
+    /// - Returns: True if the post is in the board, false otherwise
+    func isPostInBoard(postId: String, boardId: String) async throws -> Bool {
+        let boardPostId = "\(boardId)_\(postId)"
+        let boardPostDoc = try await db.collection(boardPostsCollection).document(boardPostId).getDocument()
+        return boardPostDoc.exists
+    }
+    
+    /// Check which boards contain a specific post (batch check for multiple boards)
+    /// - Parameters:
+    ///   - postId: The post ID to check
+    ///   - boardIds: Array of board IDs to check
+    /// - Returns: Set of board IDs that contain the post
+    func getBoardsContainingPost(postId: String, boardIds: [String]) async throws -> Set<String> {
+        guard !boardIds.isEmpty else { return [] }
+        
+        var containingBoardIds: Set<String> = []
+        
+        // Batch check all boards in parallel
+        await withTaskGroup(of: (String, Bool).self) { group in
+            for boardId in boardIds {
+                group.addTask {
+                    do {
+                        let isInBoard = try await self.isPostInBoard(postId: postId, boardId: boardId)
+                        return (boardId, isInBoard)
+                    } catch {
+                        print("⚠️ BoardService: Error checking if post is in board \(boardId): \(error.localizedDescription)")
+                        return (boardId, false)
+                    }
+                }
+            }
+            
+            for await (boardId, isInBoard) in group {
+                if isInBoard {
+                    containingBoardIds.insert(boardId)
+                }
+            }
+        }
+        
+        return containingBoardIds
+    }
+    
     /// Remove post from board
     func removePostFromBoard(postId: String, boardId: String, userId: String) async throws {
         guard let currentUserId = Auth.auth().currentUser?.uid,

@@ -1,3 +1,11 @@
+//
+//  PullEffectScrollView.swift
+//  Ora
+//
+//  Created by Nick Rogers on 11/28/25.
+//
+
+
 import FirebaseFirestore
 import MapKit
 import SwiftUI
@@ -131,7 +139,7 @@ struct PullEffectScrollView<Content: View>: View {
             position == .center
             ? centerAction
             : position == .trailing ? trailingAction : leadingAction
-        Image(systemName: action.symbol)
+        Image(action.symbol)
             .foregroundStyle(.white)
             .opacity(scaleEffect ? 0 : 1)
             .animation(.linear(duration: 0.05), value: scaleEffect)

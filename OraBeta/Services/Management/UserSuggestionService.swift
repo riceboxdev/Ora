@@ -1,16 +1,71 @@
 //
-//  UserDiscoveryService.swift
+//  UserSuggestionService.swift
 //  OraBeta
 //
-//  Service to discover and recommend users for the discover feed
+//  Protocol and implementation for comprehensive user suggestions
+//  Supports globally popular users, personalized suggestions, and related users
 //
 
 import Foundation
-import FirebaseFirestore
 import FirebaseAuth
+import FirebaseFirestore
 
+// MARK: - Suggestion Types
+
+/// Types of user suggestions available
+enum UserSuggestionType {
+    /// Users with the highest follower counts who are active
+    case globallyPopular
+    
+    /// Personalized suggestions based on user's interests and engagement history
+    case personalized
+    
+    /// Users who create similar content to a specific post
+    case relatedToPost(Post)
+    
+    /// Users followed by people the current user follows
+    case friendsOfFriends
+}
+
+// MARK: - Protocol
+
+/// Protocol defining user suggestion capabilities
+protocol UserSuggestionServiceProtocol {
+    /// Get globally popular users (highest follower counts)
+    /// - Parameter limit: Maximum number of users to return
+    /// - Returns: Array of popular UserProfile objects
+    func getGloballyPopularUsers(limit: Int) async throws -> [UserProfile]
+    
+    /// Get personalized user suggestions based on user's interests
+    /// - Parameter limit: Maximum number of users to return
+    /// - Returns: Array of suggested UserProfile objects
+    func getPersonalizedSuggestions(limit: Int) async throws -> [UserProfile]
+    
+    /// Get users who create similar content to a specific post
+    /// - Parameters:
+    ///   - post: The post to find related users for
+    ///   - limit: Maximum number of users to return
+    /// - Returns: Array of related UserProfile objects
+    func getRelatedUsers(for post: Post, limit: Int) async throws -> [UserProfile]
+    
+    /// Get users followed by people the current user follows
+    /// - Parameter limit: Maximum number of users to return
+    /// - Returns: Array of suggested UserProfile objects
+    func getFriendsOfFriends(limit: Int) async throws -> [UserProfile]
+    
+    /// Get user suggestions based on type
+    /// - Parameters:
+    ///   - type: The type of suggestion to fetch
+    ///   - limit: Maximum number of users to return
+    /// - Returns: Array of UserProfile objects
+    func getSuggestions(type: UserSuggestionType, limit: Int) async throws -> [UserProfile]
+}
+
+// MARK: - Implementation
+
+/// Service providing comprehensive user suggestions
 @MainActor
-class UserDiscoveryService {
+class UserSuggestionService: UserSuggestionServiceProtocol {
     private let db = Firestore.firestore()
     private let usersCollection = "users"
     private let postsCollection = "posts"
@@ -21,76 +76,49 @@ class UserDiscoveryService {
         self.profileService = profileService ?? ProfileService()
     }
     
-    /// Get recommended users combining popular, similar interests, and recently active users
-    /// - Parameter limit: Maximum number of users to return (default: 10)
-    /// - Returns: Array of recommended UserProfile objects
-    func getRecommendedUsers(limit: Int = 10) async throws -> [UserProfile] {
-        guard let currentUserId = Auth.auth().currentUser?.uid else {
-            throw UserDiscoveryError.notAuthenticated
+    // MARK: - Public Methods
+    
+    /// Get user suggestions based on type
+    func getSuggestions(type: UserSuggestionType, limit: Int) async throws -> [UserProfile] {
+        switch type {
+        case .globallyPopular:
+            return try await getGloballyPopularUsers(limit: limit)
+        case .personalized:
+            return try await getPersonalizedSuggestions(limit: limit)
+        case .relatedToPost(let post):
+            return try await getRelatedUsers(for: post, limit: limit)
+        case .friendsOfFriends:
+            return try await getFriendsOfFriends(limit: limit)
         }
-        
-        // Get current user profile to check preferences
-        guard let currentUserProfile = try await profileService.getUserProfile(userId: currentUserId) else {
-            throw UserDiscoveryError.userNotFound
-        }
-        
-        // Fetch users from different sources in parallel
-        async let popularUsers = fetchPopularUsers(limit: 5, excludeUserId: currentUserId)
-        async let similarUsers = fetchSimilarUsers(currentUser: currentUserProfile, limit: 5, excludeUserId: currentUserId)
-        async let recentUsers = fetchRecentlyActiveUsers(limit: 5, excludeUserId: currentUserId)
-        
-        // Wait for all results
-        let (popular, similar, recent) = try await (popularUsers, similarUsers, recentUsers)
-        
-        // Combine and deduplicate
-        var allUsers: [UserProfile] = []
-        var seenUserIds: Set<String> = []
-        
-        // Add users in priority order: similar > popular > recent
-        for user in similar {
-            if let userId = user.id, !seenUserIds.contains(userId) {
-                allUsers.append(user)
-                seenUserIds.insert(userId)
-            }
-        }
-        
-        for user in popular {
-            if let userId = user.id, !seenUserIds.contains(userId) {
-                allUsers.append(user)
-                seenUserIds.insert(userId)
-            }
-        }
-        
-        for user in recent {
-            if let userId = user.id, !seenUserIds.contains(userId) {
-                allUsers.append(user)
-                seenUserIds.insert(userId)
-            }
-        }
-        
-        // Limit to requested amount
-        return Array(allUsers.prefix(limit))
     }
     
-    /// Fetch popular users (sorted by follower count)
-    private func fetchPopularUsers(limit: Int, excludeUserId: String) async throws -> [UserProfile] {
+    /// Get globally popular users sorted by follower count
+    func getGloballyPopularUsers(limit: Int) async throws -> [UserProfile] {
+        guard let currentUserId = Auth.auth().currentUser?.uid else {
+            throw UserSuggestionError.notAuthenticated
+        }
+        
+        // Get users the current user already follows
+        let followedUserIds = try await getFollowedUserIds(for: currentUserId)
+        
         let query = db.collection(usersCollection)
             .whereField("followerCount", isGreaterThan: 0)
             .order(by: "followerCount", descending: true)
-            .limit(to: limit * 2) // Fetch more to account for exclusions
+            .limit(to: limit * 3) // Fetch more to account for filtering
         
         let snapshot = try await query.getDocuments()
         
         var users: [UserProfile] = []
         for document in snapshot.documents {
-            // Skip current user
-            if document.documentID == excludeUserId {
+            let userId = document.documentID
+            
+            // Skip current user and users already followed
+            if userId == currentUserId || followedUserIds.contains(userId) {
                 continue
             }
             
-            // Try to decode user profile
             if var profile = try? document.data(as: UserProfile.self) {
-                profile.id = document.documentID
+                profile.id = userId
                 users.append(profile)
                 
                 if users.count >= limit {
@@ -102,31 +130,45 @@ class UserDiscoveryService {
         return users
     }
     
-    /// Fetch users with similar interests based on preferences
-    private func fetchSimilarUsers(currentUser: UserProfile, limit: Int, excludeUserId: String) async throws -> [UserProfile] {
-        // Get user's preferred tags and categories
+    /// Get personalized user suggestions based on user's interests
+    func getPersonalizedSuggestions(limit: Int) async throws -> [UserProfile] {
+        guard let currentUserId = Auth.auth().currentUser?.uid else {
+            throw UserSuggestionError.notAuthenticated
+        }
+        
+        // Get current user profile
+        guard let currentUser = try await profileService.getUserProfile(userId: currentUserId) else {
+            throw UserSuggestionError.userNotFound
+        }
+        
+        // Get users already followed
+        let followedUserIds = try await getFollowedUserIds(for: currentUserId)
+        
+        // Get preferred tags and categories
         let preferredTags = currentUser.preferredTags ?? []
         let preferredCategories = currentUser.preferredCategories ?? []
         
-        // If user has no preferences, return empty
+        // If no preferences, fall back to popular users
         guard !preferredTags.isEmpty || !preferredCategories.isEmpty else {
-            return []
+            return try await getGloballyPopularUsers(limit: limit)
         }
         
-        // Find users who have posts with matching tags or categories
+        // Find users who post content matching user's preferences
         var candidateUserIds: Set<String> = []
+        let sevenDaysAgo = Timestamp(date: Date().addingTimeInterval(-7 * 24 * 60 * 60))
         
         // Query posts with matching tags
-        if !preferredTags.isEmpty {
-            for tag in preferredTags.prefix(3) { // Limit to top 3 tags to avoid too many queries
-                let tagQuery = db.collection(postsCollection)
-                    .whereField("tags", arrayContains: tag)
-                    .whereField("createdAt", isGreaterThan: Timestamp(date: Date().addingTimeInterval(-7 * 24 * 60 * 60))) // Last 7 days
-                    .limit(to: 20)
-                
-                let snapshot = try? await tagQuery.getDocuments()
-                snapshot?.documents.forEach { doc in
-                    if let userId = doc.data()["userId"] as? String, userId != excludeUserId {
+        for tag in preferredTags.prefix(3) {
+            let tagQuery = db.collection(postsCollection)
+                .whereField("tags", arrayContains: tag)
+                .whereField("createdAt", isGreaterThan: sevenDaysAgo)
+                .limit(to: 20)
+            
+            if let snapshot = try? await tagQuery.getDocuments() {
+                for doc in snapshot.documents {
+                    if let userId = doc.data()["userId"] as? String,
+                       userId != currentUserId,
+                       !followedUserIds.contains(userId) {
                         candidateUserIds.insert(userId)
                     }
                 }
@@ -134,82 +176,45 @@ class UserDiscoveryService {
         }
         
         // Query posts with matching categories
-        if !preferredCategories.isEmpty {
-            for category in preferredCategories.prefix(2) { // Limit to top 2 categories
-                let categoryQuery = db.collection(postsCollection)
-                    .whereField("categories", arrayContains: category)
-                    .whereField("createdAt", isGreaterThan: Timestamp(date: Date().addingTimeInterval(-7 * 24 * 60 * 60))) // Last 7 days
-                    .limit(to: 20)
-                
-                let snapshot = try? await categoryQuery.getDocuments()
-                snapshot?.documents.forEach { doc in
-                    if let userId = doc.data()["userId"] as? String, userId != excludeUserId {
+        for category in preferredCategories.prefix(2) {
+            let categoryQuery = db.collection(postsCollection)
+                .whereField("categories", arrayContains: category)
+                .whereField("createdAt", isGreaterThan: sevenDaysAgo)
+                .limit(to: 20)
+            
+            if let snapshot = try? await categoryQuery.getDocuments() {
+                for doc in snapshot.documents {
+                    if let userId = doc.data()["userId"] as? String,
+                       userId != currentUserId,
+                       !followedUserIds.contains(userId) {
                         candidateUserIds.insert(userId)
                     }
                 }
             }
         }
         
-        // Fetch profiles for candidate users
+        // If no candidates found, fall back to popular users
         guard !candidateUserIds.isEmpty else {
-            return []
+            return try await getGloballyPopularUsers(limit: limit)
         }
         
-        let userIds = Array(candidateUserIds.prefix(limit * 2))
-        let profiles = try await profileService.getUserProfiles(userIds: userIds)
+        // Fetch profiles for candidates
+        let profiles = try await profileService.getUserProfiles(userIds: Array(candidateUserIds.prefix(limit * 2)))
         
         // Sort by follower count and return top users
         return Array(profiles.values)
-            .sorted { ($0.followerCount) > ($1.followerCount) }
+            .sorted { $0.followerCount > $1.followerCount }
             .prefix(limit)
             .map { $0 }
     }
     
-    /// Fetch recently active users (users who posted in the last 7 days)
-    private func fetchRecentlyActiveUsers(limit: Int, excludeUserId: String) async throws -> [UserProfile] {
-        let sevenDaysAgo = Date().addingTimeInterval(-7 * 24 * 60 * 60)
-        let timestamp = Timestamp(date: sevenDaysAgo)
-        
-        let query = db.collection(postsCollection)
-            .whereField("createdAt", isGreaterThan: timestamp)
-            .order(by: "createdAt", descending: true)
-            .limit(to: limit * 3) // Fetch more to account for duplicates and exclusions
-        
-        let snapshot = try await query.getDocuments()
-        
-        // Extract unique user IDs
-        var userIds: Set<String> = []
-        for document in snapshot.documents {
-            if let userId = document.data()["userId"] as? String, userId != excludeUserId {
-                userIds.insert(userId)
-                if userIds.count >= limit {
-                    break
-                }
-            }
-        }
-        
-        // Fetch profiles
-        guard !userIds.isEmpty else {
-            return []
-        }
-        
-        let profiles = try await profileService.getUserProfiles(userIds: Array(userIds))
-        return Array(profiles.values)
-    }
-    
-    // MARK: - Related Users
-    
     /// Get users who create similar content to a specific post
-    /// - Parameters:
-    ///   - post: The post to find related users for
-    ///   - limit: Maximum number of users to return
-    /// - Returns: Array of related UserProfile objects
-    func getRelatedUsersForPost(_ post: Post, limit: Int = 10) async throws -> [UserProfile] {
+    func getRelatedUsers(for post: Post, limit: Int) async throws -> [UserProfile] {
         guard let currentUserId = Auth.auth().currentUser?.uid else {
-            throw UserDiscoveryError.notAuthenticated
+            throw UserSuggestionError.notAuthenticated
         }
         
-        // Get users the current user already follows
+        // Get users already followed
         let followedUserIds = try await getFollowedUserIds(for: currentUserId)
         
         // Get tags and categories from the post
@@ -276,14 +281,10 @@ class UserDiscoveryService {
             .map { $0 }
     }
     
-    // MARK: - Friends of Friends
-    
-    /// Get users followed by people the current user follows
-    /// - Parameter limit: Maximum number of users to return
-    /// - Returns: Array of suggested UserProfile objects
-    func getFriendsOfFriends(limit: Int = 10) async throws -> [UserProfile] {
+    /// Get users followed by people the current user follows (friends of friends)
+    func getFriendsOfFriends(limit: Int) async throws -> [UserProfile] {
         guard let currentUserId = Auth.auth().currentUser?.uid else {
-            throw UserDiscoveryError.notAuthenticated
+            throw UserSuggestionError.notAuthenticated
         }
         
         // Get users the current user follows
@@ -291,7 +292,7 @@ class UserDiscoveryService {
         
         // If user doesn't follow anyone, fall back to popular users
         guard !followedUserIds.isEmpty else {
-            return try await fetchPopularUsers(limit: limit, excludeUserId: currentUserId)
+            return try await getGloballyPopularUsers(limit: limit)
         }
         
         // For each followed user, get who they follow
@@ -317,7 +318,7 @@ class UserDiscoveryService {
         
         // If no friends of friends found, fall back to popular users
         guard !friendsOfFriendsIds.isEmpty else {
-            return try await fetchPopularUsers(limit: limit, excludeUserId: currentUserId)
+            return try await getGloballyPopularUsers(limit: limit)
         }
         
         // Sort by number of mutual connections (most connected first)
@@ -363,7 +364,9 @@ class UserDiscoveryService {
     }
 }
 
-enum UserDiscoveryError: LocalizedError {
+// MARK: - Errors
+
+enum UserSuggestionError: LocalizedError {
     case notAuthenticated
     case userNotFound
     case fetchError(String)

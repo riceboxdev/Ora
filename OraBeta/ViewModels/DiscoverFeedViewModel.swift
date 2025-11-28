@@ -35,6 +35,7 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
     private let container: DIContainer
     private let feedService: FeedServiceProtocol
     private let trendService: TrendService
+    private let userDiscoveryService: UserDiscoveryService
     let profileService: ProfileServiceProtocol
     private var currentUserId: String?
     private var lastDocument: QueryDocumentSnapshot?
@@ -57,6 +58,7 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
         self.profileService = diContainer.profileService
         self.feedService = diContainer.feedService
         self.trendService = diContainer.trendService
+        self.userDiscoveryService = diContainer.userDiscoveryService
     }
     
     // MARK: - Public Methods
@@ -85,6 +87,12 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
             group.addTask { await self.loadPosts() }
             group.addTask { await self.loadSuggestedUsers() }
             group.addTask { await self.loadGlobalTrendingTopics() }
+        }
+        
+        // After trending topics have loaded and featured topics are selected,
+        // load preview posts for the hero cards so their images can render.
+        if !featuredTopics.isEmpty {
+            await loadTopicPreviews()
         }
         
         hasLoadedInitialData = true
@@ -369,7 +377,7 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
     
     /// Load suggested users for discover feed
     func loadSuggestedUsers() async {
-        guard let userId = currentUserId ?? Auth.auth().currentUser?.uid else {
+        guard currentUserId ?? Auth.auth().currentUser?.uid != nil else {
             print("⚠️ DiscoverFeedViewModel: Cannot load suggested users - no user ID")
             return
         }
@@ -378,78 +386,39 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
         
         isLoadingSuggestedUsers = true
         
-        // Stream functionality removed - return empty recommendations
-        suggestedUsers = []
-        isLoadingSuggestedUsers = false
-        return
-        
-        /* Stream code removed
         do {
-            // Use discover feed as source for recommendations
-            let response = try await streamService.getFollowRecommendations(
-                sourceFeedSlug: "discover",
-                targetFeedSlug: "user",
-                limit: 10
-            )
-            
-            if let recommendationsData = response["recommendations"] as? [[String: Any]] {
-                let recommendations = recommendationsData.compactMap { FollowRecommendation(from: $0) }
-                
-                // Filter out current user and load profiles
-                let recommendedUserIds = recommendations
-                    .map { $0.id }
-                    .filter { $0 != userId }
-                
-                // Load user profiles in parallel
-                var loadedProfiles: [UserProfile] = []
-                await withTaskGroup(of: UserProfile?.self) { group in
-                    for recommendedUserId in recommendedUserIds {
-                        group.addTask {
-                            do {
-                                return try await self.profileService.getUserProfile(userId: recommendedUserId)
-                            } catch {
-                                print("⚠️ DiscoverFeedViewModel: Failed to load profile for \(recommendedUserId): \(error.localizedDescription)")
-                                return nil
-                            }
-                        }
-                    }
-                    
-                    for await profile in group {
-                        if let profile = profile {
-                            loadedProfiles.append(profile)
-                        }
-                    }
-                }
-                
-                suggestedUsers = loadedProfiles
-                print("✅ DiscoverFeedViewModel: Loaded \(loadedProfiles.count) suggested users")
-            } else {
-                suggestedUsers = []
-                print("⚠️ DiscoverFeedViewModel: No recommendations in response")
-            }
+            // Use UserDiscoveryService to get recommended users
+            // This combines popular, similar interests, and recently active users
+            let users = try await userDiscoveryService.getRecommendedUsers(limit: 10)
+            suggestedUsers = users
+            print("✅ DiscoverFeedViewModel: Loaded \(users.count) suggested users")
         } catch {
-            // This is expected when there's insufficient data for recommendations
-            // Stream Personalization API requires some data to generate recommendations
-            print("⚠️ DiscoverFeedViewModel: No suggested users available (this is normal with limited data)")
-            print("   Error: \(error.localizedDescription)")
+            print("⚠️ DiscoverFeedViewModel: Failed to load suggested users: \(error.localizedDescription)")
             suggestedUsers = []
         }
-        */
+        
+        isLoadingSuggestedUsers = false
     }
     
     /// Load recommended users for discover feed
     func loadRecommendedUsers() async {
-        guard let userId = currentUserId ?? Auth.auth().currentUser?.uid else {
+        guard currentUserId ?? Auth.auth().currentUser?.uid != nil else {
             print("⚠️ DiscoverFeedViewModel: Cannot load recommended users - no user ID")
             return
         }
         
         isLoadingRecommendedUsers = true
         
-        // For now, use the same logic as suggested users
-        // This can be enhanced with personalized recommendations later
-        await loadSuggestedUsers()
-        recommendedUsers = suggestedUsers
+        do {
+            // Use UserDiscoveryService to get recommended users
+            // This combines popular, similar interests, and recently active users
+            let users = try await userDiscoveryService.getRecommendedUsers(limit: 10)
+            recommendedUsers = users
+            print("✅ DiscoverFeedViewModel: Loaded \(users.count) recommended users")
+        } catch {
+            print("⚠️ DiscoverFeedViewModel: Failed to load recommended users: \(error.localizedDescription)")
+            recommendedUsers = []
+        }
         
         isLoadingRecommendedUsers = false
     }
@@ -459,7 +428,46 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
         guard !featuredTopics.isEmpty else { return }
         
         let topicPreviewService = TopicPreviewService()
-        topicPreviews = await topicPreviewService.getTopicPreviews(topics: featuredTopics, limitPerTopic: 3)
+        let remotePreviews = await topicPreviewService.getTopicPreviews(topics: featuredTopics, limitPerTopic: 3)
+        
+        // Fallback: if Algolia is not configured or returns no results for a topic,
+        // synthesize previews from the posts already loaded in the discover feed.
+        var combinedPreviews: [String: [Post]] = [:]
+        
+        for topic in featuredTopics {
+            let remote = remotePreviews[topic.id] ?? []
+            if !remote.isEmpty {
+                combinedPreviews[topic.id] = Array(remote.prefix(3))
+            } else {
+                let local = getLocalPreviewPosts(for: topic, limit: 3)
+                if !local.isEmpty {
+                    combinedPreviews[topic.id] = local
+                }
+            }
+        }
+        
+        topicPreviews = combinedPreviews
+    }
+    
+    /// Build preview posts for a topic from the already loaded discover posts.
+    /// This is used when Algolia previews are unavailable.
+    private func getLocalPreviewPosts(for topic: TrendingTopic, limit: Int) -> [Post] {
+        guard !posts.isEmpty else { return [] }
+        
+        let name = topic.name.lowercased()
+        
+        let matchingPosts: [Post] = posts.filter { post in
+            switch topic.type {
+            case .tag, .label:
+                let tags = (post.tags ?? []).map { $0.lowercased() }
+                return tags.contains(name)
+            case .category:
+                let categories = (post.categories ?? []).map { $0.lowercased() }
+                return categories.contains(name)
+            }
+        }
+        
+        return Array(matchingPosts.prefix(limit))
     }
     
     /// Load global trending topics for discover feed

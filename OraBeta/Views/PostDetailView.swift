@@ -55,6 +55,7 @@ struct PostDetailView: View {
                 captionSection
                 tagsSection
                 latestCommentSection
+                relatedUsersSection
                 recommendedPostsSection
             }
         }
@@ -258,6 +259,17 @@ struct PostDetailView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
+        }
+    }
+    
+    @ViewBuilder
+    private var relatedUsersSection: some View {
+        if !viewModel.relatedUsers.isEmpty || viewModel.isLoadingRelatedUsers {
+            RelatedUsersSection(
+                users: viewModel.relatedUsers,
+                isLoading: viewModel.isLoadingRelatedUsers,
+                profileService: profileService
+            )
         }
     }
     
@@ -618,7 +630,6 @@ struct LikeButton: View {
 struct EngagementRow: View {
     @ObservedObject var viewModel: PostDetailViewModel
     @EnvironmentObject var authViewModel: AuthViewModel
-    @State private var showCreateBoard = false
     let rowHeight: CGFloat = 50
     
     var body: some View {
@@ -627,89 +638,131 @@ struct EngagementRow: View {
                 Spacer()
                 saveButton()
             }
-            
-            if viewModel.showBoards {
-                VStack(spacing: 8) {
-                    if viewModel.isLoadingBoards {
-                        HStack {
-                            Spacer()
-                            ProgressView()
-                                .padding()
-                            Spacer()
-                        }
-                        .frame(height: 50)
-                    } else if viewModel.boards.isEmpty {
-                        // Create Board option
+        }
+        .padding(.horizontal)
+        .sheet(isPresented: $viewModel.showBoards) {
+            SaveToBoardSheet(viewModel: viewModel)
+                .environmentObject(authViewModel)
+                .presentationDetents([.medium])
+        }
+        .onChange(of: viewModel.showBoards) { oldValue, newValue in
+            if newValue && viewModel.boards.isEmpty && !viewModel.isLoadingBoards {
+                // Load boards when showing boards sheet
+                Task {
+                    await viewModel.loadBoards()
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func saveButton() -> some View {
+        Button { 
+            viewModel.showBoards = true
+        } label: {
+            HStack(alignment: .center, spacing: 12) {
+                Text("Save")
+                    .font(.creatoDisplaySubheadline(.medium))
+            }
+            .foregroundStyle(.black)
+            .padding(.leading, 16)
+            .padding(.trailing, 12)
+            .frame(height: 50)
+            .background(.ora, in: .rect(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 2))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Save to Board Sheet
+
+struct SaveToBoardSheet: View {
+    @ObservedObject var viewModel: PostDetailViewModel
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @Environment(\.dismiss) var dismiss
+    @State private var navigationPath = NavigationPath()
+    
+    var body: some View {
+        NavigationStack(path: $navigationPath) {
+            VStack(spacing: 0) {
+                if viewModel.isLoadingBoards {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding()
+                } else if viewModel.boards.isEmpty {
+                    // Empty state with create board option
+                    VStack(spacing: 16) {
+                        Text("No boards yet")
+                            .font(.creatoDisplayHeadline())
+                            .foregroundStyle(.secondary)
+                        
                         Button(action: {
-                            showCreateBoard = true
+                            navigationPath.append("create")
                         }) {
                             HStack {
                                 Image(systemName: "plus.circle.fill")
                                     .font(.title3)
                                 Text("Create Board")
-                                    .font(.creatoDisplayHeadline())
-                                Spacer()
+                                    .font(.creatoDisplaySubheadline(.medium))
                             }
-                            .foregroundStyle(.ora)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .frame(height: 50)
-                            .background(.regularMaterial, in: .rect(cornerRadius: 16))
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 2))
-                        }
-                        .buttonStyle(.plain)
-                    } else {
-                        ScrollView(showsIndicators: false) {
-                            VStack(spacing: 8) {
-                                // Create Board option
-                                Button(action: {
-                                    showCreateBoard = true
-                                }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "plus.circle.fill")
-                                            .font(.title3)
-                                        Text("Create")
-                                            .font(.creatoDisplaySubheadline(.medium))
-                                    }
-                                    .foregroundStyle(.ora)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .frame(height: 50)
-                                    .frame(maxWidth: .infinity)
-                                    .background(.regularMaterial, in: .rect(cornerRadius: 16))
-                                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 2))
-                                }
-                                .buttonStyle(.plain)
-                                
-                                // Board list
-                                ForEach(viewModel.boards) { board in
-                                    boardRow(board: board)
-                                }
-                            }
-                            .padding(.horizontal, 4)
+                            .foregroundStyle(.accent)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(.ora, in: .rect(cornerRadius: 16))
                         }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 12) {
+                            // Create Board button
+                            Button(action: {
+                                navigationPath.append("create")
+                            }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.title3)
+                                    Text("Create Board")
+                                        .font(.creatoDisplaySubheadline(.medium))
+                                    Spacer()
+                                }
+                                .foregroundStyle(.accent)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(.regularMaterial, in: .rect(cornerRadius: 16))
+                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 2))
+                            }
+                            .buttonStyle(.plain)
+                            
+                            // Board list
+                            ForEach(viewModel.boards) { board in
+                                boardRow(board: board)
+                            }
+                        }
+                        .padding()
+                    }
                 }
-                .transition(.move(edge: .top).combined(with: .opacity))
             }
-        }
-        .padding(.horizontal)
-        .animation(.smooth, value: viewModel.showBoards)
-        .sheet(isPresented: $showCreateBoard) {
-            CreateBoardView(boardService: BoardService())
-                .environmentObject(authViewModel)
-                .onDisappear {
-                    // Reload boards after creating a new one
-                    Task {
-                        await viewModel.loadBoards()
+            .navigationTitle("Save to Board")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
                     }
                 }
-        }
-        .onChange(of: viewModel.showBoards) { oldValue, newValue in
-            if newValue && viewModel.boards.isEmpty && !viewModel.isLoadingBoards {
-                // Load boards when showing boards view
-                Task {
-                    await viewModel.loadBoards()
+            }
+            .navigationDestination(for: String.self) { destination in
+                if destination == "create" {
+                    CreateBoardView(boardService: BoardService())
+                        .environmentObject(authViewModel)
+                        .onDisappear {
+                            // Reload boards after creating a new one
+                            Task {
+                                await viewModel.loadBoards()
+                            }
+                        }
                 }
             }
         }
@@ -720,6 +773,8 @@ struct EngagementRow: View {
         Button(action: {
             Task {
                 await viewModel.saveToBoard(board)
+                // Dismiss sheet after saving (viewModel.saveToBoard sets showBoards = false)
+                dismiss()
             }
         }) {
             HStack(spacing: 12) {
@@ -731,7 +786,7 @@ struct EngagementRow: View {
                         CachedImageView(
                             url: url,
                             aspectRatio: 1.0,
-                            downsamplingSize: CGSize(width: 50, height: 50),
+                            downsamplingSize: CGSize(width: 60, height: 60),
                             contentMode: .fill
                         )
                     } else {
@@ -743,8 +798,7 @@ struct EngagementRow: View {
                             }
                     }
                 }
-                .frame(width: 50, height: 50)
-                .clipShape(.rect(cornerRadius: 8))
+                .frame(width: 60, height: 60)
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(board.title)
@@ -769,41 +823,20 @@ struct EngagementRow: View {
                     ProgressView()
                         .scaleEffect(0.8)
                 } else {
-                    Image(systemName: "plus")
+                    // Show checkmark if post is already in this board, plus if not
+                    let isPostInBoard = board.id.map { viewModel.boardsContainingPost.contains($0) } ?? false
+                    Image(systemName: isPostInBoard ? "checkmark" : "plus")
                         .font(.title3)
-                        .foregroundStyle(.ora)
+                        .foregroundStyle(.accent)
                 }
             }
-            .padding(.trailing, 16)
-            .padding(.vertical, 8)
-            .frame(height: 50)
-            .background(.regularMaterial, in: .rect(cornerRadius: 16))
+            .padding(.trailing)
+            .background(.regularMaterial)
+            .clipShape(.rect(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 2))
         }
         .buttonStyle(.plain)
         .disabled(viewModel.isSavingToBoard)
-    }
-    
-    @ViewBuilder
-    private func saveButton() -> some View {
-        Button { 
-            viewModel.showBoards.toggle()
-        } label: {
-            HStack(alignment: .center, spacing: 12) {
-                Text("Save")
-                    .font(.creatoDisplaySubheadline(.medium))
-                
-                Image(systemName: viewModel.showBoards ? "chevron.up" : "chevron.down")
-                    .font(.caption)
-            }
-            .foregroundStyle(.black)
-            .padding(.leading, 16)
-            .padding(.trailing, 12)
-            .frame(height: 50)
-            .background(.ora, in: .rect(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 2))
-        }
-        .buttonStyle(.plain)
     }
 }
 
@@ -869,8 +902,22 @@ struct RecommendedPostsSection: View {
 }
 
 #Preview {
-    ContentView()
+    NavigationView {
+        PostDetailView(
+            post: Post(
+                activityId: "8408ea70-be85-11f0-8080-800050ac5f9f",
+                userId: "ChXrUkIGqsS1TMVi6avPKAhIlxn1",
+                username: "Nick",
+                imageUrl: "https://res.cloudinary.com/ddlpzt0qn/image/upload/v1762550962/users/ChXrUkIGqsS1TMVi6avPKAhIlxn1/thumbnails/ekc8zxcxkg51rqb21hcb.jpg",
+                caption: "Test caption",
+                tags: ["flowers", "nature", "retro"]
+            )
+        )
+    }
+    .preferredColorScheme(.dark)
         .environmentObject(AuthViewModel())
+        .environmentObject(DIContainer.shared)
+        .previewAuthenticated(email: "nickswoke@outlook.com", password: "password1")
 }
 
 // MARK: - StoryPreviewView

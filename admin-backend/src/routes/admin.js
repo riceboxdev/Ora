@@ -1240,6 +1240,11 @@ router.get('/settings', requireRole('super_admin', 'moderator', 'viewer'), async
 // @access  Private (super_admin only)
 router.post('/settings', requireRole('super_admin'), async (req, res) => {
   try {
+    // Verify Firebase Admin is initialized
+    if (!admin.apps.length) {
+      throw new Error('Firebase Admin not initialized');
+    }
+    
     const { featureFlags, remoteConfig, maintenanceMode, uiSettings } = req.body;
     console.log('Settings update request received:', {
       hasFeatureFlags: featureFlags !== undefined,
@@ -1355,8 +1360,28 @@ router.post('/settings', requireRole('super_admin'), async (req, res) => {
     res.json(response);
   } catch (error) {
     console.error('Error updating settings:', error);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ message: error.message });
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+    
+    // Provide more helpful error messages
+    let errorMessage = error.message || 'Failed to save settings';
+    if (error.code === 7) {
+      errorMessage = 'Permission denied. Please check Firestore security rules.';
+    } else if (error.code === 14) {
+      errorMessage = 'Firestore unavailable. Please check your connection.';
+    } else if (error.message?.includes('not initialized')) {
+      errorMessage = 'Firebase Admin not initialized. Please check environment variables.';
+    } else if (error.message?.includes('Database connection')) {
+      errorMessage = 'Database connection error. Please check your Firestore configuration.';
+    }
+    
+    res.status(500).json({ 
+      message: errorMessage,
+      ...(process.env.NODE_ENV === 'development' && { details: error.message })
+    });
   }
 });
 
@@ -2814,13 +2839,27 @@ router.post('/announcements', requireRole('super_admin'), async (req, res) => {
 // @access  Private (super_admin+)
 router.get('/announcements', requireRole('super_admin'), async (req, res) => {
   try {
+    // Verify Firebase Admin is initialized
+    if (!admin.apps.length) {
+      throw new Error('Firebase Admin not initialized');
+    }
+    
     const db = admin.firestore();
     const { status } = req.query;
     
-    let query = db.collection('announcements').orderBy('createdAt', 'desc');
+    let query = db.collection('announcements');
     
+    // If status filter is provided, apply it before ordering
     if (status) {
       query = query.where('status', '==', status);
+    }
+    
+    // Order by createdAt (descending) - if this fails, it might need a Firestore index
+    try {
+      query = query.orderBy('createdAt', 'desc');
+    } catch (orderError) {
+      console.warn('Could not order by createdAt, fetching without order:', orderError.message);
+      // Continue without ordering if index is missing
     }
     
     const snapshot = await query.get();
@@ -2835,7 +2874,26 @@ router.get('/announcements', requireRole('super_admin'), async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching announcements:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+    
+    // Provide more helpful error messages
+    let errorMessage = error.message || 'Failed to load announcements';
+    if (error.code === 8) {
+      errorMessage = 'Firestore index missing. Please create a composite index for announcements collection.';
+    } else if (error.code === 7) {
+      errorMessage = 'Permission denied. Please check Firestore security rules.';
+    } else if (error.message?.includes('not initialized')) {
+      errorMessage = 'Firebase Admin not initialized. Please check environment variables.';
+    }
+    
+    res.status(500).json({ 
+      message: errorMessage,
+      ...(process.env.NODE_ENV === 'development' && { details: error.message })
+    });
   }
 });
 

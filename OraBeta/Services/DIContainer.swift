@@ -87,6 +87,16 @@ final class DIContainer: ObservableObject {
         )
     }()
     
+    /// User discovery service for user suggestions and recommendations (depends on ProfileService)
+    private(set) lazy var userDiscoveryService: UserDiscoveryService = {
+        UserDiscoveryService(profileService: profileService as? ProfileService)
+    }()
+    
+    /// User suggestion service for comprehensive user suggestions (depends on ProfileService)
+    private(set) lazy var userSuggestionService: UserSuggestionService = {
+        UserSuggestionService(profileService: profileService as? ProfileService)
+    }()
+    
     // MARK: - Singleton Services
     
     /// Tag service (singleton)

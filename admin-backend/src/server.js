@@ -55,17 +55,24 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Ensure DB connection for serverless functions (skip for OPTIONS)
+// Note: MongoDB is only needed for AdminUser authentication, not for Firestore routes
+// So we make this optional - routes that need MongoDB will handle connection errors
 app.use(async (req, res, next) => {
   if (req.method === 'OPTIONS') {
     return next();
   }
-  try {
-    await connectDB();
-    next();
-  } catch (error) {
-    console.error('Database connection error:', error);
-    res.status(500).json({ message: 'Database connection failed' });
+  // Only attempt MongoDB connection if MONGODB_URI is configured
+  // Most routes use Firestore, so MongoDB connection is optional
+  if (process.env.MONGODB_URI) {
+    try {
+      await connectDB();
+    } catch (error) {
+      // Log but don't block - routes that need MongoDB will handle the error
+      // Most routes (announcements, settings, etc.) use Firestore, not MongoDB
+      console.warn('MongoDB connection warning (non-blocking):', error.message);
+    }
   }
+  next();
 });
 
 // Routes

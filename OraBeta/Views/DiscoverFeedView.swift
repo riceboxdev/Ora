@@ -10,20 +10,18 @@ import FirebaseAuth
 import MasonryStack
 import Kingfisher
 import Foundation
-import StretchyHeaderUI
 
-// MARK: - Preference Keys
+// MARK: - Stretchy Header Configuration
 
-struct ScrollOffsetPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
+private enum StretchyHeaderConfig {
+    static let baseHeight: CGFloat = 300
+    static let maxStretch: CGFloat = 150 // Maximum additional stretch when pulling down
 }
 
 // MARK: - DiscoverFeedView
 
 struct DiscoverFeedView: View {
+    @Environment(\.safeAreaInsets) var safeArea
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel: DiscoverFeedViewModel
     @State private var navigationPath = NavigationPath()
@@ -53,9 +51,6 @@ struct DiscoverFeedView: View {
                             .transition(.opacity)
                     }
                     .sharedBackgroundVisibility(.hidden)
-                }
-                .refreshable {
-                    await handleRefresh()
                 }
                 .task {
                     await viewModel.loadInitialData()
@@ -91,43 +86,22 @@ struct DiscoverFeedView: View {
     }
     
     private var feedScrollView: some View {
-        ScrollView {
-            ScrollView(.horizontal) {
-                LazyHStack {
-                    ForEach(viewModel.featuredTopics) { topic in
-                        FeaturedTopicCard(
-                            topic: topic,
-                            previewPosts: viewModel.topicPreviews[topic.id] ?? [],
-                            navigationPath: $navigationPath
-                        )
-                        .frame(height: 300)
-                    }
-                }
-            }
-//                           FeaturedTopicsHero(
-//                               topics: viewModel.featuredTopics,
-//                               topicPreviews: viewModel.topicPreviews,
-//                               navigationPath: $navigationPath
-//                           )
-                       
-
+        PullEffectScrollView(
+            actionTopPadding: safeArea.top,
+            leadingAction: .init(symbol: "", action: {  }),
+            centerAction: .init(symbol: "refresh.icon", action: {  }),
+            trailingAction: .init(symbol: "", action: {  })
+        ) {
             LazyVStack(spacing: 0) {
-                // Hero section with featured topics
-//                if viewModel.isLoadingTrendingTopics || (!viewModel.trendingTopics.isEmpty && viewModel.featuredTopics.isEmpty) {
-//                    // Show placeholder while loading
-//                    FeaturedTopicsHeroPlaceholder()
-//                        .transition(.opacity)
-//                        .ignoresSafeArea()
-//                } else if !viewModel.featuredTopics.isEmpty {
-//                    // Show actual content when loaded
-//                    FeaturedTopicsHero(
-//                        topics: viewModel.featuredTopics,
-//                        topicPreviews: viewModel.topicPreviews,
-//                        navigationPath: $navigationPath
-//                    )
-//                    .transition(.opacity)
-//                    .ignoresSafeArea()
-//                }
+                // Stretchy Hero Carousel
+                if !viewModel.featuredTopics.isEmpty {
+                    StretchyHeroCarousel(
+                        topics: viewModel.featuredTopics,
+                        topicPreviews: viewModel.topicPreviews,
+                        navigationPath: $navigationPath
+                    )
+                }
+                
                 Divider()
                 
                 // User discovery row
@@ -162,16 +136,14 @@ struct DiscoverFeedView: View {
                 // Reusable Pagination Footer
                 PaginationFooter(viewModel: viewModel)
             }
-            .coordinateSpace(name: "scroll")
-            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { _ in
-                // Reserved for additional scroll detection if needed
-            }
-            .animation(.easeInOut(duration: 0.3), value: viewModel.featuredTopics.count)
+            .ignoresSafeArea()
+            .animation(.smooth, value: viewModel.featuredTopics.count)
             .animation(.easeInOut(duration: 0.3), value: viewModel.isLoadingTrendingTopics)
             .animation(.easeInOut(duration: 0.3), value: viewModel.recommendedUsers.count)
             .animation(.easeInOut(duration: 0.3), value: viewModel.isLoadingRecommendedUsers)
         }
         .scrollIndicators(.hidden)
+        .coordinateSpace(name: "scroll")
     }
     
     // MARK: - Helper Methods
@@ -190,224 +162,247 @@ struct DiscoverFeedView: View {
     }
 }
 
-// MARK: - FeaturedTopicsHero
+// MARK: - Stretchy Hero Carousel
 
-struct FeaturedTopicsHero: View {
+/// A clean, standardized stretchy header carousel implementation.
+/// The header stretches when the user pulls down, and snaps back when released.
+struct StretchyHeroCarousel: View {
     let topics: [TrendingTopic]
     let topicPreviews: [String: [Post]]
     @Binding var navigationPath: NavigationPath
     
+    private let baseHeight: CGFloat = StretchyHeaderConfig.baseHeight
+    
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(spacing: 0) {
-                ForEach(topics) { topic in
-                    FeaturedTopicCard(
-                        topic: topic,
-                        previewPosts: topicPreviews[topic.id] ?? [],
-                        navigationPath: $navigationPath
-                    )
+        GeometryReader { geometry in
+            let minY = geometry.frame(in: .named("scroll")).minY
+            // Calculate stretch: when pulling down (minY > 0), add to height
+            let stretch = max(0, minY)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 0) {
+                    ForEach(topics) { topic in
+                        HeroCard(
+                            topic: topic,
+                            previewPosts: topicPreviews[topic.id] ?? [],
+                            baseHeight: baseHeight,
+                            stretch: stretch
+                        ) {
+                            navigationPath.append(topic)
+                        }
+                        .containerRelativeFrame(.horizontal)
+                        .clipped()
+                    }
                 }
+                .scrollTargetLayout()
             }
-            .scrollTargetLayout()
+            .scrollTargetBehavior(.paging)
+            .frame(height: baseHeight + stretch)
+            // When pulling down (minY > 0), offset upward to keep pinned at top
+            .offset(y: minY > 0 ? -minY : 0)
         }
-        .scrollTargetBehavior(.paging)
+        .frame(height: baseHeight)
     }
 }
 
-// MARK: - FeaturedTopicCard
+// MARK: - Hero Card
 
-struct FeaturedTopicCard: View {
+/// Individual card in the stretchy carousel.
+/// Receives stretch amount from parent and applies it to the image.
+private struct HeroCard: View {
     let topic: TrendingTopic
     let previewPosts: [Post]
-    let cardHeight: CGFloat = 300
-    @Binding var navigationPath: NavigationPath
+    let baseHeight: CGFloat
+    let stretch: CGFloat
+    let onTap: () -> Void
+    
+    @State private var currentImageIndex: Int = 0
+    @State private var slideshowTask: Task<Void, Never>?
+    
+    // Limit to first 3-4 images for slideshow
+    private var slideshowPosts: [Post] {
+        Array(previewPosts.prefix(3))
+    }
     
     var body: some View {
-        Button(action: {
-            navigationPath.append(topic)
-        }) {
-            ZStack(alignment: .bottomLeading) {
-                // Background image (first post)
-                backgroundImage
-                    .stretchy()
+        Button(action: onTap) {
+            ZStack(alignment: .bottom) {
+                // Background images - slideshow with fade transition
+                heroImageSlideshow
+                    .frame(height: baseHeight + stretch)
+                    .clipped()
                 
-                // Gradient overlay for text readability
+                // Gradient overlay
                 LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.black.opacity(0.0),
-                        Color.black.opacity(0.3),
-                        Color.black.opacity(0.6)
-                    ]),
+                    colors: [
+                        .clear,
+                        .black.opacity(0.4),
+                        .black.opacity(0.7)
+                    ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
-//                .frame(height: cardHeight)
-                .containerRelativeFrame(.horizontal)
                 
-                // Content - constrained to bottom
-                VStack(alignment: .leading, spacing: 0) {
-                    Spacer()
-                    
-                    // Topic header at bottom
+                // Content overlay
+                HStack(alignment: .bottom) {
+                    // Topic info
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(alignment: .top) {
                             Text(topic.name)
                                 .font(.creatoDisplayHeadline())
                                 .fontWeight(.bold)
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .lineLimit(2)
-                                .fixedSize(horizontal: false, vertical: true)
+                                .multilineTextAlignment(.leading)
                             
                             Spacer(minLength: 8)
                             
                             if topic.growthRate > 0 {
-                                HStack(spacing: 2) {
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.caption2)
-                                    Text("\(Int(topic.growthRate * 100))%")
-                                        .font(.caption2)
-                                }
-                                .foregroundColor(.white.opacity(0.9))
+                                GrowthBadge(rate: topic.growthRate)
                             }
                         }
                         
                         Text("\(topic.postCount) posts")
                             .font(.creatoDisplayCaption(.regular))
-                            .foregroundColor(.white.opacity(0.9))
+                            .foregroundStyle(.white.opacity(0.9))
                     }
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        // Subtle background for text area
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.clear,
-                                Color.black.opacity(0.3)
-                            ]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                }
-//                .frame(height: cardHeight)
-                .containerRelativeFrame(.horizontal)
-                
-                // Overlay images in bottom corner
-                VStack {
+                    
                     Spacer()
-                    HStack {
-                        Spacer()
-                        overlayImages
-                            .padding(.trailing, 12)
-                            .padding(.bottom, 12)
-                    }
+                    
+                    // Preview thumbnails
+                    PreviewThumbnails(posts: previewPosts)
                 }
-//                .frame(height: cardHeight)
-                .containerRelativeFrame(.horizontal)
+                .padding(16)
             }
-//            .frame(height: cardHeight)
-            .containerRelativeFrame(.horizontal)
-//            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 20))
         }
         .buttonStyle(.plain)
-        .containerRelativeFrame(.horizontal)
+        .onAppear {
+            startSlideshow()
+        }
+        .onDisappear {
+            stopSlideshow()
+        }
     }
     
-    private var backgroundImage: some View {
-        Group {
-            if let firstPost = previewPosts.first {
-                let imageUrlString = firstPost.thumbnailUrl ?? firstPost.imageUrl
-                if let url = URL(string: imageUrlString) {
-                    KFImage(url)
-                        .placeholder {
-                            // Fallback gradient if no image
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.accent.opacity(0.8),
-                                    Color.accent.opacity(0.6)
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        }
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } else {
-                    // Fallback gradient if URL is invalid
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.accent.opacity(0.8),
-                            Color.accent.opacity(0.6)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+    @ViewBuilder
+    private var heroImageSlideshow: some View {
+        if slideshowPosts.isEmpty {
+            fallbackGradient
+        } else {
+            ZStack {
+                // Show all images with opacity based on current index
+                ForEach(Array(slideshowPosts.enumerated()), id: \.element.id) { index, post in
+                    heroImage(for: post)
+                        .opacity(index == currentImageIndex ? 1 : 0)
+                        .animation(.easeInOut(duration: 1.5), value: currentImageIndex)
                 }
-            } else {
-                // Fallback gradient if no posts
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.accent.opacity(0.8),
-                        Color.accent.opacity(0.6)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
             }
         }
     }
     
-    private var overlayImages: some View {
-        HStack(spacing: 4) {
-            // Show second and third posts as overlay images
-            let overlayPosts = Array(previewPosts.dropFirst().prefix(2))
-            
-            ForEach(overlayPosts, id: \.id) { post in
-                Group {
-                    let imageUrlString = post.thumbnailUrl ?? post.imageUrl
-                    if let url = URL(string: imageUrlString) {
-                        KFImage(url)
-                            .placeholder {
-                                Color.white.opacity(0.3)
-                            }
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } else {
-                        Color.white.opacity(0.3)
-                    }
+    @ViewBuilder
+    private func heroImage(for post: Post) -> some View {
+        if let urlString = post.thumbnailUrl ?? Optional(post.imageUrl),
+           let url = URL(string: urlString) {
+            KFImage(url)
+                .placeholder { fallbackGradient }
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+        } else {
+            fallbackGradient
+        }
+    }
+    
+    private var fallbackGradient: some View {
+        LinearGradient(
+            colors: [Color.accent.opacity(0.8), Color.accent.opacity(0.5)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+    
+    // MARK: - Slideshow Timer
+    
+    private func startSlideshow() {
+        // Only start slideshow if we have multiple images
+        guard slideshowPosts.count > 1 else { return }
+        
+        // Stop any existing slideshow
+        stopSlideshow()
+        
+        // Start new slideshow task
+        slideshowTask = Task { @MainActor in
+            while !Task.isCancelled {
+                // Wait 3 seconds before changing image
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                
+                guard !Task.isCancelled else { break }
+                
+                // Fade to next image
+                withAnimation(.easeInOut(duration: 1.5)) {
+                    currentImageIndex = (currentImageIndex + 1) % slideshowPosts.count
                 }
-                .frame(width: 50, height: 50)
-                .clipShape(.rect(cornerRadius: 16))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.5), lineWidth: 2)
-                )
-                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
             }
+        }
+    }
+    
+    private func stopSlideshow() {
+        slideshowTask?.cancel()
+        slideshowTask = nil
+    }
+}
+
+// MARK: - Growth Badge
+
+private struct GrowthBadge: View {
+    let rate: Double
+    
+    var body: some View {
+        HStack(spacing: 2) {
+            Image(systemName: "arrow.up.right")
+                .font(.caption2)
+            Text("\(Int(rate * 100))%")
+                .font(.caption2)
+        }
+        .foregroundStyle(.white.opacity(0.9))
+    }
+}
+
+// MARK: - Preview Thumbnails
+
+private struct PreviewThumbnails: View {
+    let posts: [Post]
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(Array(posts.dropFirst().prefix(2)), id: \.id) { post in
+                thumbnailImage(for: post)
+                    .frame(width: 50, height: 50)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.white.opacity(0.4), lineWidth: 1.5)
+                    )
+                    .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func thumbnailImage(for post: Post) -> some View {
+        if let urlString = post.thumbnailUrl ?? Optional(post.imageUrl),
+           let url = URL(string: urlString) {
+            KFImage(url)
+                .placeholder { Color.white.opacity(0.2) }
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+        } else {
+            Color.white.opacity(0.2)
         }
     }
 }
 
 // MARK: - TrendingTopicsSection
-
-
-extension View {
-    func stretchy() -> some View {
-        visualEffect { effect, geometry in
-            let currentHeight = geometry.size.height
-            let scrollOffset = geometry.frame(in: .scrollView).minY
-            let positiveOffset = max(0, scrollOffset)
-            
-            let newHeight = currentHeight + positiveOffset
-            let scaleFactor = newHeight / currentHeight
-            
-            return effect.scaleEffect(
-                x: scaleFactor, y: scaleFactor,
-                anchor: .bottom
-            )
-        }
-    }
-}
 
 struct TrendingTopicsSection: View {
     @ObservedObject var viewModel: DiscoverFeedViewModel
@@ -539,8 +534,8 @@ struct SuggestedUserCard: View {
                 OtherProfileView(userId: userId)
             }
         }) {
-            VStack(spacing: 12) {
-                profileImageView
+            VStack(spacing: 20) {
+                profileImageView(size: 90)
                 userInfoView
                 
                 if canFollow {
@@ -548,8 +543,9 @@ struct SuggestedUserCard: View {
                 }
             }
             .padding(.vertical, 12)
-            .containerRelativeFrame(.horizontal, count: 3, spacing: 10)
-            
+            .padding(.horizontal)
+            .background(.quinary,in: .rect(cornerRadius: 20))
+            .containerRelativeFrame(.horizontal, count: 2, spacing: 10)
         }
         .buttonStyle(PlainButtonStyle())
         .task {
@@ -560,7 +556,7 @@ struct SuggestedUserCard: View {
     
     // MARK: - Subviews
     
-    private var profileImageView: some View {
+    private func profileImageView(size: CGFloat = 70) -> some View {
         Group {
             if let profilePhotoUrl = user.profilePhotoUrl,
                let url = URL(string: profilePhotoUrl),
@@ -577,7 +573,7 @@ struct SuggestedUserCard: View {
                     .resizable()
             }
         }
-        .frame(width: 70, height: 70)
+        .frame(width: size, height: size)
         .clipShape(Circle())
         .overlay(
             Circle()
@@ -588,12 +584,12 @@ struct SuggestedUserCard: View {
     private var userInfoView: some View {
         VStack(spacing: 4) {
             Text(user.displayName ?? user.username)
-                .font(.creatoDisplaySubheadline(.medium))
+                .font(.creatoDisplayHeadline(.medium))
                 .foregroundColor(.primary)
                 .lineLimit(1)
             
             Text("@\(user.username)")
-                .font(.creatoDisplayCaption(.regular))
+                .font(.creatoDisplayBody(.regular))
                 .foregroundColor(.secondary)
                 .lineLimit(1)
         }
@@ -614,15 +610,15 @@ struct SuggestedUserCard: View {
                 } else {
                     HStack(spacing: 4) {
                         Image(systemName: isFollowing ? "checkmark" : "plus")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold))
                         Text(isFollowing ? "Following" : "Follow")
-                            .font(.creatoDisplayCaption(.medium))
+                            .font(.creatoDisplayCallout(.medium))
                     }
                 }
             }
             .foregroundColor(isFollowing ? .primary : .black)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
             .background(
                 isFollowing
                     ? Color(UIColor.tertiarySystemFill)
@@ -683,50 +679,58 @@ struct SuggestedUserCard: View {
 
 // MARK: - Placeholder Views
 
-struct FeaturedTopicsHeroPlaceholder: View {
+struct StretchyHeroPlaceholder: View {
+    private let baseHeight: CGFloat = StretchyHeaderConfig.baseHeight
+    
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 16) {
-                // Show 2-3 placeholder cards to match typical featured topics count
+            LazyHStack(spacing: 0) {
                 ForEach(0..<3, id: \.self) { _ in
-                    FeaturedTopicCardPlaceholder()
+                    HeroCardPlaceholder(height: baseHeight)
+                        .containerRelativeFrame(.horizontal)
                 }
             }
+            .scrollTargetLayout()
         }
+        .scrollTargetBehavior(.paging)
+        .frame(height: baseHeight)
     }
 }
 
-struct FeaturedTopicCardPlaceholder: View {
-    let height: CGFloat = 300
+struct HeroCardPlaceholder: View {
+    let height: CGFloat
+    
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            // Background placeholder - matches 300x200 size
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.gray.opacity(0.2),
-                            Color.gray.opacity(0.15)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(height: height)
-            
-            // Bottom gradient overlay placeholder
+        ZStack(alignment: .bottom) {
+            // Background shimmer
             LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.clear,
-                    Color.black.opacity(0.2)
-                ]),
+                colors: [Color.gray.opacity(0.2), Color.gray.opacity(0.15)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            
+            // Gradient overlay
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.2)],
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .frame(height: height)
+            
+            // Content placeholder
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 8) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.white.opacity(0.3))
+                        .frame(width: 180, height: 24)
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.white.opacity(0.2))
+                        .frame(width: 80, height: 14)
+                }
+                Spacer()
+            }
+            .padding(16)
         }
-        .containerRelativeFrame(.horizontal)
-        .frame(height: 300)
+        .frame(height: height)
     }
 }
 

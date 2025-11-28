@@ -29,12 +29,16 @@ class PostDetailViewModel: ObservableObject {
     @Published var latestCommentProfile: UserProfile?
     @Published var recommendedPosts: [Post] = []
     @Published var isLoadingRecommendations: Bool = false
+    @Published var relatedUsers: [UserProfile] = []
+    @Published var isLoadingRelatedUsers: Bool = false
+    @Published var boardsContainingPost: Set<String> = [] // Set of board IDs that contain this post
     
     // MARK: - Private Properties
     let post: Post
     private var engagementService: EngagementService
     private var boardService: BoardService
     private let profileService: ProfileServiceProtocol
+    private let userDiscoveryService: UserDiscoveryService
     private var currentUserId: String?
     private let feedGroup: String
     private let feedId: String
@@ -54,6 +58,7 @@ class PostDetailViewModel: ObservableObject {
         self.boardService = diContainer.boardService
         self.engagementService = diContainer.engagementService
         self.profileService = diContainer.profileService
+        self.userDiscoveryService = diContainer.userDiscoveryService
         
         // Initialize counts from post (fallback values)
         self.likeCount = post.likeCount
@@ -84,6 +89,7 @@ class PostDetailViewModel: ObservableObject {
             group.addTask { await self.loadFollowStatus() }
             group.addTask { await self.loadLatestComment() }
             group.addTask { await self.loadRecommendedPosts() }
+            group.addTask { await self.loadRelatedUsers() }
         }
         
         isLoading = false
@@ -305,6 +311,16 @@ class PostDetailViewModel: ObservableObject {
         do {
             boards = try await boardService.getUserBoards(userId: userId)
             print("✅ PostDetailViewModel: Loaded \(boards.count) boards")
+            
+            // Check which boards already contain this post
+            let boardIds = boards.compactMap { $0.id }
+            if !boardIds.isEmpty {
+                boardsContainingPost = try await boardService.getBoardsContainingPost(
+                    postId: post.activityId,
+                    boardIds: boardIds
+                )
+                print("✅ PostDetailViewModel: Post is in \(boardsContainingPost.count) boards")
+            }
         } catch {
             print("❌ PostDetailViewModel: Error loading boards: \(error.localizedDescription)")
             errorMessage = "Failed to load boards"
@@ -343,6 +359,9 @@ class PostDetailViewModel: ObservableObject {
                 }
             }
             
+            // Mark that this board now contains the post
+            boardsContainingPost.insert(boardId)
+            
             // Close the boards view after successful save
             showBoards = false
             
@@ -378,6 +397,24 @@ class PostDetailViewModel: ObservableObject {
         }
         
         isLoadingRecommendations = false
+    }
+    
+    /// Load related users who create similar content to this post
+    func loadRelatedUsers() async {
+        isLoadingRelatedUsers = true
+        
+        do {
+            // Get users who create similar content based on the post's tags/categories
+            let users = try await userDiscoveryService.getRelatedUsersForPost(post, limit: 10)
+            relatedUsers = users
+            
+            Logger.info("Loaded \(users.count) related users for post", service: "PostDetailViewModel")
+        } catch {
+            Logger.warning("Failed to load related users: \(error.localizedDescription)", service: "PostDetailViewModel")
+            relatedUsers = []
+        }
+        
+        isLoadingRelatedUsers = false
     }
 }
 
