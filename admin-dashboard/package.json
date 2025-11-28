@@ -1,0 +1,30 @@
+{
+  "name": "ora-admin-dashboard",
+  "version": "1.0.0",
+  "description": "ORA Admin Dashboard",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^4.2.1",
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "axios": "^1.6.5",
+    "chart.js": "^4.4.0",
+    "firebase": "^10.7.1",
+    "nuxt": "^4.2.1",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.15",
+    "vue-chartjs": "^5.2.0",
+    "vue-router": "^4.2.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.3",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.33",
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.0.11"
+  }
+}

@@ -1,0 +1,51 @@
+# Prevent Vercel from detecting subdirectories as separate projects
+# Always deploy from root using root/vercel.json
+# Exclude node_modules and other large directories that aren't needed for deployment
+
+# Node modules (will be installed during build)
+**/node_modules/
+node_modules/
+
+# Build outputs (will be generated during build)
+**/dist/
+**/build/
+dist/
+build/
+
+# iOS app files (not needed for web deployment)
+OraBeta/
+OraBeta.xcodeproj/
+OraBetaAdminSDK/
+OraBetaTests/
+OraBetaUITests/
+
+# Firebase functions (deployed separately)
+functions/
+
+# Log files
+*.log
+build*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# Vercel
+.vercel/
+
+# Documentation (not needed for runtime)
+docs/
+
+# Test files
+**/tests/
+**/test/
+**/*.test.js
+**/*.spec.js

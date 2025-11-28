@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-5443685985835981~6505178726</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>HagridTextBold.otf</string>
+		<string>CreatoDisplay-Thin.ttf</string>
+		<string>CreatoDisplay-RegularItalic.ttf</string>
+		<string>CreatoDisplay-Regular.ttf</string>
+		<string>CreatoDisplay-MediumItalic.ttf</string>
+		<string>CreatoDisplay-Medium.ttf</string>
+		<string>CreatoDisplay-LightItalic.ttf</string>
+		<string>CreatoDisplay-Light.ttf</string>
+		<string>CreatoDisplay-ExtraBoldItalic.ttf</string>
+		<string>CreatoDisplay-ExtraBold.ttf</string>
+		<string>CreatoDisplay-BoldItalic.ttf</string>
+		<string>CreatoDisplay-Bold.ttf</string>
+		<string>CreatoDisplay-BlackItalic.ttf</string>
+		<string>CreatoDisplay-Black.ttf</string>
+	</array>
+	<key>WAITLIST_API_KEY</key>
+	<string>94b07ac0eb18b7ffdec93aab98105e58edaf5a0d2abc57576cc15b5b15d13e1f</string>
+	<key>WAITLIST_BASE_URL</key>
+	<string>https://velvet-app-peach.vercel.app</string>
+	<key>WAITLIST_ID</key>
+	<string>692213547d5f95fe3c1c2de6</string>
+</dict>
+</plist>

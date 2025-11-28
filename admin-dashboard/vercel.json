@@ -1,0 +1,17 @@
+{
+  "_comment": "⚠️ DO NOT DEPLOY THIS DIRECTORY AS A SEPARATE PROJECT",
+  "_comment2": "This file exists for reference only. Deployment should be from repository root.",
+  "_comment3": "The root vercel.json handles both frontend and backend in a single project.",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+

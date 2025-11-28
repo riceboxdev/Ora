@@ -1,0 +1,307 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Follows collection - track follow relationships
+    match /follows/{followId} {
+      // Anyone authenticated can read follows (needed for checking if user is following)
+      // This allows both individual document reads and queries
+      allow read: if request.auth != null;
+      
+      // Users can only create follows where they are the follower
+      allow create: if request.auth != null && 
+        request.resource.data.followerId == request.auth.uid &&
+        request.resource.data.followingId != request.auth.uid; // Can't follow self
+      
+      // Users can only delete their own follows
+      allow delete: if request.auth != null && 
+        resource.data.followerId == request.auth.uid;
+      
+      // No updates allowed (delete and recreate instead)
+      allow update: if false;
+    }
+    
+    // User stats collection - follower/following counts
+    match /user_stats/{userId} {
+      // Anyone authenticated can read stats (public information)
+      allow read: if request.auth != null;
+      
+      // Write operations are only allowed via transactions in FollowService
+      // In production, you might want to restrict this further, but for now
+      // we allow authenticated users to update (the service handles the logic)
+      allow write: if request.auth != null && 
+        request.resource.data.userId == userId;
+    }
+    
+    // Collections collection - wallpaper collections (legacy)
+    match /collections/{collectionId} {
+      // Allow users to read all public collections
+      allow read: if resource.data.isPrivate == false;
+      // Allow users to read their own collections (including private)
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Allow users to create, update, and delete their own collections
+      allow create, update, delete: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Boards collection - Pinterest-style boards
+    match /boards/{boardId} {
+      // Allow users to read all public boards
+      allow read: if resource.data.isPrivate == false;
+      // Allow users to read their own boards (including private)
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Allow users to create, update, and delete their own boards
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Users collection - extended user profiles with isAdmin
+    match /users/{userId} {
+      // Anyone authenticated can read user profiles (public information)
+      allow read: if request.auth != null;
+      
+      // Users can create/update their own profile
+      // Only admins can set isAdmin to true
+      // Note: id field is managed by @DocumentID and may not be present in the data
+      allow create: if request.auth != null && 
+        userId == request.auth.uid &&
+        (!request.resource.data.get('isAdmin', false) || 
+         // Allow setting isAdmin only if user is already admin (or document doesn't exist yet, in which case it's false)
+         (!exists(/databases/$(database)/documents/users/$(request.auth.uid)) || 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false)));
+      
+      allow update: if request.auth != null && (
+        // Users can update their own profile
+        (userId == request.auth.uid &&
+         // Users can't change their own isAdmin status
+         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin']) ||
+          request.resource.data.isAdmin == resource.data.get('isAdmin', false)) &&
+         // If updating preference fields, validate their types
+         // Preference fields are updated automatically by UserPreferenceService
+         (!request.resource.data.diff(resource.data).affectedKeys().hasAny([
+           'preferredLabels', 'preferredTags', 'preferredCategories',
+           'labelWeights', 'tagWeights', 'categoryWeights',
+           'lastPreferencesUpdate', 'totalEngagements', 'preferenceVersion'
+         ]) ||
+          // Validate preference field types when they're being updated
+          ((request.resource.data.get('preferredLabels', []) is list || request.resource.data.get('preferredLabels') == null) &&
+           (request.resource.data.get('preferredTags', []) is list || request.resource.data.get('preferredTags') == null) &&
+           (request.resource.data.get('preferredCategories', []) is list || request.resource.data.get('preferredCategories') == null) &&
+           (request.resource.data.get('labelWeights', {}) is map || request.resource.data.get('labelWeights') == null) &&
+           (request.resource.data.get('tagWeights', {}) is map || request.resource.data.get('tagWeights') == null) &&
+           (request.resource.data.get('categoryWeights', {}) is map || request.resource.data.get('categoryWeights') == null) &&
+           (request.resource.data.get('totalEngagements', 0) is int) &&
+           (request.resource.data.get('preferenceVersion', 1) is int)))) ||
+        // Anyone authenticated can update follower/following counts (public stats)
+        // This allows follow/unfollow operations to update these fields on any user
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount', 'followingCount', 'updatedAt']) &&
+         // Ensure we're only updating numeric values
+         (request.resource.data.get('followerCount', 0) is int &&
+          request.resource.data.get('followingCount', 0) is int))
+      );
+      
+      // Users can delete their own profile
+      allow delete: if request.auth != null && userId == request.auth.uid;
+    }
+    
+    // Feeds collection - wallpapers for Stream Firebase Extension
+    // Path structure: feeds/{feedId}/{userId}/{foreignId}
+    match /feeds/{feedId}/{userId}/{foreignId} {
+      // Anyone authenticated can read feeds (public wallpapers)
+      allow read: if request.auth != null;
+      
+      // Users can create wallpapers in their own feed
+      // Must include required Stream fields: actor, verb, object
+      allow create: if request.auth != null && 
+        userId == request.auth.uid &&
+        request.resource.data.actor is string &&
+        request.resource.data.verb is string &&
+        request.resource.data.object is string;
+      
+      // Users can update their own wallpapers
+      allow update: if request.auth != null && 
+        userId == request.auth.uid;
+      
+      // Users can delete their own wallpapers
+      allow delete: if request.auth != null && 
+        userId == request.auth.uid;
+    }
+    
+    // Allow access to feed group documents (they don't need data, just exist as containers)
+    match /feeds/{feedId} {
+      allow read: if request.auth != null;
+      // Feed group documents are created automatically by the extension
+      allow write: if false; // No direct writes to feed group documents
+    }
+    
+    // Notifications collection - user notifications stored in subcollection
+    match /users/{userId}/notifications/{notificationId} {
+      // Users can read their own notifications
+      allow read: if request.auth != null && userId == request.auth.uid;
+      
+      // Users can only update the isRead field of their own notifications
+      allow update: if request.auth != null && 
+        userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'updatedAt']);
+      
+      // Only server-side functions can create notifications
+      allow create: if false; // Server-side only
+      
+      // Users cannot delete notifications (server-side cleanup only)
+      allow delete: if false;
+    }
+    
+    // Posts collection - posts stored in Firestore
+    match /posts/{postId} {
+      // Anyone authenticated can read posts (public posts)
+      allow read: if request.auth != null;
+      
+      // Users can create their own posts
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.activityId == postId &&
+        request.resource.data.imageUrl is string &&
+        request.resource.data.thumbnailUrl is string &&
+        (request.resource.data.caption is string || request.resource.data.caption == null) &&
+        (request.resource.data.tags is list || request.resource.data.tags == null) &&
+        (request.resource.data.categories is list || request.resource.data.categories == null) &&
+        (request.resource.data.semanticLabels is list || request.resource.data.semanticLabels == null) &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.updatedAt == request.time;
+      
+          // Users can update their own posts
+          allow update: if request.auth != null && (
+            // Users can update their own posts (caption, tags, etc.)
+            (resource.data.userId == request.auth.uid &&
+             request.resource.data.userId == request.auth.uid &&
+             request.resource.data.updatedAt == request.time) ||
+            // Anyone authenticated can update engagement metrics (likeCount, commentCount, viewCount, shareCount, saveCount)
+            // This allows metrics to be updated when users interact with posts
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount', 'commentCount', 'viewCount', 'shareCount', 'saveCount', 'updatedAt']) &&
+             request.resource.data.updatedAt == request.time &&
+             // Ensure we're only updating numeric values
+             (request.resource.data.get('likeCount', 0) is int &&
+              request.resource.data.get('commentCount', 0) is int &&
+              request.resource.data.get('viewCount', 0) is int &&
+              request.resource.data.get('shareCount', 0) is int &&
+              request.resource.data.get('saveCount', 0) is int)) ||
+            // Anyone authenticated can update semanticLabels (for retroactive analysis)
+            // This allows the PostAnalysisService to update posts with semantic labels
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['semanticLabels', 'updatedAt']) &&
+             request.resource.data.updatedAt == request.time &&
+             request.resource.data.get('semanticLabels', []) is list)
+          );
+      
+      // Users can delete their own posts, or admins can delete any post
+      allow delete: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true
+      );
+    }
+    
+    // Likes collection - track post likes
+    match /likes/{likeId} {
+      // Anyone authenticated can read likes
+      allow read: if request.auth != null;
+      
+      // Users can create likes for any post
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.postId is string &&
+        request.resource.data.createdAt == request.time;
+      
+      // Users can only delete their own likes
+      allow delete: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+      
+      // No updates allowed
+      allow update: if false;
+    }
+    
+    // Comments collection - track post comments
+    match /comments/{commentId} {
+      // Anyone authenticated can read comments
+      allow read: if request.auth != null;
+      
+      // Users can create comments for any post
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.postId is string &&
+        request.resource.data.text is string &&
+        request.resource.data.text.size() > 0 &&
+        request.resource.data.createdAt == request.time;
+      
+      // Users can update their own comments
+      allow update: if request.auth != null && 
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.text is string &&
+        request.resource.data.text.size() > 0 &&
+        request.resource.data.updatedAt == request.time;
+      
+      // Users can delete their own comments
+      allow delete: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Board posts collection - track which posts are in which boards
+    match /board_posts/{boardPostId} {
+      // Anyone authenticated can read board posts
+      allow read: if request.auth != null;
+      
+      // Users can create board posts for their own boards
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.boardId is string &&
+        request.resource.data.postId is string &&
+        request.resource.data.createdAt == request.time;
+      
+      // Users can delete board posts from their own boards
+      allow delete: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+      
+      // No updates allowed
+      allow update: if false;
+    }
+    
+    // Post interactions collection - track user interactions with posts (views, clicks, shares)
+    match /post_interactions/{interactionId} {
+      // Anyone authenticated can read interactions (for analytics)
+      allow read: if request.auth != null;
+      
+      // Users can create their own interactions
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.postId is string &&
+        request.resource.data.interactionType is string &&
+        request.resource.data.timestamp == request.time;
+      
+      // Users can only delete their own interactions
+      allow delete: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+      
+      // No updates allowed
+      allow update: if false;
+    }
+    
+    // Tags collection - centralized tag management
+    match /tags/{tagId} {
+      // Anyone authenticated can read tags (for autocomplete)
+      allow read: if request.auth != null;
+      
+      // Only server-side functions can create/update tags
+      allow write: if false; // Server-side only via Cloud Functions
+    }
+    
+    // Trending topics collection - cached trending topics
+    match /trending_topics/{topicDocId} {
+      // Anyone authenticated can read trending topics
+      allow read: if request.auth != null;
+      
+      // Only server-side functions can create/update trending topics
+      allow write: if false; // Server-side only via Cloud Functions
+    }
+  }
+}
+

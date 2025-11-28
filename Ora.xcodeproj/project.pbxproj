@@ -1,0 +1,1140 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		FE06D1BC2ED8BAFA007AA9CE /* OraLogging in Frameworks */ = {isa = PBXBuildFile; productRef = FE06D1BB2ED8BAFA007AA9CE /* OraLogging */; };
+		FE06D1BF2ED8BB3F007AA9CE /* PageableKit in Frameworks */ = {isa = PBXBuildFile; productRef = FE06D1BE2ED8BB3F007AA9CE /* PageableKit */; };
+		FE06D1C22ED8BB6A007AA9CE /* ImageUtils in Frameworks */ = {isa = PBXBuildFile; productRef = FE06D1C12ED8BB6A007AA9CE /* ImageUtils */; };
+		FE06D1C52ED8BB9F007AA9CE /* FeatureFlags in Frameworks */ = {isa = PBXBuildFile; productRef = FE06D1C42ED8BB9F007AA9CE /* FeatureFlags */; };
+		FE06D1C82ED8BE84007AA9CE /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = FE06D1C72ED8BE84007AA9CE /* GoogleMobileAds */; };
+		FE06ED722ED8CE3D007AA9CE /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = FE06ED712ED8CE3D007AA9CE /* FirebaseMessaging */; };
+		FE51DB902EC3FE9B00799235 /* ColorKit in Frameworks */ = {isa = PBXBuildFile; productRef = FE51DB8F2EC3FE9B00799235 /* ColorKit */; };
+		FE6C6DD32EC2F4180047D107 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = FE6C6DD22EC2F4180047D107 /* Kingfisher */; };
+		FEB5E64C2EBE9D420016E80D /* MasonryStack in Frameworks */ = {isa = PBXBuildFile; productRef = FEB5E64B2EBE9D420016E80D /* MasonryStack */; };
+		FEC517BD2EBD2558006FED6A /* FirebaseAuthCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = FEC517BC2EBD2558006FED6A /* FirebaseAuthCombine-Community */; };
+		FEC517BF2EBD2558006FED6A /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = FEC517BE2EBD2558006FED6A /* FirebaseCore */; };
+		FEC517C12EBD2558006FED6A /* FirebaseFirestoreCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = FEC517C02EBD2558006FED6A /* FirebaseFirestoreCombine-Community */; };
+		FEC517C32EBD2558006FED6A /* FirebaseFunctionsCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = FEC517C22EBD2558006FED6A /* FirebaseFunctionsCombine-Community */; };
+		FEC517C42EBD2558006FED6A /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = FEC517C52EBD2558006FED6A /* FirebaseAuth */; };
+		FEC517C62EBD2558006FED6A /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = FEC517C72EBD2558006FED6A /* FirebaseFirestore */; };
+		FEC6A57E2EC2CF5D002D1D7D /* StretchyHeaderUI in Frameworks */ = {isa = PBXBuildFile; productRef = FEC6A57D2EC2CF5D002D1D7D /* StretchyHeaderUI */; };
+		FECADC902EC67A7000ECAA59 /* Boomerang in Frameworks */ = {isa = PBXBuildFile; productRef = FECADC8F2EC67A7000ECAA59 /* Boomerang */; };
+		FECCCF7E2EC4EFE20064AB4C /* Analytics in Frameworks */ = {isa = PBXBuildFile; productRef = FECCCF7D2EC4EFE20064AB4C /* Analytics */; };
+		FECCCF802EC4EFE20064AB4C /* Composition in Frameworks */ = {isa = PBXBuildFile; productRef = FECCCF7F2EC4EFE20064AB4C /* Composition */; };
+		FECCCF842EC4EFE20064AB4C /* Ingestion in Frameworks */ = {isa = PBXBuildFile; productRef = FECCCF832EC4EFE20064AB4C /* Ingestion */; };
+		FECCCF862EC4EFE20064AB4C /* Insights in Frameworks */ = {isa = PBXBuildFile; productRef = FECCCF852EC4EFE20064AB4C /* Insights */; };
+		FECCCF882EC4EFE20064AB4C /* Monitoring in Frameworks */ = {isa = PBXBuildFile; productRef = FECCCF872EC4EFE20064AB4C /* Monitoring */; };
+		FECCCF8A2EC4EFE20064AB4C /* Personalization in Frameworks */ = {isa = PBXBuildFile; productRef = FECCCF892EC4EFE20064AB4C /* Personalization */; };
+		FECCCF8C2EC4EFE20064AB4C /* QuerySuggestions in Frameworks */ = {isa = PBXBuildFile; productRef = FECCCF8B2EC4EFE20064AB4C /* QuerySuggestions */; };
+		FECCCF8E2EC4EFE20064AB4C /* Recommend in Frameworks */ = {isa = PBXBuildFile; productRef = FECCCF8D2EC4EFE20064AB4C /* Recommend */; };
+		FECCCF902EC4EFE20064AB4C /* Search in Frameworks */ = {isa = PBXBuildFile; productRef = FECCCF8F2EC4EFE20064AB4C /* Search */; };
+		FEDDDFD62ECBDD5B00C0B4C6 /* MasonryStack in Frameworks */ = {isa = PBXBuildFile; productRef = FEDDDFD52ECBDD5B00C0B4C6 /* MasonryStack */; };
+		FEDFA8942ED8CF8700A5BEED /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8932ED8CF8700A5BEED /* FirebaseAnalytics */; };
+		FEDFA8962ED8CF8700A5BEED /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8952ED8CF8700A5BEED /* FirebaseAnalyticsCore */; };
+		FEDFA8982ED8CF8700A5BEED /* FirebaseAnalyticsIdentitySupport in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8972ED8CF8700A5BEED /* FirebaseAnalyticsIdentitySupport */; };
+		FEDFA89A2ED8CF8700A5BEED /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8992ED8CF8700A5BEED /* FirebaseAuth */; };
+		FEDFA89C2ED8CF8700A5BEED /* FirebaseAuthCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA89B2ED8CF8700A5BEED /* FirebaseAuthCombine-Community */; };
+		FEDFA89E2ED8CF8700A5BEED /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA89D2ED8CF8700A5BEED /* FirebaseCore */; };
+		FEDFA8A02ED8CF8700A5BEED /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA89F2ED8CF8700A5BEED /* FirebaseCrashlytics */; };
+		FEDFA8A22ED8CF8700A5BEED /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8A12ED8CF8700A5BEED /* FirebaseFirestore */; };
+		FEDFA8A42ED8CF8700A5BEED /* FirebaseFirestoreCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8A32ED8CF8700A5BEED /* FirebaseFirestoreCombine-Community */; };
+		FEDFA8A62ED8CF8700A5BEED /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8A52ED8CF8700A5BEED /* FirebaseFunctions */; };
+		FEDFA8A82ED8CF8700A5BEED /* FirebaseFunctionsCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8A72ED8CF8700A5BEED /* FirebaseFunctionsCombine-Community */; };
+		FEDFA8AA2ED8CF8700A5BEED /* FirebaseInAppMessaging-Beta in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8A92ED8CF8700A5BEED /* FirebaseInAppMessaging-Beta */; };
+		FEDFA8AC2ED8CF8700A5BEED /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8AB2ED8CF8700A5BEED /* FirebaseMessaging */; };
+		FEDFA8AE2ED8CF8700A5BEED /* FirebasePerformance in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8AD2ED8CF8700A5BEED /* FirebasePerformance */; };
+		FEDFA8B02ED8CF8700A5BEED /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8AF2ED8CF8700A5BEED /* FirebaseRemoteConfig */; };
+		FEDFA8B22ED8CF8700A5BEED /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8B12ED8CF8700A5BEED /* FirebaseStorage */; };
+		FEDFA8B42ED8CF8700A5BEED /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8B32ED8CF8700A5BEED /* FirebaseStorageCombine-Community */; };
+		FEDFA8B72ED8D64800A5BEED /* OraBetaAdmin in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFA8B62ED8D64800A5BEED /* OraBetaAdmin */; };
+		FEE417682EC64A11007B8EFE /* Boomerang in Frameworks */ = {isa = PBXBuildFile; productRef = FEE417672EC64A11007B8EFE /* Boomerang */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		FE97502F2EB6D5A700FD36FA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FE9750172EB6D5A600FD36FA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FE97501E2EB6D5A600FD36FA;
+			remoteInfo = OraBeta;
+		};
+		FE9750392EB6D5A700FD36FA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FE9750172EB6D5A600FD36FA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FE97501E2EB6D5A600FD36FA;
+			remoteInfo = OraBeta;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		FE876DEC2EC2529B008D1D8A /* ModelRunner.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = ModelRunner.xcodeproj; sourceTree = "<group>"; };
+		FE97501F2EB6D5A600FD36FA /* OraBeta.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OraBeta.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FE97502E2EB6D5A700FD36FA /* OraBetaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OraBetaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		FE9750382EB6D5A700FD36FA /* OraBetaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OraBetaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FE020A842EBFCC9900DC32E8 /* Exceptions for "OraBeta" folder in "OraBeta" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FE97501E2EB6D5A600FD36FA /* OraBeta */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		FE9750212EB6D5A600FD36FA /* OraBeta */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FE020A842EBFCC9900DC32E8 /* Exceptions for "OraBeta" folder in "OraBeta" target */,
+			);
+			path = OraBeta;
+			sourceTree = "<group>";
+		};
+		FE9750312EB6D5A700FD36FA /* OraBetaTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = OraBetaTests;
+			sourceTree = "<group>";
+		};
+		FE97503B2EB6D5A700FD36FA /* OraBetaUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = OraBetaUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FE97501C2EB6D5A600FD36FA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FE06ED722ED8CE3D007AA9CE /* FirebaseMessaging in Frameworks */,
+				FEDFA8B72ED8D64800A5BEED /* OraBetaAdmin in Frameworks */,
+				FE06D1BF2ED8BB3F007AA9CE /* PageableKit in Frameworks */,
+				FEDFA89E2ED8CF8700A5BEED /* FirebaseCore in Frameworks */,
+				FECADC902EC67A7000ECAA59 /* Boomerang in Frameworks */,
+				FE6C6DD32EC2F4180047D107 /* Kingfisher in Frameworks */,
+				FEDFA8A22ED8CF8700A5BEED /* FirebaseFirestore in Frameworks */,
+				FEC517C32EBD2558006FED6A /* FirebaseFunctionsCombine-Community in Frameworks */,
+				FEDFA8B42ED8CF8700A5BEED /* FirebaseStorageCombine-Community in Frameworks */,
+				FEDFA8982ED8CF8700A5BEED /* FirebaseAnalyticsIdentitySupport in Frameworks */,
+				FEDFA8A82ED8CF8700A5BEED /* FirebaseFunctionsCombine-Community in Frameworks */,
+				FEC517C42EBD2558006FED6A /* FirebaseAuth in Frameworks */,
+				FE06D1C52ED8BB9F007AA9CE /* FeatureFlags in Frameworks */,
+				FEDFA8962ED8CF8700A5BEED /* FirebaseAnalyticsCore in Frameworks */,
+				FEC517C62EBD2558006FED6A /* FirebaseFirestore in Frameworks */,
+				FECCCF7E2EC4EFE20064AB4C /* Analytics in Frameworks */,
+				FEDFA8AE2ED8CF8700A5BEED /* FirebasePerformance in Frameworks */,
+				FEC517BF2EBD2558006FED6A /* FirebaseCore in Frameworks */,
+				FECCCF862EC4EFE20064AB4C /* Insights in Frameworks */,
+				FE51DB902EC3FE9B00799235 /* ColorKit in Frameworks */,
+				FECCCF8C2EC4EFE20064AB4C /* QuerySuggestions in Frameworks */,
+				FE06D1BC2ED8BAFA007AA9CE /* OraLogging in Frameworks */,
+				FEDFA8AA2ED8CF8700A5BEED /* FirebaseInAppMessaging-Beta in Frameworks */,
+				FEDFA8A02ED8CF8700A5BEED /* FirebaseCrashlytics in Frameworks */,
+				FECCCF8A2EC4EFE20064AB4C /* Personalization in Frameworks */,
+				FEC517C12EBD2558006FED6A /* FirebaseFirestoreCombine-Community in Frameworks */,
+				FEDDDFD62ECBDD5B00C0B4C6 /* MasonryStack in Frameworks */,
+				FECCCF902EC4EFE20064AB4C /* Search in Frameworks */,
+				FE06D1C22ED8BB6A007AA9CE /* ImageUtils in Frameworks */,
+				FECCCF8E2EC4EFE20064AB4C /* Recommend in Frameworks */,
+				FEC6A57E2EC2CF5D002D1D7D /* StretchyHeaderUI in Frameworks */,
+				FECCCF882EC4EFE20064AB4C /* Monitoring in Frameworks */,
+				FEDFA8AC2ED8CF8700A5BEED /* FirebaseMessaging in Frameworks */,
+				FECCCF802EC4EFE20064AB4C /* Composition in Frameworks */,
+				FE06D1C82ED8BE84007AA9CE /* GoogleMobileAds in Frameworks */,
+				FEDFA8A62ED8CF8700A5BEED /* FirebaseFunctions in Frameworks */,
+				FECCCF842EC4EFE20064AB4C /* Ingestion in Frameworks */,
+				FEE417682EC64A11007B8EFE /* Boomerang in Frameworks */,
+				FEDFA8B02ED8CF8700A5BEED /* FirebaseRemoteConfig in Frameworks */,
+				FEDFA8A42ED8CF8700A5BEED /* FirebaseFirestoreCombine-Community in Frameworks */,
+				FEDFA89C2ED8CF8700A5BEED /* FirebaseAuthCombine-Community in Frameworks */,
+				FEC517BD2EBD2558006FED6A /* FirebaseAuthCombine-Community in Frameworks */,
+				FEDFA8942ED8CF8700A5BEED /* FirebaseAnalytics in Frameworks */,
+				FEDFA8B22ED8CF8700A5BEED /* FirebaseStorage in Frameworks */,
+				FEB5E64C2EBE9D420016E80D /* MasonryStack in Frameworks */,
+				FEDFA89A2ED8CF8700A5BEED /* FirebaseAuth in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FE97502B2EB6D5A700FD36FA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FE9750352EB6D5A700FD36FA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		FA4FA0B34FD198BDAA6E0A04 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		FE8770722EC2529B008D1D8A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FE9750162EB6D5A600FD36FA = {
+			isa = PBXGroup;
+			children = (
+				FE9750212EB6D5A600FD36FA /* OraBeta */,
+				FE9750312EB6D5A700FD36FA /* OraBetaTests */,
+				FE97503B2EB6D5A700FD36FA /* OraBetaUITests */,
+				FE9750202EB6D5A600FD36FA /* Products */,
+				FA4FA0B34FD198BDAA6E0A04 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		FE9750202EB6D5A600FD36FA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FE97501F2EB6D5A600FD36FA /* OraBeta.app */,
+				FE97502E2EB6D5A700FD36FA /* OraBetaTests.xctest */,
+				FE9750382EB6D5A700FD36FA /* OraBetaUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		FE97501E2EB6D5A600FD36FA /* OraBeta */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FE9750422EB6D5A700FD36FA /* Build configuration list for PBXNativeTarget "OraBeta" */;
+			buildPhases = (
+				FE97501B2EB6D5A600FD36FA /* Sources */,
+				FE97501C2EB6D5A600FD36FA /* Frameworks */,
+				FE97501D2EB6D5A600FD36FA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FE9750212EB6D5A600FD36FA /* OraBeta */,
+			);
+			name = OraBeta;
+			productName = OraBeta;
+			productReference = FE97501F2EB6D5A600FD36FA /* OraBeta.app */;
+			productType = "com.apple.product-type.application";
+		};
+		FE97502D2EB6D5A700FD36FA /* OraBetaTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FE9750452EB6D5A700FD36FA /* Build configuration list for PBXNativeTarget "OraBetaTests" */;
+			buildPhases = (
+				FE97502A2EB6D5A700FD36FA /* Sources */,
+				FE97502B2EB6D5A700FD36FA /* Frameworks */,
+				FE97502C2EB6D5A700FD36FA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FE9750302EB6D5A700FD36FA /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				FE9750312EB6D5A700FD36FA /* OraBetaTests */,
+			);
+			name = OraBetaTests;
+			productName = OraBetaTests;
+			productReference = FE97502E2EB6D5A700FD36FA /* OraBetaTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		FE9750372EB6D5A700FD36FA /* OraBetaUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FE9750482EB6D5A700FD36FA /* Build configuration list for PBXNativeTarget "OraBetaUITests" */;
+			buildPhases = (
+				FE9750342EB6D5A700FD36FA /* Sources */,
+				FE9750352EB6D5A700FD36FA /* Frameworks */,
+				FE9750362EB6D5A700FD36FA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FE97503A2EB6D5A700FD36FA /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				FE97503B2EB6D5A700FD36FA /* OraBetaUITests */,
+			);
+			name = OraBetaUITests;
+			productName = OraBetaUITests;
+			productReference = FE9750382EB6D5A700FD36FA /* OraBetaUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FE9750172EB6D5A600FD36FA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					FE97501E2EB6D5A600FD36FA = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
+					FE97502D2EB6D5A700FD36FA = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = FE97501E2EB6D5A600FD36FA;
+					};
+					FE9750372EB6D5A700FD36FA = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = FE97501E2EB6D5A600FD36FA;
+					};
+				};
+			};
+			buildConfigurationList = FE97501A2EB6D5A600FD36FA /* Build configuration list for PBXProject "Ora" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = FE9750162EB6D5A600FD36FA;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				FEC6A57C2EC2CF5D002D1D7D /* XCRemoteSwiftPackageReference "swiftui-stretchy-header-ui" */,
+				FE6C6DD12EC2F4180047D107 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				FE51DB8E2EC3FE9B00799235 /* XCRemoteSwiftPackageReference "ColorKit" */,
+				FECCCF7C2EC4EFE20064AB4C /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */,
+				FECADC8E2EC67A7000ECAA59 /* XCLocalSwiftPackageReference "../Boomerang" */,
+				FEDDDFD42ECBDD5B00C0B4C6 /* XCLocalSwiftPackageReference "../Packages/MasonryStack-main" */,
+				FE06D1BA2ED8BAFA007AA9CE /* XCLocalSwiftPackageReference "OraLogging" */,
+				FE06D1BD2ED8BB3F007AA9CE /* XCLocalSwiftPackageReference "PageableKit" */,
+				FE06D1C02ED8BB6A007AA9CE /* XCLocalSwiftPackageReference "ImageUtils" */,
+				FE06D1C32ED8BB9F007AA9CE /* XCLocalSwiftPackageReference "FeatureFlags" */,
+				FE06D1C62ED8BE84007AA9CE /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+				FEDFA8B52ED8D64800A5BEED /* XCLocalSwiftPackageReference "OraBetaAdminSDK" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = FE9750202EB6D5A600FD36FA /* Products */;
+			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = FE8770722EC2529B008D1D8A /* Products */;
+					ProjectRef = FE876DEC2EC2529B008D1D8A /* ModelRunner.xcodeproj */;
+				},
+			);
+			projectRoot = "";
+			targets = (
+				FE97501E2EB6D5A600FD36FA /* OraBeta */,
+				FE97502D2EB6D5A700FD36FA /* OraBetaTests */,
+				FE9750372EB6D5A700FD36FA /* OraBetaUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		FE97501D2EB6D5A600FD36FA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FE97502C2EB6D5A700FD36FA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FE9750362EB6D5A700FD36FA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		FE97501B2EB6D5A600FD36FA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FE97502A2EB6D5A700FD36FA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FE9750342EB6D5A700FD36FA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		FE9750302EB6D5A700FD36FA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FE97501E2EB6D5A600FD36FA /* OraBeta */;
+			targetProxy = FE97502F2EB6D5A700FD36FA /* PBXContainerItemProxy */;
+		};
+		FE97503A2EB6D5A700FD36FA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FE97501E2EB6D5A600FD36FA /* OraBeta */;
+			targetProxy = FE9750392EB6D5A700FD36FA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		FE9750402EB6D5A700FD36FA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = ZKSUTHB68A;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		FE9750412EB6D5A700FD36FA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = ZKSUTHB68A;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		FE9750432EB6D5A700FD36FA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = ORA;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZKSUTHB68A;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OraBeta/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ORA;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "This allows us to save media.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This allows you to upload media.";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/google/_upb",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/numpy/_core/lib",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/numpy/random/lib",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/_polars_runtime_32",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/PIL/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/scipy/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/cv2/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/torch/lib",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/torchvision/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/PIL/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/numpy/_core/lib",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/numpy/random/lib",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/torch/lib",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/torchvision/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/google/_upb",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/coremltools",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/_polars_runtime_32",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/cv2/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/scipy/.dylibs",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.riceboxai.ora;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		FE9750442EB6D5A700FD36FA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = ORA;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZKSUTHB68A;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OraBeta/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ORA;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "This allows us to save media.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This allows you to upload media.";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/google/_upb",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/numpy/_core/lib",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/numpy/random/lib",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/_polars_runtime_32",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/PIL/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/scipy/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/cv2/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/torch/lib",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.14/site-packages/torchvision/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/PIL/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/numpy/_core/lib",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/numpy/random/lib",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/torch/lib",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/torchvision/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/google/_upb",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/coremltools",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/_polars_runtime_32",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/cv2/.dylibs",
+					"$(PROJECT_DIR)/OraBeta/Models/CoreML/Working/coremltools-venv/lib/python3.11/site-packages/scipy/.dylibs",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.riceboxai.ora;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
+		FE9750462EB6D5A700FD36FA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZKSUTHB68A;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.riceboxlabs.OraBetaTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OraBeta.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OraBeta";
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		FE9750472EB6D5A700FD36FA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZKSUTHB68A;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.riceboxlabs.OraBetaTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OraBeta.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OraBeta";
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
+		FE9750492EB6D5A700FD36FA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZKSUTHB68A;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.riceboxlabs.OraBetaUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = OraBeta;
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		FE97504A2EB6D5A700FD36FA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZKSUTHB68A;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.riceboxlabs.OraBetaUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = OraBeta;
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		FE97501A2EB6D5A600FD36FA /* Build configuration list for PBXProject "Ora" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FE9750402EB6D5A700FD36FA /* Debug */,
+				FE9750412EB6D5A700FD36FA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FE9750422EB6D5A700FD36FA /* Build configuration list for PBXNativeTarget "OraBeta" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FE9750432EB6D5A700FD36FA /* Debug */,
+				FE9750442EB6D5A700FD36FA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FE9750452EB6D5A700FD36FA /* Build configuration list for PBXNativeTarget "OraBetaTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FE9750462EB6D5A700FD36FA /* Debug */,
+				FE9750472EB6D5A700FD36FA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FE9750482EB6D5A700FD36FA /* Build configuration list for PBXNativeTarget "OraBetaUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FE9750492EB6D5A700FD36FA /* Debug */,
+				FE97504A2EB6D5A700FD36FA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		FE06D1BA2ED8BAFA007AA9CE /* XCLocalSwiftPackageReference "OraLogging" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = OraLogging;
+		};
+		FE06D1BD2ED8BB3F007AA9CE /* XCLocalSwiftPackageReference "PageableKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = PageableKit;
+		};
+		FE06D1C02ED8BB6A007AA9CE /* XCLocalSwiftPackageReference "ImageUtils" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ImageUtils;
+		};
+		FE06D1C32ED8BB9F007AA9CE /* XCLocalSwiftPackageReference "FeatureFlags" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = FeatureFlags;
+		};
+		FECADC8E2EC67A7000ECAA59 /* XCLocalSwiftPackageReference "../Boomerang" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Boomerang;
+		};
+		FEDDDFD42ECBDD5B00C0B4C6 /* XCLocalSwiftPackageReference "../Packages/MasonryStack-main" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../Packages/MasonryStack-main";
+		};
+		FEDFA8B52ED8D64800A5BEED /* XCLocalSwiftPackageReference "OraBetaAdminSDK" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = OraBetaAdminSDK;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		FE06D1C62ED8BE84007AA9CE /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.14.0;
+			};
+		};
+		FE51DB8E2EC3FE9B00799235 /* XCRemoteSwiftPackageReference "ColorKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Boris-Em/ColorKit";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+		FE6C6DD12EC2F4180047D107 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.6.1;
+			};
+		};
+		FEB5E64A2EBE9D420016E80D /* XCRemoteSwiftPackageReference "MasonryStack" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/lukepistrol/MasonryStack";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.0;
+			};
+		};
+		FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+		FEC6A57C2EC2CF5D002D1D7D /* XCRemoteSwiftPackageReference "swiftui-stretchy-header-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/zmian/swiftui-stretchy-header-ui";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+		FECCCF7C2EC4EFE20064AB4C /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/algolia/algoliasearch-client-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.34.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FE06D1BB2ED8BAFA007AA9CE /* OraLogging */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OraLogging;
+		};
+		FE06D1BE2ED8BB3F007AA9CE /* PageableKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PageableKit;
+		};
+		FE06D1C12ED8BB6A007AA9CE /* ImageUtils */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ImageUtils;
+		};
+		FE06D1C42ED8BB9F007AA9CE /* FeatureFlags */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FeatureFlags;
+		};
+		FE06D1C72ED8BE84007AA9CE /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FE06D1C62ED8BE84007AA9CE /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+		FE06ED712ED8CE3D007AA9CE /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		FE51DB8F2EC3FE9B00799235 /* ColorKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FE51DB8E2EC3FE9B00799235 /* XCRemoteSwiftPackageReference "ColorKit" */;
+			productName = ColorKit;
+		};
+		FE6C6DD22EC2F4180047D107 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FE6C6DD12EC2F4180047D107 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		FEB5E64B2EBE9D420016E80D /* MasonryStack */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEB5E64A2EBE9D420016E80D /* XCRemoteSwiftPackageReference "MasonryStack" */;
+			productName = MasonryStack;
+		};
+		FEC517BC2EBD2558006FED6A /* FirebaseAuthCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseAuthCombine-Community";
+		};
+		FEC517BE2EBD2558006FED6A /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		FEC517C02EBD2558006FED6A /* FirebaseFirestoreCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseFirestoreCombine-Community";
+		};
+		FEC517C22EBD2558006FED6A /* FirebaseFunctionsCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseFunctionsCombine-Community";
+		};
+		FEC517C52EBD2558006FED6A /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		FEC517C72EBD2558006FED6A /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		FEC6A57D2EC2CF5D002D1D7D /* StretchyHeaderUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC6A57C2EC2CF5D002D1D7D /* XCRemoteSwiftPackageReference "swiftui-stretchy-header-ui" */;
+			productName = StretchyHeaderUI;
+		};
+		FECADC8F2EC67A7000ECAA59 /* Boomerang */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Boomerang;
+		};
+		FECCCF7D2EC4EFE20064AB4C /* Analytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FECCCF7C2EC4EFE20064AB4C /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = Analytics;
+		};
+		FECCCF7F2EC4EFE20064AB4C /* Composition */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FECCCF7C2EC4EFE20064AB4C /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = Composition;
+		};
+		FECCCF832EC4EFE20064AB4C /* Ingestion */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FECCCF7C2EC4EFE20064AB4C /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = Ingestion;
+		};
+		FECCCF852EC4EFE20064AB4C /* Insights */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FECCCF7C2EC4EFE20064AB4C /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = Insights;
+		};
+		FECCCF872EC4EFE20064AB4C /* Monitoring */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FECCCF7C2EC4EFE20064AB4C /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = Monitoring;
+		};
+		FECCCF892EC4EFE20064AB4C /* Personalization */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FECCCF7C2EC4EFE20064AB4C /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = Personalization;
+		};
+		FECCCF8B2EC4EFE20064AB4C /* QuerySuggestions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FECCCF7C2EC4EFE20064AB4C /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = QuerySuggestions;
+		};
+		FECCCF8D2EC4EFE20064AB4C /* Recommend */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FECCCF7C2EC4EFE20064AB4C /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = Recommend;
+		};
+		FECCCF8F2EC4EFE20064AB4C /* Search */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FECCCF7C2EC4EFE20064AB4C /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = Search;
+		};
+		FEDDDFD52ECBDD5B00C0B4C6 /* MasonryStack */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MasonryStack;
+		};
+		FEDFA8932ED8CF8700A5BEED /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		FEDFA8952ED8CF8700A5BEED /* FirebaseAnalyticsCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsCore;
+		};
+		FEDFA8972ED8CF8700A5BEED /* FirebaseAnalyticsIdentitySupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsIdentitySupport;
+		};
+		FEDFA8992ED8CF8700A5BEED /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		FEDFA89B2ED8CF8700A5BEED /* FirebaseAuthCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseAuthCombine-Community";
+		};
+		FEDFA89D2ED8CF8700A5BEED /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		FEDFA89F2ED8CF8700A5BEED /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+		FEDFA8A12ED8CF8700A5BEED /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		FEDFA8A32ED8CF8700A5BEED /* FirebaseFirestoreCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseFirestoreCombine-Community";
+		};
+		FEDFA8A52ED8CF8700A5BEED /* FirebaseFunctions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFunctions;
+		};
+		FEDFA8A72ED8CF8700A5BEED /* FirebaseFunctionsCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseFunctionsCombine-Community";
+		};
+		FEDFA8A92ED8CF8700A5BEED /* FirebaseInAppMessaging-Beta */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseInAppMessaging-Beta";
+		};
+		FEDFA8AB2ED8CF8700A5BEED /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		FEDFA8AD2ED8CF8700A5BEED /* FirebasePerformance */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebasePerformance;
+		};
+		FEDFA8AF2ED8CF8700A5BEED /* FirebaseRemoteConfig */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseRemoteConfig;
+		};
+		FEDFA8B12ED8CF8700A5BEED /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		FEDFA8B32ED8CF8700A5BEED /* FirebaseStorageCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseStorageCombine-Community";
+		};
+		FEDFA8B62ED8D64800A5BEED /* OraBetaAdmin */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OraBetaAdmin;
+		};
+		FEE417672EC64A11007B8EFE /* Boomerang */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Boomerang;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = FE9750172EB6D5A600FD36FA /* Project object */;
+}
