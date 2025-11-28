@@ -83,7 +83,8 @@ struct TopicFeedView: View {
                                 await viewModel.loadMorePosts()
                             }
                         }
-                    }
+                    },
+                    adsEnabled: true // Enable ads on topic feed
                 )
                 
                 // Loading indicator for pagination

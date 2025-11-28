@@ -175,7 +175,8 @@ struct HomeFeedView: View {
                 
                 PostGrid(
                     posts: $viewModel.posts,
-                    onItemAppear: nil // Disable item-based pagination
+                    onItemAppear: nil, // Disable item-based pagination
+                    adsEnabled: true // Enable ads on home feed
                 )
                 
                 

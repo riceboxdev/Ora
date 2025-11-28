@@ -26,12 +26,16 @@ public class FeatureFlagService: ObservableObject {
     /// Whether maintenance mode is active
     @Published public var isMaintenanceMode: Bool = false
     
+    /// Ad frequency - show ad every N posts (default: 5)
+    @Published public var adFrequency: Int = 5
+    
     /// Configuration for feature flag keys
     public struct Config {
         public let adsEnabledKey: String
         public let waitlistEnabledKey: String
         public let storiesEnabledKey: String
         public let maintenanceModeKey: String
+        public let adFrequencyKey: String
         public let featureFlagsJSONKey: String
         
         public init(
@@ -39,12 +43,14 @@ public class FeatureFlagService: ObservableObject {
             waitlistEnabledKey: String = "waitlistEnabled",
             storiesEnabledKey: String = "storiesEnabled",
             maintenanceModeKey: String = "maintenanceMode",
+            adFrequencyKey: String = "adFrequency",
             featureFlagsJSONKey: String = "featureFlags"
         ) {
             self.adsEnabledKey = adsEnabledKey
             self.waitlistEnabledKey = waitlistEnabledKey
             self.storiesEnabledKey = storiesEnabledKey
             self.maintenanceModeKey = maintenanceModeKey
+            self.adFrequencyKey = adFrequencyKey
             self.featureFlagsJSONKey = featureFlagsJSONKey
         }
     }
@@ -89,6 +95,10 @@ public class FeatureFlagService: ObservableObject {
         let maintenanceMode = provider.boolValue(forKey: config.maintenanceModeKey, defaultValue: false)
         var storiesEnabled = false
         
+        // Read ad frequency (stored as string in Remote Config, convert to Int)
+        let adFrequencyString = provider.stringValue(forKey: config.adFrequencyKey, defaultValue: "5")
+        let adFrequency = Int(adFrequencyString) ?? 5
+        
         // Try to read JSON-based feature flags
         let jsonValue = provider.stringValue(forKey: config.featureFlagsJSONKey, defaultValue: "")
         if !jsonValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
@@ -115,6 +125,7 @@ public class FeatureFlagService: ObservableObject {
         self.isWaitlistEnabled = waitlistEnabled
         self.isStoriesEnabled = storiesEnabled
         self.isMaintenanceMode = maintenanceMode
+        self.adFrequency = max(1, adFrequency) // Ensure at least 1
     }
     
     /// Decodable model for JSON-based feature flags

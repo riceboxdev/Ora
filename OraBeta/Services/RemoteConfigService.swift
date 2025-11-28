@@ -23,6 +23,7 @@ public class RemoteConfigService: ObservableObject {
     @Published public var isWaitlistEnabled: Bool = false
     @Published public var isStoriesEnabled: Bool = false
     @Published public var isMaintenanceMode: Bool = false
+    @Published public var adFrequency: Int = 5 // Show ad every N posts (default: 5)
     
     private init() {
         // Create Firebase provider with default configuration
@@ -30,6 +31,7 @@ public class RemoteConfigService: ObservableObject {
             "showAds": true as NSObject,
             "waitlistEnabled": false as NSObject,
             "maintenanceMode": false as NSObject,
+            "adFrequency": "5" as NSObject, // String because Remote Config stores all values as strings
             "featureFlags": "" as NSObject
         ]
         
@@ -58,6 +60,12 @@ public class RemoteConfigService: ObservableObject {
         featureFlagService.$isMaintenanceMode
             .sink { [weak self] value in
                 self?.isMaintenanceMode = value
+            }
+            .store(in: &cancellables)
+        
+        featureFlagService.$adFrequency
+            .sink { [weak self] value in
+                self?.adFrequency = value
             }
             .store(in: &cancellables)
     }

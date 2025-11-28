@@ -68,7 +68,11 @@ struct SearchView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ScrollView {
-                PostGrid(posts: posts, queryID: currentQueryID)
+                PostGrid(
+                    posts: posts,
+                    queryID: currentQueryID,
+                    adsEnabled: false // Disable ads in search results
+                )
             }
             .scrollIndicators(.hidden)
         }

@@ -364,7 +364,8 @@ struct OtherUserPostsFeed: View {
                     PostGrid(
                         posts: $viewModel.posts,
                         columns: 2,
-                        onItemAppear: nil
+                        onItemAppear: nil,
+                        adsEnabled: false // Disable ads on profile pages
                     )
                     
                     // Reusable Pagination Footer

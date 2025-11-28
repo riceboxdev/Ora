@@ -349,7 +349,8 @@ struct UserPostsFeed: View {
                         PostGrid(
                             posts: $viewModel.posts,
                             columns: 3,
-                            onItemAppear: nil // Disable item-based pagination
+                            onItemAppear: nil, // Disable item-based pagination
+                            adsEnabled: false // Disable ads on profile pages
                         )
                     }
                     

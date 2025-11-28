@@ -55,8 +55,11 @@ struct BoardDetailView: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                 } else {
-                    PostGrid(posts: posts)
-                        .padding()
+                    PostGrid(
+                        posts: posts,
+                        adsEnabled: false // Disable ads on board detail view
+                    )
+                    .padding()
                 }
             }
         }

@@ -874,7 +874,8 @@ struct RecommendedPostsSection: View {
                 PostGrid(
                     posts: posts,
                     columns: 2,
-                    spacing: 5
+                    spacing: 5,
+                    adsEnabled: false // Disable ads in post detail view
                 )
             }
         }
