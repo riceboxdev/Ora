@@ -1,63 +1,45 @@
 import express from 'express';
 import admin from 'firebase-admin';
 import { apiRateLimiter } from '../middleware/rateLimit.js';
+import { processFirebasePrivateKey, validateFirebaseCredentials } from '../utils/firebaseKeyProcessor.js';
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
   try {
     const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
     
-    // Validate required Firebase credentials
-    if (!projectId || !privateKey || !clientEmail) {
-      console.error('Firebase Admin initialization failed: Missing required credentials', {
-        hasProjectId: !!projectId,
-        hasPrivateKey: !!privateKey,
-        hasClientEmail: !!clientEmail
-      });
-    } else {
-      // Process private key: handle both escaped and literal newlines
-      // Replace escaped newlines first, then ensure proper formatting
-      privateKey = privateKey.replace(/\\n/g, '\n');
-      
-      // Remove any leading/trailing whitespace
-      privateKey = privateKey.trim();
-      
-      // Validate private key format
-      if (!privateKey.includes('BEGIN PRIVATE KEY') || !privateKey.includes('END PRIVATE KEY')) {
-        console.error('Firebase Admin initialization failed: Invalid private key format. Private key must include BEGIN/END markers.');
-      } else {
-        // Ensure the private key has proper line breaks
-        // If it's all on one line, try to format it properly
-        if (!privateKey.includes('\n') && privateKey.length > 100) {
-          // It might be a single-line key, try to add newlines after markers
-          privateKey = privateKey.replace(/-----BEGIN PRIVATE KEY-----/, '-----BEGIN PRIVATE KEY-----\n');
-          privateKey = privateKey.replace(/-----END PRIVATE KEY-----/, '\n-----END PRIVATE KEY-----');
-        }
-        
-        try {
-          admin.initializeApp({
-            credential: admin.credential.cert({
-              projectId,
-              privateKey,
-              clientEmail,
-            }),
-          });
-          console.log('Firebase Admin initialized successfully');
-        } catch (initError) {
-          console.error('Firebase Admin credential error:', initError.message);
-          console.error('Private key length:', privateKey.length);
-          console.error('Private key starts with:', privateKey.substring(0, 50));
-          throw initError;
-        }
-      }
-    }
+    // Validate credentials first
+    validateFirebaseCredentials(projectId, rawPrivateKey, clientEmail);
+    
+    // Process and format the private key
+    const privateKey = processFirebasePrivateKey(rawPrivateKey);
+    
+    // Initialize Firebase Admin
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId,
+        privateKey,
+        clientEmail,
+      }),
+    });
+    console.log('Firebase Admin initialized successfully');
   } catch (error) {
     console.error('Firebase Admin initialization error:', error.message);
     console.error('Error details:', {
       code: error.code,
+      name: error.name,
       stack: error.stack
+    });
+    // Log environment variable status (without sensitive values)
+    console.error('Environment variable status:', {
+      hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
+      hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+      hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+      privateKeyLength: process.env.FIREBASE_PRIVATE_KEY?.length || 0,
+      projectIdValue: process.env.FIREBASE_PROJECT_ID || 'NOT SET',
+      clientEmailValue: process.env.FIREBASE_CLIENT_EMAIL || 'NOT SET'
     });
   }
 }
