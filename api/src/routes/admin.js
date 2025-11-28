@@ -1668,5 +1668,301 @@ router.post('/notifications/:id/send', requireRole('super_admin'), async (req, r
   }
 });
 
+// =========================
+// Welcome Screen Images Routes
+// =========================
+
+// @route   GET /api/admin/welcome-images
+// @desc    Get all welcome screen images
+// @access  Private (viewer+)
+router.get('/welcome-images', requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const doc = await db.collection('welcome_screen_images').doc('main').get();
+    
+    if (!doc.exists) {
+      return res.json({
+        success: true,
+        images: []
+      });
+    }
+    
+    const data = doc.data();
+    const images = data.images || [];
+    
+    // Sort by order
+    images.sort((a, b) => (a.order || 0) - (b.order || 0));
+    
+    res.json({
+      success: true,
+      images
+    });
+  } catch (error) {
+    console.error('Error fetching welcome images:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   POST /api/admin/welcome-images
+// @desc    Upload a new welcome screen image
+// @access  Private (moderator+)
+router.post('/welcome-images', requireRole('super_admin', 'moderator'), upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided' });
+    }
+    
+    // Get Cloudflare credentials from environment
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+    
+    if (!accountId || !apiToken) {
+      console.error('Cloudflare credentials missing:', {
+        hasAccountId: !!accountId,
+        hasApiToken: !!apiToken
+      });
+      return res.status(500).json({ 
+        message: 'Cloudflare credentials not configured',
+        debug: {
+          hasAccountId: !!accountId,
+          hasApiToken: !!apiToken
+        }
+      });
+    }
+    
+    // Build upload URL
+    const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1`;
+    
+    // Manually build multipart form data
+    const boundary = `----WebKitFormBoundary${Math.random().toString(36).substring(2, 15)}`;
+    const CRLF = '\r\n';
+    
+    // Build multipart body parts
+    const parts = [];
+    
+    // Part 1: File
+    parts.push(Buffer.from(`--${boundary}${CRLF}`, 'utf8'));
+    parts.push(Buffer.from(`Content-Disposition: form-data; name="file"; filename="${req.file.originalname || 'image.jpg'}"${CRLF}`, 'utf8'));
+    parts.push(Buffer.from(`Content-Type: ${req.file.mimetype || 'image/jpeg'}${CRLF}${CRLF}`, 'utf8'));
+    parts.push(req.file.buffer);
+    parts.push(Buffer.from(CRLF, 'utf8'));
+    
+    // Part 2: Metadata
+    const metadata = { userId: req.admin.firebaseUid || req.admin._id?.toString() || 'admin', type: 'welcome_screen' };
+    const metadataJson = JSON.stringify(metadata);
+    parts.push(Buffer.from(`--${boundary}${CRLF}`, 'utf8'));
+    parts.push(Buffer.from(`Content-Disposition: form-data; name="metadata"${CRLF}${CRLF}`, 'utf8'));
+    parts.push(Buffer.from(metadataJson, 'utf8'));
+    parts.push(Buffer.from(CRLF, 'utf8'));
+    
+    // Part 3: requireSignedURLs
+    parts.push(Buffer.from(`--${boundary}${CRLF}`, 'utf8'));
+    parts.push(Buffer.from(`Content-Disposition: form-data; name="requireSignedURLs"${CRLF}${CRLF}`, 'utf8'));
+    parts.push(Buffer.from('false', 'utf8'));
+    parts.push(Buffer.from(CRLF, 'utf8'));
+    
+    // Close boundary
+    parts.push(Buffer.from(`--${boundary}--${CRLF}`, 'utf8'));
+    
+    // Combine all parts
+    const multipartBody = Buffer.concat(parts);
+    
+    const headers = {
+      'Authorization': `Bearer ${apiToken}`,
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'Content-Length': multipartBody.length.toString()
+    };
+    
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: headers,
+      body: multipartBody
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { message: errorText };
+      }
+      
+      console.error('Cloudflare upload error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData
+      });
+      
+      return res.status(500).json({ 
+        message: 'Failed to upload image to Cloudflare',
+        error: errorData.message || errorText,
+        details: errorData.errors || errorData
+      });
+    }
+    
+    const result = await response.json();
+    
+    // Extract image URL from Cloudflare response
+    if (!result.result || !result.result.variants || result.result.variants.length === 0) {
+      return res.status(500).json({ message: 'Invalid response from Cloudflare' });
+    }
+    
+    // The first variant is typically the full image URL
+    const imageUrl = result.result.variants[0];
+    const imageId = result.result.id;
+    
+    // Get current images from Firestore
+    const db = admin.firestore();
+    const doc = await db.collection('welcome_screen_images').doc('main').get();
+    
+    let images = [];
+    if (doc.exists) {
+      images = doc.data().images || [];
+    }
+    
+    // Find max order
+    const maxOrder = images.length > 0 
+      ? Math.max(...images.map(img => img.order || 0))
+      : -1;
+    
+    // Create new image entry
+    const newImage = {
+      id: imageId,
+      url: imageUrl,
+      order: maxOrder + 1,
+      uploadedAt: admin.firestore.Timestamp.now()
+    };
+    
+    images.push(newImage);
+    
+    // Update Firestore
+    await db.collection('welcome_screen_images').doc('main').set({
+      images,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    
+    res.json({
+      success: true,
+      image: newImage
+    });
+  } catch (error) {
+    console.error('Error uploading welcome image:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   DELETE /api/admin/welcome-images/:id
+// @desc    Delete a welcome screen image
+// @access  Private (moderator+)
+router.delete('/welcome-images/:id', requireRole('super_admin', 'moderator'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = admin.firestore();
+    
+    const doc = await db.collection('welcome_screen_images').doc('main').get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ message: 'Welcome images document not found' });
+    }
+    
+    const data = doc.data();
+    let images = data.images || [];
+    
+    // Remove image with matching id
+    const initialLength = images.length;
+    images = images.filter(img => img.id !== id);
+    
+    if (images.length === initialLength) {
+      return res.status(404).json({ message: 'Image not found' });
+    }
+    
+    // Reorder remaining images
+    images.forEach((img, index) => {
+      img.order = index;
+    });
+    
+    // Update Firestore
+    await db.collection('welcome_screen_images').doc('main').set({
+      images,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    
+    res.json({
+      success: true,
+      message: 'Image deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting welcome image:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   PUT /api/admin/welcome-images/reorder
+// @desc    Reorder welcome screen images
+// @access  Private (moderator+)
+router.put('/welcome-images/reorder', requireRole('super_admin', 'moderator'), async (req, res) => {
+  try {
+    const { imageIds } = req.body;
+    
+    if (!imageIds || !Array.isArray(imageIds)) {
+      return res.status(400).json({ message: 'imageIds array is required' });
+    }
+    
+    const db = admin.firestore();
+    const doc = await db.collection('welcome_screen_images').doc('main').get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ message: 'Welcome images document not found' });
+    }
+    
+    const data = doc.data();
+    let images = data.images || [];
+    
+    // Create a map for quick lookup
+    const imageMap = new Map(images.map(img => [img.id, img]));
+    
+    // Reorder images based on provided order
+    const reorderedImages = imageIds.map((id, index) => {
+      const image = imageMap.get(id);
+      if (!image) {
+        throw new Error(`Image with id ${id} not found`);
+      }
+      return {
+        ...image,
+        order: index
+      };
+    });
+    
+    // Add any images not in the reorder list (shouldn't happen, but handle gracefully)
+    const reorderedIds = new Set(imageIds);
+    images.forEach(img => {
+      if (!reorderedIds.has(img.id)) {
+        reorderedImages.push({
+          ...img,
+          order: reorderedImages.length
+        });
+      }
+    });
+    
+    // Sort by order to ensure consistency
+    reorderedImages.sort((a, b) => a.order - b.order);
+    
+    // Update Firestore
+    await db.collection('welcome_screen_images').doc('main').set({
+      images: reorderedImages,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    
+    res.json({
+      success: true,
+      images: reorderedImages
+    });
+  } catch (error) {
+    console.error('Error reordering welcome images:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
 
