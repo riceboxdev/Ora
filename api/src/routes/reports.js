@@ -5,15 +5,38 @@ import { apiRateLimiter } from '../middleware/rateLimit.js';
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID?.trim(),
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL?.trim(),
-      }),
-    });
+    const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
+    
+    // Validate required Firebase credentials
+    if (!projectId || !privateKey || !clientEmail) {
+      console.error('Firebase Admin initialization failed: Missing required credentials', {
+        hasProjectId: !!projectId,
+        hasPrivateKey: !!privateKey,
+        hasClientEmail: !!clientEmail
+      });
+    } else {
+      // Validate private key format
+      if (!privateKey.includes('BEGIN PRIVATE KEY') || !privateKey.includes('END PRIVATE KEY')) {
+        console.error('Firebase Admin initialization failed: Invalid private key format. Private key must include BEGIN/END markers.');
+      } else {
+        admin.initializeApp({
+          credential: admin.credential.cert({
+            projectId,
+            privateKey,
+            clientEmail,
+          }),
+        });
+        console.log('Firebase Admin initialized successfully');
+      }
+    }
   } catch (error) {
-    console.warn('Firebase Admin initialization warning:', error.message);
+    console.error('Firebase Admin initialization error:', error.message);
+    console.error('Error details:', {
+      code: error.code,
+      stack: error.stack
+    });
   }
 }
 
