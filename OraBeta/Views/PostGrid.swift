@@ -143,7 +143,7 @@ struct PostGrid: View {
                     }
                     
                 case .ad:
-                    AdView()
+                    TestAdView()
                         .aspectRatio(9/16, contentMode: .fit)
                         .clipShape(.rect(cornerRadius: 20))
                         .overlay(
