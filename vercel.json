@@ -1,7 +1,7 @@
 {
   "buildCommand": "cd admin-dashboard && npm install && npm run build",
   "outputDirectory": "admin-dashboard/dist",
-  "installCommand": "cd admin-dashboard && npm install && cd ../admin-backend && npm install",
+  "installCommand": "cd admin-dashboard && npm install && cd ../api && npm install",
   "framework": "vite",
   "rewrites": [
     {
