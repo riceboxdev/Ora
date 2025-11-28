@@ -12,7 +12,7 @@ const router = express.Router();
 if (!admin.apps.length) {
   try {
     const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
     
     // Validate required Firebase credentials
@@ -23,18 +23,40 @@ if (!admin.apps.length) {
         hasClientEmail: !!clientEmail
       });
     } else {
+      // Process private key: handle both escaped and literal newlines
+      // Replace escaped newlines first, then ensure proper formatting
+      privateKey = privateKey.replace(/\\n/g, '\n');
+      
+      // Remove any leading/trailing whitespace
+      privateKey = privateKey.trim();
+      
       // Validate private key format
       if (!privateKey.includes('BEGIN PRIVATE KEY') || !privateKey.includes('END PRIVATE KEY')) {
         console.error('Firebase Admin initialization failed: Invalid private key format. Private key must include BEGIN/END markers.');
       } else {
-        admin.initializeApp({
-          credential: admin.credential.cert({
-            projectId,
-            privateKey,
-            clientEmail,
-          }),
-        });
-        console.log('Firebase Admin initialized successfully');
+        // Ensure the private key has proper line breaks
+        // If it's all on one line, try to format it properly
+        if (!privateKey.includes('\n') && privateKey.length > 100) {
+          // It might be a single-line key, try to add newlines after markers
+          privateKey = privateKey.replace(/-----BEGIN PRIVATE KEY-----/, '-----BEGIN PRIVATE KEY-----\n');
+          privateKey = privateKey.replace(/-----END PRIVATE KEY-----/, '\n-----END PRIVATE KEY-----');
+        }
+        
+        try {
+          admin.initializeApp({
+            credential: admin.credential.cert({
+              projectId,
+              privateKey,
+              clientEmail,
+            }),
+          });
+          console.log('Firebase Admin initialized successfully');
+        } catch (initError) {
+          console.error('Firebase Admin credential error:', initError.message);
+          console.error('Private key length:', privateKey.length);
+          console.error('Private key starts with:', privateKey.substring(0, 50));
+          throw initError;
+        }
       }
     }
   } catch (error) {
