@@ -10,7 +10,7 @@ import MasonryStack
 import ColorKit
 
 /// Represents an item in the grid - either a post or an ad
-enum GridItem {
+enum PostGridItem {
     case post(Post)
     case ad
     
@@ -99,14 +99,14 @@ struct PostGrid: View {
     }
     
     /// Interleaves ads into the posts array at regular intervals
-    private var gridItems: [GridItem] {
+    private var gridItems: [PostGridItem] {
         guard shouldShowAds else {
             // No ads - just return posts
             return posts.map { .post($0) }
         }
         
         let interval = effectiveAdInterval
-        var items: [GridItem] = []
+        var items: [PostGridItem] = []
         
         for (index, post) in posts.enumerated() {
             items.append(.post(post))
