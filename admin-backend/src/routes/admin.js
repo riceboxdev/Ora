@@ -1257,6 +1257,9 @@ router.post('/settings', requireRole('super_admin'), async (req, res) => {
       updatedBy: req.admin.firebaseUid || req.admin._id.toString()
     };
     
+    // Track Remote Config sync errors
+    let remoteConfigError = null;
+    
     // Sync to Firebase Remote Config if feature flags, remote config, or maintenance mode are being updated
     // Do this in a single template update to avoid conflicts
     const shouldSyncToRemoteConfig = featureFlags !== undefined || remoteConfig !== undefined || maintenanceMode !== undefined;
@@ -1297,8 +1300,13 @@ router.post('/settings', requireRole('super_admin'), async (req, res) => {
           status: rcError?.status,
           stack: rcError?.stack
         });
-        // Don't fail the entire request if Remote Config sync fails
-        // The settings are still saved to Firestore
+        // Store the error to return to the user
+        // Settings are still saved to Firestore, but Remote Config sync failed
+        remoteConfigError = {
+          message: rcError?.message || 'Failed to sync to Firebase Remote Config',
+          code: rcError?.code,
+          status: rcError?.status
+        };
       }
     } else {
       console.log('Skipping Remote Config sync - no relevant fields to sync');
@@ -1338,7 +1346,13 @@ router.post('/settings', requireRole('super_admin'), async (req, res) => {
     console.log('Returning response data:', JSON.stringify(responseData, null, 2));
     
     // Return the actual saved data, ensuring uiSettings is included
-    res.json({ success: true, settings: responseData });
+    // Also include Remote Config sync error if it occurred
+    const response = { success: true, settings: responseData };
+    if (remoteConfigError) {
+      response.remoteConfigError = remoteConfigError;
+      response.warning = 'Settings saved to database, but failed to sync to Firebase Remote Config. The iOS app may not receive the updates until this is resolved.';
+    }
+    res.json(response);
   } catch (error) {
     console.error('Error updating settings:', error);
     console.error('Error stack:', error.stack);
@@ -2986,8 +3000,8 @@ router.get('/announcements/:id/stats', requireRole('super_admin'), async (req, r
 
 // @route   GET /api/admin/welcome-images
 // @desc    Get all welcome screen images
-// @access  Private (moderator+)
-router.get('/welcome-images', requireRole('super_admin', 'moderator'), async (req, res) => {
+// @access  Private (viewer+)
+router.get('/welcome-images', requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
   try {
     const db = admin.firestore();
     const doc = await db.collection('welcome_screen_images').doc('main').get();

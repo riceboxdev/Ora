@@ -742,10 +742,16 @@ const deleteRemoteConfig = (key) => {
 const saveFeatureFlags = async () => {
   try {
     saving.value = true;
-    await api.post('/api/admin/settings', {
+    const response = await api.post('/api/admin/settings', {
       featureFlags: featureFlags.value
     });
-    showToast('Feature flags saved and synced to Firebase Remote Config', 'success');
+    
+    // Check for Remote Config sync errors
+    if (response.data?.remoteConfigError) {
+      showToast(`Feature flags saved, but Remote Config sync failed: ${response.data.remoteConfigError.message}`, 'error');
+    } else {
+      showToast('Feature flags saved and synced to Firebase Remote Config', 'success');
+    }
   } catch (error) {
     console.error('Error saving feature flags:', error);
     const errorMsg = error.response?.data?.message || error.message || 'Failed to save feature flags';
@@ -758,13 +764,20 @@ const saveFeatureFlags = async () => {
 const saveRemoteConfig = async () => {
   try {
     saving.value = true;
-    await api.post('/api/admin/settings', {
+    const response = await api.post('/api/admin/settings', {
       remoteConfig: remoteConfig.value
     });
-    showToast('Remote config saved successfully', 'success');
+    
+    // Check for Remote Config sync errors
+    if (response.data?.remoteConfigError) {
+      showToast(`Remote config saved, but Remote Config sync failed: ${response.data.remoteConfigError.message}`, 'error');
+    } else {
+      showToast('Remote config saved successfully', 'success');
+    }
   } catch (error) {
     console.error('Error saving remote config:', error);
-    showToast('Failed to save remote config', 'error');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to save remote config';
+    showToast(errorMsg, 'error');
   } finally {
     saving.value = false;
   }
@@ -894,13 +907,20 @@ const applyUISettings = () => {
 const saveMaintenanceMode = async () => {
   try {
     saving.value = true;
-    await api.post('/api/admin/settings', {
+    const response = await api.post('/api/admin/settings', {
       maintenanceMode: maintenanceMode.value
     });
-    showToast('Maintenance mode updated successfully', 'success');
+    
+    // Check for Remote Config sync errors
+    if (response.data?.remoteConfigError) {
+      showToast(`Maintenance mode saved, but Remote Config sync failed: ${response.data.remoteConfigError.message}`, 'error');
+    } else {
+      showToast('Maintenance mode updated successfully', 'success');
+    }
   } catch (error) {
     console.error('Error saving maintenance mode:', error);
-    showToast('Failed to update maintenance mode', 'error');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to update maintenance mode';
+    showToast(errorMsg, 'error');
   } finally {
     saving.value = false;
   }
