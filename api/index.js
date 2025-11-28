@@ -91,20 +91,48 @@ app.get('/api/health', async (req, res) => {
     status: 'ok',
     checks: {
       db: 'unknown',
+      firestore: 'unknown',
       env: {
         hasMongoUri: !!process.env.MONGODB_URI,
         hasJwtSecret: !!process.env.JWT_SECRET,
-        hasFirebaseConfig: !!(process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY)
+        hasFirebaseConfig: !!(process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL),
+        firebaseProjectId: process.env.FIREBASE_PROJECT_ID || 'NOT SET',
+        privateKeyLength: process.env.FIREBASE_PRIVATE_KEY?.length || 0,
+        privateKeyHasMarkers: !!(process.env.FIREBASE_PRIVATE_KEY?.includes('BEGIN PRIVATE KEY') && process.env.FIREBASE_PRIVATE_KEY?.includes('END PRIVATE KEY'))
       }
     }
   };
 
+  // Test MongoDB connection
   try {
-    await connectDB();
-    result.checks.db = 'ok';
+    if (process.env.MONGODB_URI) {
+      await connectDB();
+      result.checks.db = 'ok';
+    } else {
+      result.checks.db = 'skipped';
+    }
   } catch (error) {
     console.error('Health check DB error:', error);
     result.checks.db = 'error';
+    result.status = 'degraded';
+  }
+
+  // Test Firestore connection
+  try {
+    const admin = (await import('firebase-admin')).default;
+    if (admin.apps.length > 0) {
+      const db = admin.firestore();
+      // Try a simple read operation to test authentication
+      await db.collection('_health').limit(1).get();
+      result.checks.firestore = 'ok';
+    } else {
+      result.checks.firestore = 'not_initialized';
+      result.status = 'degraded';
+    }
+  } catch (error) {
+    console.error('Health check Firestore error:', error.message);
+    result.checks.firestore = 'error';
+    result.checks.firestoreError = error.message;
     result.status = 'degraded';
   }
 
