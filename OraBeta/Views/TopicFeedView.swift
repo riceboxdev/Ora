@@ -189,6 +189,7 @@ class TopicFeedViewModel: ObservableObject {
     private let topic: TrendingTopic
     private let trendService = TrendService.shared
     private let topicFollowService = TopicFollowService.shared
+    private let blockedUsersService = BlockedUsersService()
     private let pageSize = 20
     private var lastLoadedPostIds: Set<String> = []
     
@@ -263,6 +264,21 @@ class TopicFeedViewModel: ObservableObject {
                 }
             }
             
+            // Filter out posts from blocked users (bidirectional blocking)
+            do {
+                let blockedUserIds = try await blockedUsersService.getAllBlockedUserIds()
+                let beforeCount = fetchedPosts.count
+                fetchedPosts = fetchedPosts.filter { post in
+                    !blockedUserIds.contains(post.userId)
+                }
+                let filteredCount = beforeCount - fetchedPosts.count
+                if filteredCount > 0 {
+                    print("✅ TopicFeedViewModel: Filtered out \(filteredCount) post(s) from blocked users")
+                }
+            } catch {
+                print("⚠️ TopicFeedViewModel: Failed to get blocked users, showing all posts: \(error.localizedDescription)")
+            }
+            
             self.posts = fetchedPosts
             self.lastLoadedPostIds = Set(fetchedPosts.map { $0.id })
             self.hasMore = fetchedPosts.count >= pageSize
@@ -319,6 +335,16 @@ class TopicFeedViewModel: ObservableObject {
                         fetchedPosts.append(post)
                     }
                 }
+            }
+            
+            // Filter out posts from blocked users (bidirectional blocking)
+            do {
+                let blockedUserIds = try await blockedUsersService.getAllBlockedUserIds()
+                fetchedPosts = fetchedPosts.filter { post in
+                    !blockedUserIds.contains(post.userId)
+                }
+            } catch {
+                print("⚠️ TopicFeedViewModel: Failed to get blocked users, showing all posts: \(error.localizedDescription)")
             }
             
             // Filter out posts we've already loaded

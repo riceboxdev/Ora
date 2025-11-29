@@ -33,6 +33,8 @@ struct PostGrid: View {
     let onItemAppear: ((Post) -> Void)?
     let queryID: String? // For Algolia click tracking (from search results)
     let adsEnabled: Bool // Whether ads are enabled for this instance
+    let followedUserIds: Set<String>? // For topic indicator (optional, only used in home feed)
+    let followedTopicNames: Set<String>? // For topic indicator (optional, only used in home feed)
     
     @StateObject private var remoteConfigService = RemoteConfigService.shared
     @Namespace private var namespace
@@ -48,7 +50,9 @@ struct PostGrid: View {
         onItemAppear: ((Post) -> Void)? = nil,
         queryID: String? = nil,
         adsEnabled: Bool = false,
-        adInterval: Int? = nil
+        adInterval: Int? = nil,
+        followedUserIds: Set<String>? = nil,
+        followedTopicNames: Set<String>? = nil
     ) {
         self._posts = posts
         self.columns = columns
@@ -57,6 +61,8 @@ struct PostGrid: View {
         self.queryID = queryID
         self.adsEnabled = adsEnabled
         self.adInterval = adInterval
+        self.followedUserIds = followedUserIds
+        self.followedTopicNames = followedTopicNames
     }
     
     // Convenience initializer for non-binding usage
@@ -67,7 +73,9 @@ struct PostGrid: View {
         onItemAppear: ((Post) -> Void)? = nil,
         queryID: String? = nil,
         adsEnabled: Bool = false,
-        adInterval: Int? = nil
+        adInterval: Int? = nil,
+        followedUserIds: Set<String>? = nil,
+        followedTopicNames: Set<String>? = nil
     ) {
         self._posts = Binding.constant(posts)
         self.columns = columns
@@ -76,6 +84,8 @@ struct PostGrid: View {
         self.queryID = queryID
         self.adsEnabled = adsEnabled
         self.adInterval = adInterval
+        self.followedUserIds = followedUserIds
+        self.followedTopicNames = followedTopicNames
     }
     
     /// Computed property to determine if ads should be shown
@@ -128,7 +138,11 @@ struct PostGrid: View {
                         destination: PostDetailView(post: post, queryID: queryID)
                             .navigationTransition(.zoom(sourceID: post.id, in: namespace))
                     ) {
-                        PostThumbnailView(post: post)
+                        PostThumbnailView(
+                            post: post,
+                            followedUserIds: followedUserIds,
+                            followedTopicNames: followedTopicNames
+                        )
                             .matchedTransitionSource(id: post.id, in: namespace)
                             .onAppear {
                                 Logger.info("📍 PostGrid: Post appeared - index: \(index), postId: \(post.id), total: \(posts.count)", service: "PostGrid")
@@ -144,12 +158,8 @@ struct PostGrid: View {
                     
                 case .ad:
                     TestAdView()
-                        .aspectRatio(9/16, contentMode: .fit)
-                        .clipShape(.rect(cornerRadius: 20))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                        )
+                        .aspectRatio(9/16, contentMode: .fill)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
                 }
             }
         }
@@ -163,16 +173,47 @@ struct PostGrid: View {
 
 struct PostThumbnailView: View {
     let post: Post
+    let followedUserIds: Set<String>?
+    let followedTopicNames: Set<String>?
     let cornerRadius: CGFloat = 20
     
     @State private var isLiked: Bool = false
     @State private var isLoadingLikedStatus: Bool = false
     private let engagementService = EngagementService()
     
-    init(post: Post) {
+    init(post: Post, followedUserIds: Set<String>? = nil, followedTopicNames: Set<String>? = nil) {
         self.post = post
+        self.followedUserIds = followedUserIds
+        self.followedTopicNames = followedTopicNames
         // Ensure logging is enabled for thumbnail views
         LoggingControl.enable("PostThumbnailView")
+    }
+    
+    // Determine if post is from a topic (not a followed user) and get the topic name
+    private var topicName: String? {
+        // Only show topic indicator if we have the necessary data
+        guard let followedUserIds = followedUserIds,
+              let followedTopicNames = followedTopicNames else {
+            return nil
+        }
+        
+        // If the post's user is in the followed users list, don't show topic indicator
+        if followedUserIds.contains(post.userId) {
+            return nil
+        }
+        
+        // Find the first matching topic from the post's tags
+        guard let tags = post.tags else {
+            return nil
+        }
+        
+        for tag in tags {
+            if followedTopicNames.contains(tag.lowercased()) {
+                return tag // Return the original case tag name
+            }
+        }
+        
+        return nil
     }
     
     // Cached URL to avoid repeated URL(string:) calls
@@ -197,7 +238,7 @@ struct PostThumbnailView: View {
     }
     
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        ZStack(alignment: .bottom) {
             CachedImageView(
                 url: imageURL,
                 aspectRatio: aspectRatio,
@@ -211,15 +252,48 @@ struct PostThumbnailView: View {
                     .stroke(Color.gray.opacity(0.2), lineWidth: 1)
             )
             
-            // Red heart icon overlay in bottom right corner (only if user has liked)
-            if isLiked {
-                Image("heart.fill")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 16, height: 16)
-                    .foregroundColor(.red)
-                    .padding(8)
+            HStack {
+                // Topic indicator in bottom left corner
+                if let topicName = topicName {
+                    HStack(spacing: 4) {
+                        Text(topicName)
+                            .font(.creatoDisplayHeadline())
+                        
+                        Image(systemName: "arrow.up.right")
+                            .font(.creatoDisplayHeadline())
+                    }
+                    .shadow(radius: 4)
+//                    .padding(.horizontal, ViewConstants.Layout.chipHorizontalPadding)
+//                    .padding(.vertical, ViewConstants.Layout.chipVerticalPadding)
+//                    .background(
+//                        // Use a more opaque background for better visibility on images
+//                        Color(.systemBackground).opacity(0.85)
+//                    )
+                    .foregroundColor(.primary)
+//                    .cornerRadius(ViewConstants.Layout.chipCornerRadius)
+                    //                .padding(8)
+                }
+                
+                Spacer()
+                // Red heart icon overlay in bottom right corner (only if user has liked)
+                if isLiked {
+                    Image("heart.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 16, height: 16)
+                        .foregroundColor(.red)
+                        
+                }
             }
+            .padding()
+            .padding(.top)
+            .background(
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.2)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
         }
         .task {
             await checkLikedStatus()

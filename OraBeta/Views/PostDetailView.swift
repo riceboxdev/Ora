@@ -154,7 +154,7 @@ struct PostDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(tags, id: \.self) { tag in
-                        NavigationLink(destination: SearchView()) {
+                        NavigationLink(destination: SearchView(initialQuery: tag, isTopicContext: true)) {
                             Text("#\(tag)")
                                 .font(.creatoDisplayBody())
                                 .padding(.horizontal, 16)

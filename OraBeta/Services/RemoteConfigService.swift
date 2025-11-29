@@ -24,6 +24,7 @@ public class RemoteConfigService: ObservableObject {
     @Published public var isStoriesEnabled: Bool = false
     @Published public var isMaintenanceMode: Bool = false
     @Published public var adFrequency: Int = 5 // Show ad every N posts (default: 5)
+    @Published public var isConfigLoaded: Bool = false // Track if initial config fetch has completed
     
     private init() {
         // Create Firebase provider with default configuration
@@ -73,11 +74,61 @@ public class RemoteConfigService: ObservableObject {
     /// Initialize Remote Config (call this after Firebase is configured)
     public func initialize() {
         featureFlagService.initialize()
+        // Mark as not loaded initially - will be set to true when fetch completes
+        isConfigLoaded = false
     }
     
     /// Fetch config from remote
     public func fetchConfig() {
-        featureFlagService.fetchConfig()
+        print("🔧 RemoteConfigService.fetchConfig() called - isConfigLoaded: \(isConfigLoaded)")
+        
+        // Prevent multiple simultaneous fetches
+        guard !isConfigLoaded else {
+            Logger.debug("Remote Config already loaded, skipping fetch", service: "RemoteConfigService")
+            print("🔧 RemoteConfigService: Already loaded, skipping fetch")
+            return
+        }
+        
+        print("🔧 RemoteConfigService: About to log 'Fetching Remote Config...'")
+        Logger.info("Fetching Remote Config...", service: "RemoteConfigService")
+        print("🔧 RemoteConfigService: Logged fetch message, about to call featureFlagService.fetchConfig()")
+        
+        // Add a timeout fallback to ensure we don't stay on splash forever
+        var timeoutTask: DispatchWorkItem?
+        timeoutTask = DispatchWorkItem { [weak self] in
+            guard let self = self, !self.isConfigLoaded else { return }
+            Logger.warning("Remote Config fetch timed out after 5 seconds, using defaults", service: "RemoteConfigService")
+            self.isConfigLoaded = true
+        }
+        
+        // Schedule timeout for 5 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0, execute: timeoutTask!)
+        
+        print("🔧 RemoteConfigService: Calling featureFlagService.fetchConfig()...")
+        featureFlagService.fetchConfig { [weak self] success in
+            print("🔧 RemoteConfigService: fetchConfig completion called - success: \(success)")
+            timeoutTask?.cancel() // Cancel timeout if fetch completes
+            DispatchQueue.main.async {
+                guard let self = self else {
+                    print("🔧 RemoteConfigService: Self is nil in completion handler")
+                    return
+                }
+                
+                print("🔧 RemoteConfigService: Setting isConfigLoaded = true")
+                // Always mark as loaded after fetch attempt (success or failure)
+                self.isConfigLoaded = true
+                
+                if success {
+                    Logger.info("Remote Config fetched and activated successfully", service: "RemoteConfigService")
+                    Logger.debug("Remote Config values - isWaitlistEnabled: \(self.isWaitlistEnabled), areAdsEnabled: \(self.areAdsEnabled), isMaintenanceMode: \(self.isMaintenanceMode), isStoriesEnabled: \(self.isStoriesEnabled)", service: "RemoteConfigService")
+                    print("🔧 RemoteConfigService: ✅ Fetch successful - isWaitlistEnabled: \(self.isWaitlistEnabled)")
+                } else {
+                    Logger.warning("Remote Config fetch failed, using defaults - isWaitlistEnabled (default): \(self.isWaitlistEnabled)", service: "RemoteConfigService")
+                    print("🔧 RemoteConfigService: ⚠️ Fetch failed - using defaults - isWaitlistEnabled: \(self.isWaitlistEnabled)")
+                }
+            }
+        }
+        print("🔧 RemoteConfigService: fetchConfig() method completed (async fetch in progress)")
     }
 }
 

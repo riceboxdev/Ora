@@ -27,6 +27,9 @@ struct ContentView: View {
     @State private var showBulkUpload = false
     @State private var showTaggingView = false
     @State private var hasCheckedUntaggedPosts = false
+    @State private var announcements: [Announcement] = []
+    @State private var showAnnouncements = false
+    @StateObject private var announcementService = AnnouncementService()
     
     var body: some View {
         ZStack {
@@ -85,6 +88,7 @@ struct ContentView: View {
             .task {
                 await checkAdminStatus()
                 await setupGlobalNotifications()
+                await checkAnnouncements()
                 // Temporarily disabled: await checkUntaggedPosts()
             }
         }
@@ -103,6 +107,22 @@ struct ContentView: View {
                 Task {
                     // Temporarily disabled: await checkUntaggedPosts()
                 }
+            }
+        }
+        .sheet(isPresented: $showAnnouncements) {
+            if !announcements.isEmpty {
+                AnnouncementView(announcements: announcements)
+                    .environmentObject(authViewModel)
+            } else {
+                Text("No announcements")
+                    .onAppear {
+                        print("📢 ContentView: Sheet showing but announcements array is empty")
+                    }
+            }
+        }
+        .onChange(of: showAnnouncements) { oldValue, newValue in
+            if newValue {
+                print("📢 ContentView: Sheet is now showing - announcements count: \(announcements.count)")
             }
         }
     }
@@ -172,6 +192,31 @@ struct ContentView: View {
             }
             // Default to non-admin if there's an error
             isAdmin = false
+        }
+    }
+    
+    private func checkAnnouncements() async {
+        guard let userId = authViewModel.currentUser?.uid else {
+            return
+        }
+        
+        // Small delay to let app finish loading before showing announcements
+        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        
+        do {
+            let fetchedAnnouncements = try await announcementService.fetchActiveAnnouncements(for: userId)
+            
+            if !fetchedAnnouncements.isEmpty {
+                await MainActor.run {
+                    announcements = fetchedAnnouncements
+                    showAnnouncements = true
+                    print("📢 ContentView: Showing \(fetchedAnnouncements.count) announcement(s)")
+                }
+            } else {
+                print("📢 ContentView: No announcements to show")
+            }
+        } catch {
+            print("❌ ContentView: Error fetching announcements: \(error)")
         }
     }
 }

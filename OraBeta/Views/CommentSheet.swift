@@ -89,7 +89,7 @@ struct CommentSheet: View {
     private func loadComments() async {
         isLoading = true
         do {
-            comments = try await engagementService.getComments(postId: post.id)
+            comments = try await engagementService.getComments(postId: post.id, postAuthorId: post.userId)
             
             // Load user profiles for all comments
             await loadUserProfiles(for: comments)

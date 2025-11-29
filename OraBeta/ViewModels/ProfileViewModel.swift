@@ -23,6 +23,7 @@ class ProfileViewModel: ObservableObject, PaginatableViewModel {
     @Published var hasMore = true // Renamed from hasMorePosts for protocol conformance
     @Published var section: ProfileTabSection = .posts
     @Published var errorMessage: String?
+    @Published var postCount: Int = 0
     
     // MARK: - Private Properties
     private let profileService: ProfileServiceProtocol
@@ -57,9 +58,12 @@ class ProfileViewModel: ObservableObject, PaginatableViewModel {
         
         currentUserId = userId
         
-        await loadProfile()
-        await loadUserPosts()
-        await loadBoards()
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await self.loadProfile() }
+            group.addTask { await self.loadUserPosts() }
+            group.addTask { await self.loadBoards() }
+            group.addTask { await self.loadPostCount() }
+        }
     }
     
     /// Load user profile
@@ -294,6 +298,28 @@ class ProfileViewModel: ObservableObject, PaginatableViewModel {
     @MainActor
     func loadPosts() async {
         await loadUserPosts()
+    }
+    
+    /// Load total post count for the user
+    func loadPostCount() async {
+        guard let userId = currentUserId ?? Auth.auth().currentUser?.uid else {
+            return
+        }
+        
+        do {
+            let db = Firestore.firestore()
+            let snapshot = try await db.collection("posts")
+                .whereField("userId", isEqualTo: userId)
+                .count
+                .getAggregation(source: .server)
+            
+            postCount = Int(truncating: snapshot.count)
+            print("✅ ProfileViewModel: Post count loaded: \(postCount)")
+        } catch {
+            print("❌ ProfileViewModel: Error loading post count: \(error.localizedDescription)")
+            // Fallback to loaded posts count if query fails
+            postCount = posts.count
+        }
     }
 }
 

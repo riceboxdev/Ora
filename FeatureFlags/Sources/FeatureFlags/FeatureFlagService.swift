@@ -67,22 +67,35 @@ public class FeatureFlagService: ObservableObject {
     }
     
     /// Initialize the service (call after backend is configured)
+    /// Note: This only initializes the provider. You must call fetchConfig() separately
+    /// to ensure completion handlers are properly called.
     public func initialize() {
         provider.initialize()
-        fetchConfig()
+        // Don't call fetchConfig() here - let the caller control when to fetch
+        // This ensures completion handlers are properly set up
     }
     
     /// Fetch feature flags from the provider
-    public func fetchConfig() {
+    /// - Parameter completion: Optional completion handler called when fetch completes (success or failure)
+    public func fetchConfig(completion: ((Bool) -> Void)? = nil) {
         provider.fetchFlags { [weak self] success, error in
-            guard let self = self else { return }
+            guard let self = self else {
+                completion?(false)
+                return
+            }
             
             if success {
                 DispatchQueue.main.async {
                     self.updateValues()
+                    completion?(true)
                 }
-            } else if let error = error {
-                print("FeatureFlags: Failed to fetch flags: \(error.localizedDescription)")
+            } else {
+                if let error = error {
+                    print("FeatureFlags: Failed to fetch flags: \(error.localizedDescription)")
+                }
+                DispatchQueue.main.async {
+                    completion?(false)
+                }
             }
         }
     }

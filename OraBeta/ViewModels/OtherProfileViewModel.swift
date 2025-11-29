@@ -25,6 +25,7 @@ class OtherProfileViewModel: ObservableObject, PaginatableViewModel {
     @Published var errorMessage: String?
     @Published var isFollowing = false
     @Published var isFollowingUser = false
+    @Published var postCount: Int = 0
     
     // MARK: - Private Properties
     private let profileService: ProfileServiceProtocol
@@ -284,5 +285,23 @@ class OtherProfileViewModel: ObservableObject, PaginatableViewModel {
     /// Load user posts (wrapper for refresh)
     func loadPosts() async {
         await loadUserPosts()
+    }
+    
+    /// Load total post count for the user
+    func loadPostCount() async {
+        do {
+            let db = Firestore.firestore()
+            let snapshot = try await db.collection("posts")
+                .whereField("userId", isEqualTo: targetUserId)
+                .count
+                .getAggregation(source: .server)
+            
+            postCount = Int(truncating: snapshot.count)
+            print("✅ OtherProfileViewModel: Post count loaded: \(postCount)")
+        } catch {
+            print("❌ OtherProfileViewModel: Error loading post count: \(error.localizedDescription)")
+            // Fallback to loaded posts count if query fails
+            postCount = posts.count
+        }
     }
 }

@@ -26,5 +26,17 @@ protocol FeedServiceProtocol {
         lastDocument: QueryDocumentSnapshot?,
         applyRanking: Bool
     ) async throws -> (posts: [Post], lastDocument: QueryDocumentSnapshot?)
+    
+    /// Get home feed with posts from followed users and topics
+    /// - Parameters:
+    ///   - userId: Current user ID (required)
+    ///   - limit: Maximum number of posts to return
+    ///   - lastDocument: Last document for pagination (optional)
+    /// - Returns: Array of posts, last document for pagination, and whether user has follows
+    func getHomeFeed(
+        userId: String,
+        limit: Int,
+        lastDocument: QueryDocumentSnapshot?
+    ) async throws -> (posts: [Post], lastDocument: QueryDocumentSnapshot?, hasFollows: Bool)
 }
 

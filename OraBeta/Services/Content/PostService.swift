@@ -14,11 +14,13 @@ import FirebaseFunctions
 class PostService: PostServiceProtocol {
     private let db = Firestore.firestore()
     private let profileService: ProfileService
+    private let blockedUsersService: BlockedUsersService
     private let functions = FunctionsConfig.functions(region: "us-central1")
     
-    init(profileService: ProfileService) {
+    init(profileService: ProfileService, blockedUsersService: BlockedUsersService? = nil) {
         Logger.info("Initializing", service: "PostService")
         self.profileService = profileService
+        self.blockedUsersService = blockedUsersService ?? BlockedUsersService()
     }
     
     /// Create a new post - saves to Firestore via Firebase Function
@@ -261,12 +263,29 @@ class PostService: PostServiceProtocol {
             }
         }
         
-        Logger.info("Retrieved \(posts.count) posts from Firestore", service: "PostService")
+        // Filter out posts from blocked users (bidirectional blocking)
+        let filteredPosts: [Post]
+        do {
+            let blockedUserIds = try await blockedUsersService.getAllBlockedUserIds()
+            let beforeCount = posts.count
+            filteredPosts = posts.filter { post in
+                !blockedUserIds.contains(post.userId)
+            }
+            let filteredCount = beforeCount - filteredPosts.count
+            if filteredCount > 0 {
+                Logger.info("Filtered out \(filteredCount) post(s) from blocked users", service: "PostService")
+            }
+        } catch {
+            Logger.warning("Failed to get blocked users, showing all posts: \(error.localizedDescription)", service: "PostService")
+            filteredPosts = posts
+        }
+        
+        Logger.info("Retrieved \(filteredPosts.count) posts from Firestore", service: "PostService")
         
         // Get last document for pagination
         let lastDoc = snapshot.documents.last
         
-        return (posts: posts, lastDocument: lastDoc)
+        return (posts: filteredPosts, lastDocument: lastDoc)
     }
     
     /// Delete a post - removes from Firestore via Firebase Function

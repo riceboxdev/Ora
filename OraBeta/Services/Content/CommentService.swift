@@ -12,6 +12,11 @@ import FirebaseAuth
 @MainActor
 class CommentService {
     private let db = Firestore.firestore()
+    private let blockedUsersService: BlockedUsersService
+    
+    init(blockedUsersService: BlockedUsersService? = nil) {
+        self.blockedUsersService = blockedUsersService ?? BlockedUsersService()
+    }
     
     /// Add a comment to a post
     func addComment(postId: String, text: String) async throws -> String {
@@ -136,14 +141,14 @@ class CommentService {
     }
     
     /// Get comments for a post
-    func getComments(postId: String, limit: Int = 50) async throws -> [Comment] {
+    func getComments(postId: String, limit: Int = 50, postAuthorId: String? = nil) async throws -> [Comment] {
         let snapshot = try await db.collection("comments")
             .whereField("postId", isEqualTo: postId)
             .order(by: "createdAt", descending: false)
             .limit(to: limit)
             .getDocuments()
         
-        return snapshot.documents.compactMap { doc -> Comment? in
+        let comments = snapshot.documents.compactMap { doc -> Comment? in
             let data = doc.data()
             guard
                   let userId = data["userId"] as? String,
@@ -161,6 +166,33 @@ class CommentService {
                 text: text,
                 createdAt: createdAt
             )
+        }
+        
+        // Filter out comments from blocked users and comments on posts from blocked users
+        do {
+            let blockedUserIds = try await blockedUsersService.getAllBlockedUserIds()
+            let beforeCount = comments.count
+            
+            // If post author is provided and is blocked, hide all comments on that post
+            if let postAuthorId = postAuthorId, blockedUserIds.contains(postAuthorId) {
+                print("✅ CommentService: Post author is blocked, hiding all \(comments.count) comments")
+                return []
+            }
+            
+            // Filter out comments from blocked users
+            let filteredComments = comments.filter { comment in
+                !blockedUserIds.contains(comment.userId)
+            }
+            
+            let filteredCount = beforeCount - filteredComments.count
+            if filteredCount > 0 {
+                print("✅ CommentService: Filtered out \(filteredCount) comment(s) from blocked users")
+            }
+            
+            return filteredComments
+        } catch {
+            print("⚠️ CommentService: Failed to get blocked users, showing all comments: \(error.localizedDescription)")
+            return comments
         }
     }
     

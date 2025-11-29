@@ -55,8 +55,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             }
         )
         
-        // Initialize Remote Config (after Firebase is configured)
-        RemoteConfigService.shared.initialize()
+        // Remote Config is now initialized in OraBetaApp.init() to ensure it happens early
+        // No need to initialize here - it's already done
         
         
         return true

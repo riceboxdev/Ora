@@ -26,6 +26,9 @@ class HomeFeedViewModel: ObservableObject, PaginatableViewModel {
     @Published var trendingTopics: [TrendingTopic] = []
     @Published var isLoadingTrendingTopics: Bool = false
     @Published var selectedTrendingTopic: TrendingTopic?
+    @Published var hasFollows: Bool = false // Track if user has any follows
+    @Published var followedUserIds: Set<String> = [] // Track followed user IDs for topic indicator
+    @Published var followedTopicNames: Set<String> = [] // Track followed topic names (lowercased) for topic indicator
     
     // MARK: - Private Properties
     private let container: DIContainer
@@ -98,17 +101,19 @@ class HomeFeedViewModel: ObservableObject, PaginatableViewModel {
         hasMore = true
         
         do {
-            // Use FeedService to get posts from Firestore
-            let result = try await feedService.getDiscoverFeed(
+            // Fetch followed users and topics for topic indicator
+            await loadFollowedUsersAndTopics(userId: userId)
+            
+            // Use FeedService to get home feed (posts from followed users and topics)
+            let result = try await feedService.getHomeFeed(
                 userId: userId,
                 limit: pageSize,
-                strategy: HybridStrategy(recencyWeight: 0.3, popularityWeight: 0.7),
-                lastDocument: nil,
-                applyRanking: true
+                lastDocument: nil
             )
             
             posts = result.posts
             lastDocument = result.lastDocument
+            hasFollows = result.hasFollows
             
             // If we got fewer posts than requested, there are no more
             hasMore = result.posts.count >= pageSize
@@ -118,8 +123,9 @@ class HomeFeedViewModel: ObservableObject, PaginatableViewModel {
                 hasMore = false
             }
             
-            Logger.info("Loaded \(result.posts.count) posts from Firestore", service: "HomeFeedViewModel")
+            Logger.info("Loaded \(result.posts.count) posts from home feed", service: "HomeFeedViewModel")
             Logger.debug("Has more: \(hasMore)", service: "HomeFeedViewModel")
+            Logger.debug("Has follows: \(hasFollows)", service: "HomeFeedViewModel")
             
             if result.posts.isEmpty {
                 Logger.warning("No posts found", service: "HomeFeedViewModel")
@@ -229,19 +235,28 @@ class HomeFeedViewModel: ObservableObject, PaginatableViewModel {
         // isLoadingMore already set to true in onItemAppear()
         
         do {
-            let result = try await feedService.getDiscoverFeed(
+            // Refresh followed users and topics (in case they changed)
+            await loadFollowedUsersAndTopics(userId: userId)
+            
+            let result = try await feedService.getHomeFeed(
                 userId: userId,
                 limit: pageSize,
-                strategy: HybridStrategy(recencyWeight: 0.3, popularityWeight: 0.7),
-                lastDocument: lastDoc,
-                applyRanking: false // Don't re-rank - just append new posts
+                lastDocument: lastDoc
             )
             
-            Logger.info("📦 Received \(result.posts.count) posts from feed service", service: "HomeFeedViewModel")
+            Logger.info("📦 Received \(result.posts.count) posts from home feed service", service: "HomeFeedViewModel")
             
-            // Append new posts
-            posts.append(contentsOf: result.posts)
+            // Append new posts (deduplicate by ID)
+            var existingPostIds = Set(posts.map { $0.id })
+            for post in result.posts {
+                if !existingPostIds.contains(post.id) {
+                    posts.append(post)
+                    existingPostIds.insert(post.id)
+                }
+            }
+            
             lastDocument = result.lastDocument
+            hasFollows = result.hasFollows
             
             // Only set hasMore to false if we got 0 posts (true end of feed)
             // Don't stop just because we got fewer than pageSize - that's not reliable
@@ -467,6 +482,34 @@ class HomeFeedViewModel: ObservableObject, PaginatableViewModel {
     }
     
     // MARK: - Private Methods
+    
+    /// Load followed user IDs and topic names for topic indicator
+    private func loadFollowedUsersAndTopics(userId: String) async {
+        do {
+            // Fetch followed user IDs
+            let db = Firestore.firestore()
+            let followedUsersSnapshot = try await db.collection("follows")
+                .whereField("followerId", isEqualTo: userId)
+                .getDocuments()
+            
+            let userIds = Set(followedUsersSnapshot.documents.compactMap { doc in
+                doc.data()["followingId"] as? String
+            })
+            
+            // Fetch followed topics
+            let topicFollowService = TopicFollowService.shared
+            let followedTopics = try await topicFollowService.getFollowedTopics()
+            let topicNames = Set(followedTopics.map { $0.name.lowercased() })
+            
+            followedUserIds = userIds
+            followedTopicNames = topicNames
+            
+            Logger.debug("Loaded \(userIds.count) followed users and \(topicNames.count) followed topics", service: "HomeFeedViewModel")
+        } catch {
+            Logger.warning("Failed to load followed users/topics: \(error.localizedDescription)", service: "HomeFeedViewModel")
+            // Don't fail the whole operation if this fails
+        }
+    }
     
     /// Verify feed status when empty
     private func verifyFeedStatus(userId: String) async {

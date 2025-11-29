@@ -28,6 +28,39 @@ struct OraBetaApp: App {
         LoggingControl.enable("CachedImageView")
         LoggingControl.enable("PostThumbnailView")
         
+        // Enable logging for Remote Config and routing services
+        // Register and enable these services explicitly to ensure they're ready
+        _ = LoggingServiceRegistry.shared.register(serviceName: "RemoteConfigService")
+        _ = LoggingServiceRegistry.shared.register(serviceName: "WaitlistGuard")
+        _ = LoggingServiceRegistry.shared.register(serviceName: "SplashGuard")
+        LoggingControl.enable("RemoteConfigService")
+        LoggingControl.enable("WaitlistGuard")
+        LoggingControl.enable("SplashGuard")
+        
+        // Debug: Print logging state to verify services are enabled
+        print("🔧 Logging Configuration:")
+        print("   - Default log level: \(LoggingConfig.defaultLogLevel.rawValue)")
+        print("   - RemoteConfigService enabled: \(LoggingControl.isEnabled("RemoteConfigService"))")
+        print("   - WaitlistGuard enabled: \(LoggingControl.isEnabled("WaitlistGuard"))")
+        print("   - SplashGuard enabled: \(LoggingControl.isEnabled("SplashGuard"))")
+        
+        // Test logging to verify it works - force a test log
+        print("🧪 Testing Logger.info()...")
+        Logger.info("App initialization complete - logging system ready", service: "OraBetaApp")
+        print("🧪 Logger.info() call completed")
+        
+        // Also test with a service that should definitely work
+        Logger.info("Test log from RemoteConfigService", service: "RemoteConfigService")
+        Logger.debug("Test debug log from RemoteConfigService", service: "RemoteConfigService")
+        
+        // Initialize and fetch Remote Config here (after Firebase is configured)
+        // This ensures it happens early and we can see the logs
+        print("🔧 OraBetaApp: Initializing Remote Config...")
+        RemoteConfigService.shared.initialize()
+        print("🔧 OraBetaApp: Remote Config initialized, fetching...")
+        RemoteConfigService.shared.fetchConfig()
+        print("🔧 OraBetaApp: fetchConfig() called")
+        
         // Create container and AuthViewModel
         let diContainer = DIContainer.shared
         _container = StateObject(wrappedValue: diContainer)
@@ -57,12 +90,18 @@ struct OraBetaApp: App {
     }
     
     /// Determine the current route based on app state
+    /// This is a computed property that re-evaluates when dependencies change
+    @State private var routeRefreshTrigger: Int = 0
+    
     private var currentRoute: AppRoute {
         let router = AppRouter(
             authViewModel: authViewModel,
             remoteConfigService: remoteConfigService
         )
-        return router.determineRoute()
+        let route = router.determineRoute()
+        // Use routeRefreshTrigger to force re-evaluation when needed
+        _ = routeRefreshTrigger
+        return route
     }
 
     var body: some Scene {
@@ -104,14 +143,17 @@ struct OraBetaApp: App {
                             .transition(AppRoute.main.transition)
                         
                     case .waitlist:
-                        // Waitlist not implemented yet, fall back to login
-                        LoginView()
+                        AppWaitlistView(remoteConfigService: remoteConfigService)
                             .environmentObject(authViewModel)
                             .environmentObject(container)
                             .transition(AppRoute.waitlist.transition)
                     }
                 }
                 .animation(currentRoute.animation, value: currentRoute)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("NavigateToLogin"))) { _ in
+                // Force route refresh when navigation is requested
+                routeRefreshTrigger += 1
             }
         }
     }

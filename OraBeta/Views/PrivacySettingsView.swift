@@ -207,6 +207,8 @@ struct PrivacySettingsView: View {
     private func unblockUser(_ blockedUser: BlockedUser) async {
         do {
             try await blockedUsersService.unblockUser(blockedId: blockedUser.blockedId)
+            // Invalidate cache to ensure immediate effect
+            blockedUsersService.invalidateCache()
             await loadData()
         } catch {
             errorMessage = error.localizedDescription

@@ -41,9 +41,14 @@ final class DIContainer: ObservableObject {
         LikeService()
     }()
     
+    /// Blocked users service
+    private(set) lazy var blockedUsersService: BlockedUsersService = {
+        BlockedUsersService()
+    }()
+    
     /// Comment service for post comments
     private(set) lazy var commentService: CommentService = {
-        CommentService()
+        CommentService(blockedUsersService: blockedUsersService)
     }()
     
     /// User preference service
@@ -68,14 +73,14 @@ final class DIContainer: ObservableObject {
     
     // MARK: - Dependent Services
     
-    /// Post service (depends on ProfileService)
+    /// Post service (depends on ProfileService and BlockedUsersService)
     private(set) lazy var postService: PostServiceProtocol = {
-        PostService(profileService: profileService as! ProfileService)
+        PostService(profileService: profileService as! ProfileService, blockedUsersService: blockedUsersService)
     }()
     
-    /// Feed service (depends on ProfileService)
+    /// Feed service (depends on ProfileService and BlockedUsersService)
     private(set) lazy var feedService: FeedServiceProtocol = {
-        FeedService(profileService: profileService as! ProfileService)
+        FeedService(profileService: profileService as! ProfileService, blockedUsersService: blockedUsersService)
     }()
     
     /// Engagement service (depends on LikeService, CommentService, BoardService)

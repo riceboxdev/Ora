@@ -219,6 +219,11 @@ private struct HeroCard: View {
     
     @State private var currentImageIndex: Int = 0
     @State private var slideshowTask: Task<Void, Never>?
+    @State private var isFollowing = false
+    @State private var isLoading = false
+    @State private var isCheckingFollowStatus = true
+    
+    private let topicFollowService = TopicFollowService.shared
     
     // Limit to first 3-4 images for slideshow
     private var slideshowPosts: [Post] {
@@ -245,35 +250,48 @@ private struct HeroCard: View {
                 )
                 
                 // Content overlay
-                HStack(alignment: .bottom) {
-                    // Topic info
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(alignment: .top) {
-                            Text(topic.name)
-                                .font(.creatoDisplayHeadline())
-                                .fontWeight(.bold)
-                                .foregroundStyle(.white)
-                                .lineLimit(2)
-                                .multilineTextAlignment(.leading)
-                            
-                            Spacer(minLength: 8)
-                            
-                            if topic.growthRate > 0 {
-                                GrowthBadge(rate: topic.growthRate)
-                            }
-                        }
-                        
-                        Text("\(topic.postCount) posts")
-                            .font(.creatoDisplayCaption(.regular))
-                            .foregroundStyle(.white.opacity(0.9))
+                VStack(alignment: .leading, spacing: 0) {
+                    // Follow button in top right
+                    HStack {
+                        Spacer()
+                        followButton
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
                     
                     Spacer()
                     
-                    // Preview thumbnails
-                    PreviewThumbnails(posts: previewPosts)
+                    // Topic info and preview thumbnails at bottom
+                    HStack(alignment: .bottom) {
+                        // Topic info
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(alignment: .top) {
+                                Text(topic.name)
+                                    .font(.creatoDisplayHeadline())
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.white)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                                
+                                Spacer(minLength: 8)
+                                
+                                if topic.growthRate > 0 {
+                                    GrowthBadge(rate: topic.growthRate)
+                                }
+                            }
+                            
+                            Text("\(topic.postCount) posts")
+                                .font(.creatoDisplayCaption(.regular))
+                                .foregroundStyle(.white.opacity(0.9))
+                        }
+                        
+                        Spacer()
+                        
+                        // Preview thumbnails
+                        PreviewThumbnails(posts: previewPosts)
+                    }
+                    .padding(16)
                 }
-                .padding(16)
             }
         }
         .buttonStyle(.plain)
@@ -282,6 +300,82 @@ private struct HeroCard: View {
         }
         .onDisappear {
             stopSlideshow()
+        }
+        .task {
+            await checkFollowStatus()
+        }
+    }
+    
+    @ViewBuilder
+    private var followButton: some View {
+        if isCheckingFollowStatus {
+            ProgressView()
+                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                .scaleEffect(0.8)
+        } else {
+            Button(action: {
+                Task {
+                    await toggleFollow()
+                }
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: isFollowing ? "checkmark" : "plus")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text(isFollowing ? "Following" : "Follow")
+                        .font(.creatoDisplayCaption(.medium))
+                }
+                .foregroundColor(isFollowing ? .primary : .black)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    isFollowing
+                        ? Color.white.opacity(0.3)
+                        : Color.ora,
+                    in: .capsule
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(isLoading)
+        }
+    }
+    
+    private func checkFollowStatus() async {
+        isCheckingFollowStatus = true
+        do {
+            isFollowing = try await topicFollowService.isFollowingTopic(
+                topicName: topic.name,
+                topicType: topic.type
+            )
+        } catch {
+            print("❌ HeroCard: Failed to check follow status: \(error.localizedDescription)")
+            isFollowing = false
+        }
+        isCheckingFollowStatus = false
+    }
+    
+    private func toggleFollow() async {
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            if isFollowing {
+                try await topicFollowService.unfollowTopic(
+                    topicName: topic.name,
+                    topicType: topic.type
+                )
+                isFollowing = false
+            } else {
+                try await topicFollowService.followTopic(
+                    topicName: topic.name,
+                    topicType: topic.type
+                )
+                isFollowing = true
+                
+                // Notify feed to refresh
+                NotificationCenter.default.post(name: Foundation.Notification.Name.feedShouldRefresh, object: nil)
+            }
+        } catch {
+            print("❌ HeroCard: Failed to toggle follow: \(error.localizedDescription)")
         }
     }
     
@@ -443,29 +537,101 @@ struct TrendingTopicButton: View {
     let topic: TrendingTopic
     @Binding var navigationPath: NavigationPath
     
+    @State private var isFollowing = false
+    @State private var isLoading = false
+    @State private var isCheckingFollowStatus = true
+    
+    private let topicFollowService = TopicFollowService.shared
+    
     var body: some View {
-        Button(action: {
-            navigationPath.append(topic)
-        }) {
-            HStack(spacing: 4) {
-                Text(topic.name)
-                    .font(.subheadline)
-                    .fontWeight(.regular)
-                
-                if topic.growthRate > 0 {
-                    Image(systemName: "arrow.up.right")
+        HStack(spacing: 8) {
+            // Main button for navigation
+            Button(action: {
+                navigationPath.append(topic)
+            }) {
+                HStack(spacing: 4) {
+                    Text(topic.name)
+                        .font(.subheadline)
+                        .fontWeight(.regular)
+                    
+                    if topic.growthRate > 0 {
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption2)
+                    }
+                    
+                    Text("(\(topic.postCount))")
                         .font(.caption2)
+                        .opacity(0.7)
                 }
-                
-                Text("(\(topic.postCount))")
-                    .font(.caption2)
-                    .opacity(0.7)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.gray.opacity(0.2))
+                .foregroundColor(.primary)
+                .cornerRadius(20)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color.gray.opacity(0.2))
-            .foregroundColor(.primary)
-            .cornerRadius(20)
+            .buttonStyle(.plain)
+            
+            // Follow button (separate from navigation)
+            if isCheckingFollowStatus {
+                ProgressView()
+                    .scaleEffect(0.7)
+                    .frame(width: 24, height: 24)
+            } else {
+                Button(action: {
+                    Task {
+                        await toggleFollow()
+                    }
+                }) {
+                    Image(systemName: isFollowing ? "checkmark.circle.fill" : "plus.circle")
+                        .font(.system(size: 20))
+                        .foregroundColor(isFollowing ? .accentColor : .secondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(isLoading)
+            }
+        }
+        .task {
+            await checkFollowStatus()
+        }
+    }
+    
+    private func checkFollowStatus() async {
+        isCheckingFollowStatus = true
+        do {
+            isFollowing = try await topicFollowService.isFollowingTopic(
+                topicName: topic.name,
+                topicType: topic.type
+            )
+        } catch {
+            print("❌ TrendingTopicButton: Failed to check follow status: \(error.localizedDescription)")
+            isFollowing = false
+        }
+        isCheckingFollowStatus = false
+    }
+    
+    private func toggleFollow() async {
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            if isFollowing {
+                try await topicFollowService.unfollowTopic(
+                    topicName: topic.name,
+                    topicType: topic.type
+                )
+                isFollowing = false
+            } else {
+                try await topicFollowService.followTopic(
+                    topicName: topic.name,
+                    topicType: topic.type
+                )
+                isFollowing = true
+                
+                // Notify feed to refresh
+                NotificationCenter.default.post(name: Foundation.Notification.Name.feedShouldRefresh, object: nil)
+            }
+        } catch {
+            print("❌ TrendingTopicButton: Failed to toggle follow: \(error.localizedDescription)")
         }
     }
 }

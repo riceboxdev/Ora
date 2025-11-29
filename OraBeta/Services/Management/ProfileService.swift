@@ -307,6 +307,50 @@ class ProfileService: ProfileServiceProtocol {
         return followDoc.exists
     }
     
+    /// Get list of users following a specific user (followers)
+    func getFollowers(userId: String, limit: Int = 50) async throws -> [UserProfile] {
+        let snapshot = try await db.collection("follows")
+            .whereField("followingId", isEqualTo: userId)
+            .limit(to: limit)
+            .getDocuments()
+        
+        var followerIds: [String] = []
+        for doc in snapshot.documents {
+            if let followerId = doc.data()["followerId"] as? String {
+                followerIds.append(followerId)
+            }
+        }
+        
+        guard !followerIds.isEmpty else {
+            return []
+        }
+        
+        let profiles = try await getUserProfiles(userIds: followerIds)
+        return Array(profiles.values)
+    }
+    
+    /// Get list of users that a specific user is following
+    func getFollowing(userId: String, limit: Int = 50) async throws -> [UserProfile] {
+        let snapshot = try await db.collection("follows")
+            .whereField("followerId", isEqualTo: userId)
+            .limit(to: limit)
+            .getDocuments()
+        
+        var followingIds: [String] = []
+        for doc in snapshot.documents {
+            if let followingId = doc.data()["followingId"] as? String {
+                followingIds.append(followingId)
+            }
+        }
+        
+        guard !followingIds.isEmpty else {
+            return []
+        }
+        
+        let profiles = try await getUserProfiles(userIds: followingIds)
+        return Array(profiles.values)
+    }
+    
     // MARK: - Username Availability
     
     /// Check if a username is available

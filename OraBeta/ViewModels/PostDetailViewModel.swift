@@ -244,7 +244,7 @@ class PostDetailViewModel: ObservableObject {
     /// Load latest comment
     func loadLatestComment() async {
         do {
-            let comments = try await engagementService.getComments(postId: post.id)
+            let comments = try await engagementService.getComments(postId: post.id, postAuthorId: post.userId)
             
             // Get the most recent comment (last in array, as they're sorted by createdAt ascending)
             latestComment = comments.last

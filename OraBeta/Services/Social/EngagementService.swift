@@ -27,8 +27,8 @@ class EngagementService {
     }
     
     /// Get comments for a post
-    func getComments(postId: String) async throws -> [Comment] {
-        return try await commentService.getComments(postId: postId)
+    func getComments(postId: String, postAuthorId: String? = nil) async throws -> [Comment] {
+        return try await commentService.getComments(postId: postId, postAuthorId: postAuthorId)
     }
     
     /// Get like count for a post

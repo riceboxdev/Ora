@@ -49,7 +49,14 @@ struct Logger {
         }()
         
         // Check if we should log this message
-        guard LoggingConfig.shouldLog(service: service, level: logLevel) else {
+        let shouldLog = LoggingConfig.shouldLog(service: service, level: logLevel)
+        if !shouldLog {
+            // Debug: Log why we're not logging (only in debug builds to avoid infinite loops)
+            #if DEBUG
+            let isEnabled = LoggingServiceRegistry.shared.isEnabled(serviceName: service)
+            let serviceLogLevel = LoggingConfig.logLevel(for: service)
+            print("🔇 [DEBUG] Logging suppressed for \(service): enabled=\(isEnabled), logLevel=\(serviceLogLevel.rawValue), requiredLevel=\(logLevel.rawValue)")
+            #endif
             return
         }
         

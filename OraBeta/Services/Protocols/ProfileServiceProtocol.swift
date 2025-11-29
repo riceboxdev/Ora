@@ -49,6 +49,12 @@ protocol ProfileServiceProtocol {
     /// Check if current user is following another user
     func isFollowing(followingId: String) async throws -> Bool
     
+    /// Get list of users following a specific user (followers)
+    func getFollowers(userId: String, limit: Int) async throws -> [UserProfile]
+    
+    /// Get list of users that a specific user is following
+    func getFollowing(userId: String, limit: Int) async throws -> [UserProfile]
+    
     /// Check if a username is available
     func checkUsernameAvailability(username: String) async throws -> Bool
     

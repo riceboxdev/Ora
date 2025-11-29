@@ -33,9 +33,22 @@ class AnnouncementService: ObservableObject {
             .getDocuments()
         
         let allAnnouncements = try snapshot.documents.compactMap { doc -> Announcement? in
-            var announcement = try doc.data(as: Announcement.self)
-            announcement.id = doc.documentID
-            return announcement
+            do {
+                var announcement = try doc.data(as: Announcement.self)
+                announcement.id = doc.documentID
+                
+                // Debug logging
+                print("📢 AnnouncementService: Decoded announcement '\(announcement.title)' with \(announcement.pages.count) page(s)")
+                for (index, page) in announcement.pages.enumerated() {
+                    print("📢 AnnouncementService: Page \(index) - body: '\(page.body.prefix(50))...', title: \(page.title ?? "nil"), imageUrl: \(page.imageUrl ?? "nil")")
+                }
+                
+                return announcement
+            } catch {
+                print("❌ AnnouncementService: Error decoding announcement \(doc.documentID): \(error)")
+                print("❌ AnnouncementService: Document data: \(doc.data())")
+                return nil
+            }
         }
         
         // Filter announcements that user should see

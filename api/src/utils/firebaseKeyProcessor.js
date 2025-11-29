@@ -86,3 +86,6 @@ export function validateFirebaseCredentials(projectId, privateKey, clientEmail) 
   return true;
 }
 
+
+
+

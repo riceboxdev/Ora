@@ -13,6 +13,9 @@
 		FE06D1C52ED8BB9F007AA9CE /* FeatureFlags in Frameworks */ = {isa = PBXBuildFile; productRef = FE06D1C42ED8BB9F007AA9CE /* FeatureFlags */; };
 		FE06D1C82ED8BE84007AA9CE /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = FE06D1C72ED8BE84007AA9CE /* GoogleMobileAds */; };
 		FE06ED722ED8CE3D007AA9CE /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = FE06ED712ED8CE3D007AA9CE /* FirebaseMessaging */; };
+		FE2EFC282EDA637D005DCAEE /* AdMobUI in Frameworks */ = {isa = PBXBuildFile; productRef = FE2EFC272EDA637D005DCAEE /* AdMobUI */; };
+		FE2EFE782EDA94B1005DCAEE /* Waitlist in Frameworks */ = {isa = PBXBuildFile; productRef = FE2EFE772EDA94B1005DCAEE /* Waitlist */; };
+		FE2EFE7D2EDA9785005DCAEE /* Waitlist in Frameworks */ = {isa = PBXBuildFile; productRef = FE2EFE7C2EDA9785005DCAEE /* Waitlist */; };
 		FE51DB902EC3FE9B00799235 /* ColorKit in Frameworks */ = {isa = PBXBuildFile; productRef = FE51DB8F2EC3FE9B00799235 /* ColorKit */; };
 		FE6C6DD32EC2F4180047D107 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = FE6C6DD22EC2F4180047D107 /* Kingfisher */; };
 		FEB5E64C2EBE9D420016E80D /* MasonryStack in Frameworks */ = {isa = PBXBuildFile; productRef = FEB5E64B2EBE9D420016E80D /* MasonryStack */; };
@@ -118,6 +121,7 @@
 				FE06ED722ED8CE3D007AA9CE /* FirebaseMessaging in Frameworks */,
 				FEDFA8B72ED8D64800A5BEED /* OraBetaAdmin in Frameworks */,
 				FE06D1BF2ED8BB3F007AA9CE /* PageableKit in Frameworks */,
+				FE2EFC282EDA637D005DCAEE /* AdMobUI in Frameworks */,
 				FEDFA89E2ED8CF8700A5BEED /* FirebaseCore in Frameworks */,
 				FECADC902EC67A7000ECAA59 /* Boomerang in Frameworks */,
 				FE6C6DD32EC2F4180047D107 /* Kingfisher in Frameworks */,
@@ -137,8 +141,10 @@
 				FE51DB902EC3FE9B00799235 /* ColorKit in Frameworks */,
 				FECCCF8C2EC4EFE20064AB4C /* QuerySuggestions in Frameworks */,
 				FE06D1BC2ED8BAFA007AA9CE /* OraLogging in Frameworks */,
+				FE2EFE7D2EDA9785005DCAEE /* Waitlist in Frameworks */,
 				FEDFA8AA2ED8CF8700A5BEED /* FirebaseInAppMessaging-Beta in Frameworks */,
 				FEDFA8A02ED8CF8700A5BEED /* FirebaseCrashlytics in Frameworks */,
+				FE2EFE782EDA94B1005DCAEE /* Waitlist in Frameworks */,
 				FECCCF8A2EC4EFE20064AB4C /* Personalization in Frameworks */,
 				FEC517C12EBD2558006FED6A /* FirebaseFirestoreCombine-Community in Frameworks */,
 				FEDDDFD62ECBDD5B00C0B4C6 /* MasonryStack in Frameworks */,
@@ -327,6 +333,8 @@
 				FE06D1C32ED8BB9F007AA9CE /* XCLocalSwiftPackageReference "FeatureFlags" */,
 				FE06D1C62ED8BE84007AA9CE /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 				FEDFA8B52ED8D64800A5BEED /* XCLocalSwiftPackageReference "OraBetaAdminSDK" */,
+				FE2EFC262EDA637D005DCAEE /* XCRemoteSwiftPackageReference "AdMobUI" */,
+				FE2EFE7B2EDA9785005DCAEE /* XCRemoteSwiftPackageReference "Velvet" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FE9750202EB6D5A600FD36FA /* Products */;
@@ -861,6 +869,30 @@
 				minimumVersion = 12.14.0;
 			};
 		};
+		FE2EFC262EDA637D005DCAEE /* XCRemoteSwiftPackageReference "AdMobUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Uhucream/AdMobUI";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.2;
+			};
+		};
+		FE2EFE762EDA94B1005DCAEE /* XCRemoteSwiftPackageReference "Velvet" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/riceboxdev/Velvet";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+		FE2EFE7B2EDA9785005DCAEE /* XCRemoteSwiftPackageReference "Velvet" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/riceboxdev/Velvet";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		FE51DB8E2EC3FE9B00799235 /* XCRemoteSwiftPackageReference "ColorKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Boris-Em/ColorKit";
@@ -937,6 +969,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseMessaging;
+		};
+		FE2EFC272EDA637D005DCAEE /* AdMobUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FE2EFC262EDA637D005DCAEE /* XCRemoteSwiftPackageReference "AdMobUI" */;
+			productName = AdMobUI;
+		};
+		FE2EFE772EDA94B1005DCAEE /* Waitlist */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FE2EFE762EDA94B1005DCAEE /* XCRemoteSwiftPackageReference "Velvet" */;
+			productName = Waitlist;
+		};
+		FE2EFE7C2EDA9785005DCAEE /* Waitlist */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FE2EFE7B2EDA9785005DCAEE /* XCRemoteSwiftPackageReference "Velvet" */;
+			productName = Waitlist;
 		};
 		FE51DB8F2EC3FE9B00799235 /* ColorKit */ = {
 			isa = XCSwiftPackageProductDependency;

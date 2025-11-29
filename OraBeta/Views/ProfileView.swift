@@ -17,6 +17,8 @@ struct ProfileView: View {
     @State private var selectedPostIds: Set<String> = []
     @State private var showDeleteConfirmation = false
     @State private var isDeleting = false
+    @State private var showFollowersList = false
+    @State private var showFollowingList = false
     
     init() {
         // Create ViewModel with DIContainer services
@@ -115,20 +117,38 @@ struct ProfileView: View {
                             // Stats
                             HStack(spacing: 30) {
                                 VStack {
-                                    Text("\(profile.followerCount)")
+                                    Text("\(viewModel.postCount)")
                                         .font(.creatoDisplayHeadline())
-                                    Text("Followers")
+                                    Text(viewModel.postCount == 1 ? "Post" : "Posts")
                                         .font(.creatoDisplayCaption())
                                         .foregroundColor(.secondary)
                                 }
                                 
-                                VStack {
-                                    Text("\(profile.followingCount)")
-                                        .font(.creatoDisplayHeadline())
-                                    Text("Following")
-                                        .font(.creatoDisplayCaption())
-                                        .foregroundColor(.secondary)
+                                Button(action: {
+                                    showFollowersList = true
+                                }) {
+                                    VStack {
+                                        Text("\(profile.followerCount)")
+                                            .font(.creatoDisplayHeadline())
+                                        Text("Followers")
+                                            .font(.creatoDisplayCaption())
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
+                                .buttonStyle(.plain)
+                                
+                                Button(action: {
+                                    showFollowingList = true
+                                }) {
+                                    VStack {
+                                        Text("\(profile.followingCount)")
+                                            .font(.creatoDisplayHeadline())
+                                        Text("Following")
+                                            .font(.creatoDisplayCaption())
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                .buttonStyle(.plain)
                             }
                             .padding(.top, 8)
                         }
@@ -197,6 +217,16 @@ struct ProfileView: View {
                 }
             } message: {
                 Text("This action cannot be undone.")
+            }
+            .sheet(isPresented: $showFollowersList) {
+                if let userId = viewModel.profile?.id {
+                    FollowersFollowingView(userId: userId, type: .followers)
+                }
+            }
+            .sheet(isPresented: $showFollowingList) {
+                if let userId = viewModel.profile?.id {
+                    FollowersFollowingView(userId: userId, type: .following)
+                }
             }
         }
     }

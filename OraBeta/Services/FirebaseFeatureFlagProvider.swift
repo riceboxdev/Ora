@@ -66,25 +66,35 @@ public class FirebaseFeatureFlagProvider: FeatureFlagProvider {
     
     public func fetchFlags(completion: @escaping (Bool, Error?) -> Void) {
         guard let remoteConfig = remoteConfig else {
-            completion(false, NSError(domain: "FeatureFlags", code: -1, userInfo: [NSLocalizedDescriptionKey: "RemoteConfig not initialized"]))
+            let error = NSError(domain: "FeatureFlags", code: -1, userInfo: [NSLocalizedDescriptionKey: "RemoteConfig not initialized"])
+            print("FeatureFlags: RemoteConfig not initialized")
+            completion(false, error)
             return
         }
         
+        print("FeatureFlags: Starting Remote Config fetch...")
         remoteConfig.fetch { [weak self] status, error in
             guard let self = self, let remoteConfig = self.remoteConfig else {
+                print("FeatureFlags: RemoteConfig was deallocated during fetch")
                 completion(false, error)
                 return
             }
             
+            print("FeatureFlags: Fetch completed with status: \(status.rawValue), error: \(error?.localizedDescription ?? "none")")
+            
             if status == .success {
                 remoteConfig.activate { changed, error in
                     if let error = error {
+                        print("FeatureFlags: Failed to activate Remote Config: \(error.localizedDescription)")
                         completion(false, error)
                     } else {
+                        print("FeatureFlags: Remote Config activated successfully (changed: \(changed))")
                         completion(true, nil)
                     }
                 }
             } else {
+                let errorMessage = error?.localizedDescription ?? "Unknown error"
+                print("FeatureFlags: Remote Config fetch failed with status \(status.rawValue): \(errorMessage)")
                 completion(false, error)
             }
         }
@@ -101,6 +111,9 @@ public class FirebaseFeatureFlagProvider: FeatureFlagProvider {
         return value.isEmpty ? defaultValue : value
     }
 }
+
+
+
 
 
 

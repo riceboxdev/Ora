@@ -18,6 +18,8 @@ struct OtherProfileView: View {
     @State private var showBlockConfirmation = false
     @State private var showUnblockConfirmation = false
     @State private var isBlocking = false
+    @State private var showFollowersList = false
+    @State private var showFollowingList = false
     private let blockedUsersService = BlockedUsersService()
     
     init(userId: String) {
@@ -118,28 +120,38 @@ struct OtherProfileView: View {
                             // Stats
                             HStack(spacing: 30) {
                                 VStack {
-                                    Text("\(profile.followerCount)")
+                                    Text("\(viewModel.postCount)")
                                         .font(.creatoDisplayHeadline())
-                                    Text("Followers")
+                                    Text(viewModel.postCount == 1 ? "Post" : "Posts")
                                         .font(.creatoDisplayCaption())
                                         .foregroundColor(.secondary)
                                 }
                                 
-                                VStack {
-                                    Text("\(profile.followingCount)")
-                                        .font(.creatoDisplayHeadline())
-                                    Text("Following")
-                                        .font(.creatoDisplayCaption())
-                                        .foregroundColor(.secondary)
+                                Button(action: {
+                                    showFollowersList = true
+                                }) {
+                                    VStack {
+                                        Text("\(profile.followerCount)")
+                                            .font(.creatoDisplayHeadline())
+                                        Text("Followers")
+                                            .font(.creatoDisplayCaption())
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
+                                .buttonStyle(.plain)
                                 
-                                VStack {
-                                    Text("\(viewModel.posts.count)")
-                                        .font(.creatoDisplayHeadline())
-                                    Text(viewModel.posts.count == 1 ? "Post" : "Posts")
-                                        .font(.creatoDisplayCaption())
-                                        .foregroundColor(.secondary)
+                                Button(action: {
+                                    showFollowingList = true
+                                }) {
+                                    VStack {
+                                        Text("\(profile.followingCount)")
+                                            .font(.creatoDisplayHeadline())
+                                        Text("Following")
+                                            .font(.creatoDisplayCaption())
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
+                                .buttonStyle(.plain)
                             }
                             .padding(.top, 8)
                             
@@ -218,6 +230,12 @@ struct OtherProfileView: View {
             .refreshable {
                 await viewModel.refresh()
             }
+            .sheet(isPresented: $showFollowersList) {
+                FollowersFollowingView(userId: userId, type: .followers)
+            }
+            .sheet(isPresented: $showFollowingList) {
+                FollowersFollowingView(userId: userId, type: .following)
+            }
         }
     }
     
@@ -261,6 +279,8 @@ struct OtherProfileView: View {
         do {
             try await blockedUsersService.blockUser(blockedId: userId)
             isBlocked = true
+            // Invalidate cache to ensure immediate effect
+            blockedUsersService.invalidateCache()
             // Unfollow if following
             if viewModel.isFollowing {
                 await viewModel.toggleFollow()
@@ -276,6 +296,8 @@ struct OtherProfileView: View {
         do {
             try await blockedUsersService.unblockUser(blockedId: userId)
             isBlocked = false
+            // Invalidate cache to ensure immediate effect
+            blockedUsersService.invalidateCache()
         } catch {
             Logger.error("Failed to unblock user: \(error.localizedDescription)", service: "OtherProfileView")
         }

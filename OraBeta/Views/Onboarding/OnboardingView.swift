@@ -190,8 +190,10 @@ struct OnboardingView: View {
                 .navigationBarBackButtonHidden(true)
             }
         }
-        .onChange(of: viewModel.isEmailVerified) { isVerified in
-            if isVerified && !emailVerificationCompleted {
+        .onChange(of: viewModel.isEmailVerified) { oldValue, newValue in
+            print("📧 OnboardingView: Email verification status changed - old: \(oldValue), new: \(newValue)")
+            if newValue && !emailVerificationCompleted {
+                print("📧 OnboardingView: Email verified! Navigating to username page...")
                 emailVerificationCompleted = true
                 // Clear navigation path and set username as new root
                 navigationPath = NavigationPath()
@@ -649,6 +651,18 @@ struct EmailVerificationPage: View {
                 startPeriodicCheck()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // Check verification status when app comes to foreground (user might have verified in email app)
+            print("📧 EmailVerificationPage: App entering foreground, checking verification status...")
+            Task {
+                let wasVerified = viewModel.isEmailVerified
+                await viewModel.checkEmailVerificationStatus()
+                if !wasVerified && viewModel.isEmailVerified {
+                    print("📧 EmailVerificationPage: Email verified while app was in background!")
+                    navigationPath.append(OnboardingStep.username)
+                }
+            }
+        }
         .onDisappear {
             stopPeriodicCheck()
             stopResendTimer()
@@ -657,9 +671,19 @@ struct EmailVerificationPage: View {
     
     private func startPeriodicCheck() {
         stopPeriodicCheck() // Clear any existing timer
-        checkTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
-            Task {
+        checkTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak viewModel] timer in
+            Task { @MainActor [weak viewModel] in
+                guard let viewModel = viewModel else { return }
+                let wasVerified = viewModel.isEmailVerified
                 await viewModel.checkEmailVerificationStatus()
+                let isNowVerified = viewModel.isEmailVerified
+                
+                // If email was just verified, trigger navigation and stop checking
+                if !wasVerified && isNowVerified {
+                    print("📧 EmailVerificationPage: Email verified detected! Triggering navigation...")
+                    timer.invalidate() // Stop the timer
+                    // The onChange in parent view should handle navigation
+                }
             }
         }
     }

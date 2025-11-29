@@ -133,16 +133,20 @@ struct HomeFeedView: View {
                         profileService: viewModel.profileService
                     )
                 } else {
-                    VStack {
-                        Text("No posts yet")
+                    // Show empty state message for users with no follows
+                    VStack(spacing: 12) {
+                        Image(systemName: "person.2.circle")
+                            .font(.system(size: 48))
                             .foregroundColor(.secondary)
-                        Text("Follow users to see their posts in your feed")
-                            .font(.caption)
+                        
+                        Text("Posts will show up here when you follow people or topics")
+                            .font(.creatoDisplayBody())
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.vertical, 60)
                 }
             }
         }
@@ -176,7 +180,9 @@ struct HomeFeedView: View {
                 PostGrid(
                     posts: $viewModel.posts,
                     onItemAppear: nil, // Disable item-based pagination
-                    adsEnabled: true // Enable ads on home feed
+                    adsEnabled: true, // Enable ads on home feed
+                    followedUserIds: viewModel.followedUserIds,
+                    followedTopicNames: viewModel.followedTopicNames
                 )
                 
                 

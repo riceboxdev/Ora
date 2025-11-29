@@ -1,5 +1,5 @@
 {
-  "originHash" : "000f8202bfb6ea94ba78267d0a520212566b76211f8b2b1ce313da4e988bbed6",
+  "originHash" : "635fa4835c0ebd682e1bd91b9961cf938d3c1d53bcc0846d25b7467ae6400468",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "bbe8b69694d7873315fd3a4ad41efe043e1c07c5",
         "version" : "1.2024072200.0"
+      }
+    },
+    {
+      "identity" : "admobui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Uhucream/AdMobUI",
+      "state" : {
+        "revision" : "48ce94c3aa8fa06383c660f669d483058c7f2211",
+        "version" : "1.0.2"
       }
     },
     {
@@ -197,6 +206,15 @@
       "state" : {
         "revision" : "5983ec232ac986e876995131993e5a8e6deb0ce4",
         "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "velvet",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/riceboxdev/Velvet",
+      "state" : {
+        "branch" : "main",
+        "revision" : "763d1a0f652b9f3b9c90beac495bd73144b2417d"
       }
     }
   ],
