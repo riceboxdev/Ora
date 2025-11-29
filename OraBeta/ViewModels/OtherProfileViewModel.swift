@@ -35,6 +35,9 @@ class OtherProfileViewModel: ObservableObject, PaginatableViewModel {
     private var lastPostDocument: QueryDocumentSnapshot?
     private let postsPerPage = 20
     private let container: DIContainer
+    // Debounce for load more requests
+    private var lastLoadMoreTime: Date?
+    private let loadMoreDebounceInterval: TimeInterval = 0.5 // 0.5 second debounce
     
     // MARK: - Initialization
     init(userId: String, container: DIContainer? = nil) {
@@ -98,9 +101,17 @@ class OtherProfileViewModel: ObservableObject, PaginatableViewModel {
             
             posts = result.posts
             lastPostDocument = result.lastDocument
+            
+            // If we got fewer posts than requested, there are no more
             hasMore = result.posts.count >= postsPerPage
             
+            // Also check if lastDocument is nil - if so, no more posts
+            if result.lastDocument == nil {
+                hasMore = false
+            }
+            
             print("✅ OtherProfileViewModel: Loaded \(posts.count) posts from Firestore")
+            print("   Has more: \(hasMore)")
         } catch {
             print("❌ OtherProfileViewModel: Error loading user posts: \(error)")
             errorMessage = "Failed to load posts: \(error.localizedDescription)"
@@ -111,10 +122,37 @@ class OtherProfileViewModel: ObservableObject, PaginatableViewModel {
     
     /// Load more posts (pagination)
     func loadMorePosts() async {
-        // Don't load if already loading or no more posts
-        guard !isLoadingMore, hasMore, lastPostDocument != nil else {
+        // Check basic conditions
+        guard hasMore, !isLoadingPosts else {
+            print("⚠️ OtherProfileViewModel: Cannot load more - hasMore: \(hasMore), isLoadingPosts: \(isLoadingPosts)")
+            isLoadingMore = false  // Reset if we can't proceed
             return
         }
+        
+        // Debounce: Wait if we loaded recently instead of cancelling
+        if let lastLoadTime = lastLoadMoreTime {
+            let timeSinceLastLoad = Date().timeIntervalSince(lastLoadTime)
+            if timeSinceLastLoad < loadMoreDebounceInterval {
+                let waitTime = loadMoreDebounceInterval - timeSinceLastLoad
+                print("⏸️ OtherProfileViewModel: Debouncing load more request - waiting \(String(format: "%.2f", waitTime))s")
+                
+                // Wait for the remaining time
+                try? await Task.sleep(nanoseconds: UInt64(waitTime * 1_000_000_000))
+            }
+        }
+        
+        guard let lastDoc = lastPostDocument else {
+            print("⚠️ OtherProfileViewModel: Cannot load more - no lastDocument")
+            hasMore = false
+            isLoadingMore = false
+            return
+        }
+        
+        // Set debounce time to prevent duplicate calls
+        lastLoadMoreTime = Date()
+        
+        print("🔄 OtherProfileViewModel: Loading more posts")
+        print("   Current post count: \(posts.count)")
         
         isLoadingMore = true
         
@@ -122,18 +160,34 @@ class OtherProfileViewModel: ObservableObject, PaginatableViewModel {
             let result = try await postService.getPosts(
                 userId: targetUserId,
                 limit: postsPerPage,
-                lastDocument: lastPostDocument
+                lastDocument: lastDoc
             )
+            
+            print("📦 OtherProfileViewModel: Received \(result.posts.count) posts from post service")
             
             // Append new posts
             posts.append(contentsOf: result.posts)
             lastPostDocument = result.lastDocument
-            hasMore = result.posts.count >= postsPerPage
+            
+            // Only set hasMore to false if we got 0 posts (true end of feed)
+            // Don't stop just because we got fewer than postsPerPage - that's not reliable
+            if result.posts.isEmpty {
+                hasMore = false
+                print("🏁 OtherProfileViewModel: End of feed reached (0 posts returned)")
+            } else {
+                print("✅ OtherProfileViewModel: More posts may be available (got \(result.posts.count) posts)")
+            }
             
             print("✅ OtherProfileViewModel: Loaded \(result.posts.count) more posts. Total: \(posts.count)")
+            print("   Has more: \(hasMore)")
         } catch {
             print("❌ OtherProfileViewModel: Error loading more posts: \(error)")
+            hasMore = false
         }
+        
+        print("✅ OtherProfileViewModel: loadMorePosts() completed")
+        print("   - Total posts now: \(posts.count)")
+        print("   - hasMore: \(hasMore)")
         
         isLoadingMore = false
     }
