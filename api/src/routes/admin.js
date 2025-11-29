@@ -2230,5 +2230,292 @@ router.put('/welcome-images/reorder', requireRole('super_admin', 'moderator'), a
   }
 });
 
+// =========================
+// Announcement Management Routes
+// =========================
+
+// @route   POST /api/admin/announcements
+// @desc    Create announcement
+// @access  Private (super_admin+)
+router.post('/announcements', requireRole('super_admin'), async (req, res) => {
+  try {
+    const { title, pages, targetAudience, status } = req.body;
+    
+    if (!title || !pages || !Array.isArray(pages) || pages.length === 0) {
+      return res.status(400).json({ message: 'title and pages (non-empty array) are required' });
+    }
+    
+    if (!targetAudience || !targetAudience.type) {
+      return res.status(400).json({ message: 'targetAudience with type is required' });
+    }
+    
+    const validStatuses = ['draft', 'active', 'archived'];
+    const announcementStatus = status || 'draft';
+    if (!validStatuses.includes(announcementStatus)) {
+      return res.status(400).json({ message: `status must be one of: ${validStatuses.join(', ')}` });
+    }
+    
+    const db = admin.firestore();
+    const adminId = req.admin.firebaseUid || req.admin._id?.toString() || 'unknown';
+    
+    // Validate pages structure
+    for (const page of pages) {
+      if (!page.body || typeof page.body !== 'string') {
+        return res.status(400).json({ message: 'Each page must have a body string' });
+      }
+    }
+    
+    const announcement = {
+      title,
+      pages,
+      targetAudience,
+      status: announcementStatus,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: adminId,
+      version: 1
+    };
+    
+    const announcementRef = await db.collection('announcements').add(announcement);
+    const announcementId = announcementRef.id;
+    
+    const doc = await announcementRef.get();
+    const data = doc.data();
+    
+    res.status(201).json({
+      success: true,
+      announcement: {
+        id: announcementId,
+        ...data
+      }
+    });
+  } catch (error) {
+    console.error('Error creating announcement:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   GET /api/admin/announcements
+// @desc    Get all announcements
+// @access  Private (super_admin+)
+router.get('/announcements', requireRole('super_admin'), async (req, res) => {
+  try {
+    // Verify Firebase Admin is initialized
+    if (!admin.apps.length) {
+      throw new Error('Firebase Admin not initialized');
+    }
+    
+    const db = admin.firestore();
+    const { status } = req.query;
+    
+    let query = db.collection('announcements');
+    
+    // If status filter is provided, apply it before ordering
+    if (status) {
+      query = query.where('status', '==', status);
+    }
+    
+    // Order by createdAt (descending) - if this fails, it might need a Firestore index
+    try {
+      query = query.orderBy('createdAt', 'desc');
+    } catch (orderError) {
+      console.warn('Could not order by createdAt, fetching without order:', orderError.message);
+      // Continue without ordering if index is missing
+    }
+    
+    const snapshot = await query.get();
+    const announcements = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    res.json({
+      success: true,
+      announcements
+    });
+  } catch (error) {
+    console.error('Error fetching announcements:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+    
+    // Provide more helpful error messages
+    let errorMessage = error.message || 'Failed to load announcements';
+    if (error.code === 8) {
+      errorMessage = 'Firestore index missing. Please create a composite index for announcements collection.';
+    } else if (error.code === 7) {
+      errorMessage = 'Permission denied. Please check Firestore security rules.';
+    } else if (error.message?.includes('not initialized')) {
+      errorMessage = 'Firebase Admin not initialized. Please check environment variables.';
+    }
+    
+    res.status(500).json({ 
+      message: errorMessage,
+      ...(process.env.NODE_ENV === 'development' && { details: error.message })
+    });
+  }
+});
+
+// @route   GET /api/admin/announcements/:id
+// @desc    Get single announcement
+// @access  Private (super_admin+)
+router.get('/announcements/:id', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const { id } = req.params;
+    
+    const doc = await db.collection('announcements').doc(id).get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ message: 'Announcement not found' });
+    }
+    
+    res.json({
+      success: true,
+      announcement: {
+        id: doc.id,
+        ...doc.data()
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching announcement:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   PUT /api/admin/announcements/:id
+// @desc    Update announcement
+// @access  Private (super_admin+)
+router.put('/announcements/:id', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const { id } = req.params;
+    const { title, pages, targetAudience, status } = req.body;
+    
+    const announcementRef = db.collection('announcements').doc(id);
+    const doc = await announcementRef.get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ message: 'Announcement not found' });
+    }
+    
+    const existingData = doc.data();
+    const updateData = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    if (title !== undefined) updateData.title = title;
+    if (pages !== undefined) {
+      if (!Array.isArray(pages) || pages.length === 0) {
+        return res.status(400).json({ message: 'pages must be a non-empty array' });
+      }
+      // Validate pages
+      for (const page of pages) {
+        if (!page.body || typeof page.body !== 'string') {
+          return res.status(400).json({ message: 'Each page must have a body string' });
+        }
+      }
+      updateData.pages = pages;
+    }
+    if (targetAudience !== undefined) updateData.targetAudience = targetAudience;
+    if (status !== undefined) {
+      const validStatuses = ['draft', 'active', 'archived'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: `status must be one of: ${validStatuses.join(', ')}` });
+      }
+      updateData.status = status;
+    }
+    
+    // Increment version if content changed
+    if (title !== undefined || pages !== undefined || targetAudience !== undefined) {
+      updateData.version = (existingData.version || 1) + 1;
+    }
+    
+    await announcementRef.update(updateData);
+    
+    const updatedDoc = await announcementRef.get();
+    
+    res.json({
+      success: true,
+      announcement: {
+        id: updatedDoc.id,
+        ...updatedDoc.data()
+      }
+    });
+  } catch (error) {
+    console.error('Error updating announcement:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   DELETE /api/admin/announcements/:id
+// @desc    Delete/archive announcement
+// @access  Private (super_admin+)
+router.delete('/announcements/:id', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const { id } = req.params;
+    
+    const announcementRef = db.collection('announcements').doc(id);
+    const doc = await announcementRef.get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ message: 'Announcement not found' });
+    }
+    
+    // Archive instead of deleting to preserve history
+    await announcementRef.update({
+      status: 'archived',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    res.json({
+      success: true,
+      message: 'Announcement archived'
+    });
+  } catch (error) {
+    console.error('Error archiving announcement:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   GET /api/admin/announcements/:id/stats
+// @desc    Get announcement view statistics
+// @access  Private (super_admin+)
+router.get('/announcements/:id/stats', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const { id } = req.params;
+    
+    // Get all views for this announcement
+    const viewsSnapshot = await db.collection('announcement_views')
+      .where('announcementId', '==', id)
+      .get();
+    
+    const totalViews = viewsSnapshot.size;
+    const uniqueUsers = new Set();
+    viewsSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.userId) {
+        uniqueUsers.add(data.userId);
+      }
+    });
+    
+    res.json({
+      success: true,
+      stats: {
+        totalViews,
+        uniqueUsers: uniqueUsers.size,
+        announcementId: id
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching announcement stats:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
 
