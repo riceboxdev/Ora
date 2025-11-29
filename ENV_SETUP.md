@@ -5,6 +5,7 @@
 The following environment variables have been added to your Vercel project:
 
 - ✅ `MONGODB_URI` - Set to placeholder (update with your actual MongoDB URI)
+- ✅ `MONGODB_DB_NAME` - Database name override (optional, defaults to database name in URI)
 - ✅ `JWT_SECRET` - Generated secure secret
 - ✅ `FIREBASE_PROJECT_ID` - `angles-423a4`
 - ✅ `VITE_FIREBASE_API_KEY` - Firebase API key
@@ -39,10 +40,26 @@ From the same Service Accounts page:
 - Should look like: `firebase-adminsdk-xxxxx@angles-423a4.iam.gserviceaccount.com`
 - Add to Vercel as `FIREBASE_CLIENT_EMAIL`
 
-### 3. Update MONGODB_URI
-The current value is a placeholder. Update it with your actual MongoDB connection string:
-- MongoDB Atlas: `mongodb+srv://username:password@cluster.mongodb.net/orabeta-admin`
-- Local MongoDB: `mongodb://localhost:27017/orabeta-admin`
+### 3. Update MONGODB_URI and MONGODB_DB_NAME
+
+**MONGODB_URI**: The current value is a placeholder. Update it with your actual MongoDB connection string:
+- MongoDB Atlas: `mongodb+srv://username:password@cluster.mongodb.net/shared-cluster?retryWrites=true&w=majority`
+- Local MongoDB: `mongodb://localhost:27017/shared-cluster`
+- **Note**: The database name in the URI can be a placeholder (e.g., `shared-cluster`) as it will be overridden by `MONGODB_DB_NAME` if set.
+
+**MONGODB_DB_NAME** (Recommended): Set this to specify which database to use. This allows:
+- Using the same connection string across multiple projects
+- Easy switching between databases via environment variables
+- Better separation of configuration from code
+- Example: `ios-app-dashboard` (this project) or `velvet-waitlist` (other project)
+
+**Configuration Example:**
+```
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/shared-cluster?retryWrites=true&w=majority
+MONGODB_DB_NAME=ios-app-dashboard
+```
+
+The connection code will automatically replace `shared-cluster` with `ios-app-dashboard` when connecting.
 
 ## How to Add Missing Variables
 
@@ -75,6 +92,7 @@ vercel --prod
 ```
 
 Or trigger a redeploy from the Vercel dashboard.
+
 
 
 

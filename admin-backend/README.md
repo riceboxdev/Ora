@@ -15,7 +15,8 @@ cp .env.example .env
 ```
 
 3. Update `.env` with your configuration:
-- `MONGODB_URI`: MongoDB connection string
+- `MONGODB_URI`: MongoDB connection string (shared cluster, database name can be a placeholder)
+- `MONGODB_DB_NAME`: Database name override (optional, recommended for multi-project setups)
 - `JWT_SECRET`: Secret key for JWT tokens
 - `FIREBASE_PROJECT_ID`: Firebase project ID
 - `FIREBASE_PRIVATE_KEY`: Firebase private key
@@ -50,7 +51,10 @@ Or connect via GitHub and set **Root Directory** to `admin-backend`.
 1. Create a free account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
 2. Create a new cluster
 3. Get your connection string
-4. Add as `MONGODB_URI` in environment variables
+4. Add as `MONGODB_URI` in environment variables (database name can be a placeholder like `shared-cluster`)
+5. (Recommended) Add `MONGODB_DB_NAME` to specify the database name (e.g., `ios-app-dashboard`)
+   - This allows using the same connection string across multiple projects
+   - Each project can use a different database name for data isolation
 
 ## API Endpoints
 

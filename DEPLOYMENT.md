@@ -20,8 +20,15 @@ You need to set the following environment variables in the Vercel dashboard:
 
 ### Backend Environment Variables
 
-1. **MONGODB_URI** - MongoDB connection string
-   - Example: `mongodb+srv://username:password@cluster.mongodb.net/orabeta-admin`
+1. **MONGODB_URI** - MongoDB connection string (shared cluster)
+   - Example: `mongodb+srv://username:password@cluster.mongodb.net/shared-cluster?retryWrites=true&w=majority`
+   - The database name in the URI can be a placeholder (e.g., `shared-cluster`) as it will be overridden by `MONGODB_DB_NAME` if set
+
+2. **MONGODB_DB_NAME** - Database name override (recommended)
+   - Example: `ios-app-dashboard`
+   - This allows using the same connection string across multiple projects while keeping data isolated
+   - If not set, the database name from `MONGODB_URI` will be used
+   - **Important**: This project should use a different database name than other projects (e.g., `velvet-waitlist` uses `velvet-waitlist`, this project should use `ios-app-dashboard`)
 
 2. **JWT_SECRET** - Secret key for JWT tokens
    - Generate with: `openssl rand -hex 32`
