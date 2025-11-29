@@ -169,7 +169,26 @@ export default {
 
     const formatDate = (timestamp) => {
       if (!timestamp) return '';
-      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      // Handle ISO string, Date object, or Firestore timestamp object
+      let date;
+      if (typeof timestamp === 'string') {
+        date = new Date(timestamp);
+      } else if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+        date = timestamp.toDate();
+      } else if (timestamp._seconds !== undefined || timestamp.seconds !== undefined) {
+        // Handle serialized Firestore timestamp
+        const seconds = timestamp._seconds || timestamp.seconds || 0;
+        const nanoseconds = timestamp._nanoseconds || timestamp.nanoseconds || 0;
+        date = new Date(seconds * 1000 + nanoseconds / 1000000);
+      } else {
+        date = new Date(timestamp);
+      }
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      
       return date.toLocaleString();
     };
 

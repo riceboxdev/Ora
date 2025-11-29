@@ -53,6 +53,41 @@ const router = express.Router();
 router.use(protect);
 router.use(apiRateLimiter);
 
+// Helper function to convert Firestore timestamps to ISO strings
+const convertFirestoreTimestamps = (data) => {
+  if (!data || typeof data !== 'object') {
+    return data;
+  }
+  
+  if (data instanceof Date) {
+    return data.toISOString();
+  }
+  
+  // Check if it's a Firestore Timestamp
+  if (data.toDate && typeof data.toDate === 'function') {
+    return data.toDate().toISOString();
+  }
+  
+  // Check if it's a serialized Firestore timestamp (has _seconds and _nanoseconds)
+  if (data._seconds !== undefined || data.seconds !== undefined) {
+    const seconds = data._seconds || data.seconds || 0;
+    const nanoseconds = data._nanoseconds || data.nanoseconds || 0;
+    return new Date(seconds * 1000 + nanoseconds / 1000000).toISOString();
+  }
+  
+  // Recursively process objects and arrays
+  if (Array.isArray(data)) {
+    return data.map(item => convertFirestoreTimestamps(item));
+  }
+  
+  const converted = {};
+  for (const [key, value] of Object.entries(data)) {
+    converted[key] = convertFirestoreTimestamps(value);
+  }
+  
+  return converted;
+};
+
 // Helper to call Firebase Functions
 const callFirebaseFunction = async (functionName, data, adminUser) => {
   // In production, you would call the actual Firebase Function
@@ -2284,10 +2319,10 @@ router.post('/announcements', requireRole('super_admin'), async (req, res) => {
     
     res.status(201).json({
       success: true,
-      announcement: {
+      announcement: convertFirestoreTimestamps({
         id: announcementId,
         ...data
-      }
+      })
     });
   } catch (error) {
     console.error('Error creating announcement:', error);
@@ -2324,10 +2359,13 @@ router.get('/announcements', requireRole('super_admin'), async (req, res) => {
     }
     
     const snapshot = await query.get();
-    const announcements = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const announcements = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return convertFirestoreTimestamps({
+        id: doc.id,
+        ...data
+      });
+    });
     
     res.json({
       success: true,
@@ -2372,12 +2410,13 @@ router.get('/announcements/:id', requireRole('super_admin'), async (req, res) =>
       return res.status(404).json({ message: 'Announcement not found' });
     }
     
+    const data = doc.data();
     res.json({
       success: true,
-      announcement: {
+      announcement: convertFirestoreTimestamps({
         id: doc.id,
-        ...doc.data()
-      }
+        ...data
+      })
     });
   } catch (error) {
     console.error('Error fetching announcement:', error);
@@ -2436,13 +2475,14 @@ router.put('/announcements/:id', requireRole('super_admin'), async (req, res) =>
     await announcementRef.update(updateData);
     
     const updatedDoc = await announcementRef.get();
+    const updatedData = updatedDoc.data();
     
     res.json({
       success: true,
-      announcement: {
+      announcement: convertFirestoreTimestamps({
         id: updatedDoc.id,
-        ...updatedDoc.data()
-      }
+        ...updatedData
+      })
     });
   } catch (error) {
     console.error('Error updating announcement:', error);
