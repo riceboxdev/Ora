@@ -1,6 +1,6 @@
-import express from 'express';
-import { protect, requireRole } from '../middleware/adminAuth.js';
-import * as classificationController from '../controllers/classificationController.js';
+const express = require('express');
+const { protect, requireRole } = require('../middleware/adminAuth.js');
+const classificationController = require('../controllers/classificationController.js');
 
 const router = express.Router();
 
@@ -23,4 +23,4 @@ router.post('/:postId/interests', requireRole('super_admin', 'moderator'), class
 router.delete('/:postId/interests/:interestId', requireRole('super_admin', 'moderator'), classificationController.removeInterest);
 router.post('/:postId/reclassify', requireRole('super_admin', 'moderator'), classificationController.reclassifyPost);
 
-export default router;
+module.exports = router;

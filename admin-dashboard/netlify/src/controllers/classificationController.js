@@ -1,5 +1,5 @@
-import { db } from '../config/firebase.js';
-import admin from 'firebase-admin';
+const { db } = require('../config/firebase.js');
+const admin = require('firebase-admin');
 
 // Helper to update post interest fields
 async function updatePostInterestFields(postId) {
@@ -33,7 +33,7 @@ async function updatePostInterestFields(postId) {
     });
 }
 
-export const getClassifications = async (req, res) => {
+const getClassifications = async (req, res) => {
     try {
         const {
             interestId,
@@ -374,4 +374,16 @@ export const getLowConfidencePosts = async (req, res) => {
         console.error('Error getting low confidence posts:', error);
         res.status(500).json({ message: error.message });
     }
+};
+
+module.exports = {
+    getClassifications,
+    getClassification,
+    addInterest,
+    removeInterest,
+    reclassifyPost,
+    bulkClassify,
+    bulkReclassify,
+    getAnalytics,
+    getLowConfidencePosts
 };
