@@ -59,9 +59,16 @@ app.use((req, res, next) => {
   urlencodedParser(req, res, next);
 });
 
-// Log all requests for debugging
+// Enhanced logging for debugging Vercel routing
 app.use((req, res, next) => {
-  console.log(`[${req.method}] ${req.path}`, req.url);
+  console.log('=== INCOMING REQUEST ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Path:', req.path);
+  console.log('Original URL:', req.originalUrl);
+  console.log('Base URL:', req.baseUrl);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('========================');
   next();
 });
 
