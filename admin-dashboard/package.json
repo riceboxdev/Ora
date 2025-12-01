@@ -13,6 +13,7 @@
     "@heroicons/vue": "^2.2.0",
     "@vueform/multiselect": "^2.6.6",
     "axios": "^1.6.5",
+    "bcryptjs": "^2.4.3",
     "chart.js": "^4.4.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
