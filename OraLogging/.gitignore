@@ -1,0 +1,13 @@
+.DS_Store
+/.build
+/Packages
+/*.xcodeproj
+xcuserdata/
+DerivedData/
+.swiftpm/xcode/package.xcworkspace/xcshareddata/
+.swiftpm/xcode/package.xcworkspace/xcuserdata/
+.swiftpm/configuration/plugins/
+.swiftpm/xcode/package.xcworkspace/
+.swiftpm/configuration/workspace-state.json
+.swiftpm/org.swift.swiftpm/
+*.resolved
