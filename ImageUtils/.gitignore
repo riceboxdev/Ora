@@ -1,0 +1,96 @@
+# Xcode
+.DS_Store
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcuserdata/
+
+# Swift Package Manager
+.build/
+Packages/
+Package.pins
+Package.resolved
+*.xcodeproj
+*.xcworkspace
+
+# CocoaPods
+Pods/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code Injection
+*.xcodeproj/xcuserdata/*.xcuserdatad/xcdebugger/
+
+# Build generated
+.build/
+DerivedData/
+
+# Swift Package Manager generated files
+Package.resolved
+
+# macOS
+.DS_Store
+
+# Local development environment files
+.env
+.env.*
+!.env.example
+
+# Xcode user settings
+xcuserdata/
+
+# Swift Package Manager local dependencies
+.local-dependencies/
+
+# Swift Package Manager configuration
+Package.resolved
+Package.pins
+
+# Swift Package Manager build artifacts
+.build/
+
+# Swift Package Manager generated project
+*.xcodeproj
+
+# Swift Package Manager debug symbols
+dSYM/
+*.dSYM
+
+# Swift Package Manager test coverage
+*.profraw
+*.profdata
+
+# Swift Package Manager resolved versions
+.resolved/
+
+# Swift Package Manager cache
+.cache/
+
+# Swift Package Manager configuration
+Package.resolved
+Package.pins
+
+# Swift Package Manager local packages
+Packages/
+
+# Swift Package Manager build artifacts
+.build/
+
+# Swift Package Manager debug symbols
+dSYM/
+*.dSYM
+
+# Swift Package Manager test coverage
+*.profraw
+*.profdata
+
+# Swift Package Manager resolved versions
+.resolved/
+
+# Swift Package Manager cache
+.cache/

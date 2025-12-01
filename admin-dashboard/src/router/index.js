@@ -51,6 +51,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/interest-taxonomy',
+    name: 'InterestTaxonomy',
+    component: () => import('../../pages/InterestTaxonomy.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/settings',
     name: 'Settings',
     component: () => import('../../pages/Settings.vue'),
