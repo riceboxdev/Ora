@@ -25,6 +25,7 @@ const corsOptions = {
       'http://localhost:5173',
       'http://localhost:3000',
       'https://orabeta-admin-hotlny40o-nicks-projects-5b81dad2.vercel.app',
+      'https://oraadmin.netlify.app',
       process.env.DASHBOARD_URL,
       process.env.VERCEL_URL,
       process.env.VERCEL_BRANCH_URL
