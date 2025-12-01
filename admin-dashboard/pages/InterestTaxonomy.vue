@@ -364,7 +364,7 @@ import { useRouter } from 'vue-router';
 import AppHeader from '../components/AppHeader.vue';
 import InterestFormModal from '../components/InterestFormModal.vue';
 import ConfirmationModal from '../components/ConfirmationModal.vue';
-import * as interestService from '../services/interestService';
+import * as interestService from '../src/services/interestService';
 import { useToast } from 'vue-toastification';
 
 // State
