@@ -150,6 +150,16 @@ class PostService: PostServiceProtocol {
         Logger.info("   Post ID: \(postId)", service: "PostService")
         Logger.debug("   Duration: \(String(format: "%.2f", duration))s", service: "PostService")
         Logger.info("Post creation completed successfully!", service: "PostService")
+        
+        // Trigger automatic interest classification (async, don't wait)
+        Task {
+            do {
+                try await classifyPostInterests(postId: postId, caption: caption, tags: tags)
+            } catch {
+                Logger.warning("Failed to classify post interests: \(error.localizedDescription)", service: "PostService")
+                // Don't fail post creation if classification fails
+            }
+        }
 
         return postId
     }
@@ -477,5 +487,48 @@ class PostService: PostServiceProtocol {
         }
         
         return (deletedCount: deletedCount, errorCount: errorCount)
+    }
+    
+    // MARK: - Interest Classification
+    
+    /// Classify a post's interests automatically
+    /// This method fetches the post and runs it through the classification pipeline
+    /// - Parameters:
+    ///   - postId: The post ID to classify
+    ///   - caption: Optional caption (if already known)
+    ///   - tags: Optional tags (if already known)
+    private func classifyPostInterests(
+        postId: String,
+        caption: String? = nil,
+        tags: [String]? = nil
+    ) async throws {
+        Logger.info("🔍 Classifying interests for post: \(postId)", service: "PostService")
+        
+        // Fetch the post from Firestore to get complete data
+        let postDoc = try await db.collection("posts").document(postId).getDocument()
+        
+        guard postDoc.exists else {
+            Logger.warning("Post not found: \(postId)", service: "PostService")
+            return
+        }
+        
+        // Create Post object for classification
+        guard let post = await Post.from(firestoreData: postDoc.data() ?? [:], documentId: postId) else {
+            Logger.warning("Failed to create Post object for classification", service: "PostService")
+            return
+        }
+        
+        // Run classification
+        let classification = try await PostClassificationService.shared.classifyPost(post)
+        
+        Logger.info("✅ Classified post with \(classification.classifications.count) interests", service: "PostService")
+        
+        // Update post document with interest fields
+        try await PostClassificationService.shared.updatePostInterestFields(
+            postId: postId,
+            classification: classification
+        )
+        
+        Logger.info("✅ Updated post interest fields", service: "PostService")
     }
 }

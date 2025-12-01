@@ -57,9 +57,25 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/settings',
-    name: 'Settings',
     component: () => import('../../pages/Settings.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/classification',
+    name: 'PostClassificationViewer',
+    component: () => import('../../pages/PostClassificationViewer.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/classification/analytics',
+    name: 'ClassificationAnalytics',
+    component: () => import('../../pages/ClassificationAnalytics.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/classification/:postId',
+    name: 'ClassificationDetails',
+    component: () => import('../../pages/ClassificationDetails.vue'),
     meta: { requiresAuth: true }
   }
 ];
@@ -73,12 +89,12 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   try {
     const authStore = useAuthStore();
-    
+
     // Initialize auth from localStorage on first load
     if (!authStore.admin && localStorage.getItem('admin')) {
       authStore.initializeFromStorage();
     }
-    
+
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
       next('/login');
     } else if (to.path === '/login' && authStore.isAuthenticated) {

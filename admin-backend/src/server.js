@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
+import classificationRoutes from './routes/classification.js';
 
 // Load environment variables
 dotenv.config();
@@ -29,7 +30,7 @@ const corsOptions = {
       process.env.VERCEL_URL,
       process.env.VERCEL_BRANCH_URL
     ].filter(Boolean);
-    
+
     // In production, check against allowed origins
     if (process.env.NODE_ENV === 'production' && allowedOrigins.length > 0) {
       if (allowedOrigins.some(allowed => origin.includes(allowed))) {
@@ -77,6 +78,7 @@ app.use(async (req, res, next) => {
 
 // Routes
 app.use('/api/admin/auth', authRoutes);
+app.use('/api/admin/classifications', classificationRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Health check

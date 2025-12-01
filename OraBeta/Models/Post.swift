@@ -20,8 +20,14 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
     let imageWidth: Int?
     let imageHeight: Int?
     let caption: String?
-    let tags: [String]?
-    let categories: [String]?
+    let tags: [String]?                     // User-provided freeform tags
+    let categories: [String]?               // Legacy (deprecated)
+    
+    // Interest classification (Pin2Interest)
+    let interestIds: [String]?              // Classified interest IDs
+    let interestScores: [String: Double]?   // Interest ID → confidence score
+    let primaryInterestId: String?          // Main interest (highest confidence)
+    
     let likeCount: Int
     let commentCount: Int
     let viewCount: Int
@@ -42,6 +48,9 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         case caption
         case tags
         case categories
+        case interestIds
+        case interestScores
+        case primaryInterestId
         case likeCount
         case commentCount
         case viewCount
@@ -62,6 +71,9 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         caption: String? = nil,
         tags: [String]? = nil,
         categories: [String]? = nil,
+        interestIds: [String]? = nil,
+        interestScores: [String: Double]? = nil,
+        primaryInterestId: String? = nil,
         likeCount: Int = 0,
         commentCount: Int = 0,
         viewCount: Int = 0,
@@ -81,6 +93,9 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         self.caption = caption
         self.tags = tags
         self.categories = categories
+        self.interestIds = interestIds
+        self.interestScores = interestScores
+        self.primaryInterestId = primaryInterestId
         self.likeCount = likeCount
         self.commentCount = commentCount
         self.viewCount = viewCount
@@ -104,6 +119,9 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         caption = try container.decodeIfPresent(String.self, forKey: .caption)
         tags = try container.decodeIfPresent([String].self, forKey: .tags)
         categories = try container.decodeIfPresent([String].self, forKey: .categories)
+        interestIds = try container.decodeIfPresent([String].self, forKey: .interestIds)
+        interestScores = try container.decodeIfPresent([String: Double].self, forKey: .interestScores)
+        primaryInterestId = try container.decodeIfPresent(String.self, forKey: .primaryInterestId)
         likeCount = try container.decodeIfPresent(Int.self, forKey: .likeCount) ?? 0
         commentCount = try container.decodeIfPresent(Int.self, forKey: .commentCount) ?? 0
         viewCount = try container.decodeIfPresent(Int.self, forKey: .viewCount) ?? 0
@@ -135,6 +153,9 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         try container.encodeIfPresent(caption, forKey: .caption)
         try container.encodeIfPresent(tags, forKey: .tags)
         try container.encodeIfPresent(categories, forKey: .categories)
+        try container.encodeIfPresent(interestIds, forKey: .interestIds)
+        try container.encodeIfPresent(interestScores, forKey: .interestScores)
+        try container.encodeIfPresent(primaryInterestId, forKey: .primaryInterestId)
         try container.encode(likeCount, forKey: .likeCount)
         try container.encode(commentCount, forKey: .commentCount)
         try container.encode(viewCount, forKey: .viewCount)
@@ -266,6 +287,9 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
             caption: caption,
             tags: tags,
             categories: categories,
+            interestIds: nil,
+            interestScores: nil,
+            primaryInterestId: nil,
             likeCount: 0,
             commentCount: 0,
             viewCount: 0,
@@ -294,6 +318,9 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         let caption = firestoreData["caption"] as? String
         let tags = firestoreData["tags"] as? [String]
         let categories = firestoreData["categories"] as? [String]
+        let interestIds = firestoreData["interestIds"] as? [String]
+        let interestScores = firestoreData["interestScores"] as? [String: Double]
+        let primaryInterestId = firestoreData["primaryInterestId"] as? String
         let likeCount = firestoreData["likeCount"] as? Int ?? 0
         let commentCount = firestoreData["commentCount"] as? Int ?? 0
         let viewCount = firestoreData["viewCount"] as? Int ?? 0
@@ -335,6 +362,9 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
             caption: caption,
             tags: tags,
             categories: categories,
+            interestIds: interestIds,
+            interestScores: interestScores,
+            primaryInterestId: primaryInterestId,
             likeCount: likeCount,
             commentCount: commentCount,
             viewCount: viewCount,
