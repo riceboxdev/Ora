@@ -2,7 +2,7 @@
  * Processes and validates Firebase private key from environment variable
  * Handles various formats and encoding issues
  */
-export function processFirebasePrivateKey(rawKey) {
+function processFirebasePrivateKey(rawKey) {
   if (!rawKey || typeof rawKey !== 'string') {
     throw new Error('Private key must be a non-empty string');
   }
@@ -60,7 +60,7 @@ export function processFirebasePrivateKey(rawKey) {
 /**
  * Validates Firebase Admin credentials before initialization
  */
-export function validateFirebaseCredentials(projectId, privateKey, clientEmail) {
+function validateFirebaseCredentials(projectId, privateKey, clientEmail) {
   const errors = [];
 
   if (!projectId || typeof projectId !== 'string' || projectId.trim().length === 0) {
@@ -85,6 +85,8 @@ export function validateFirebaseCredentials(projectId, privateKey, clientEmail) 
 
   return true;
 }
+
+module.exports = { processFirebasePrivateKey, validateFirebaseCredentials };
 
 
 

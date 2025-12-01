@@ -1,4 +1,4 @@
-import admin from 'firebase-admin';
+const admin = require('firebase-admin');
 
 /**
  * Middleware to log admin actions to Firestore
@@ -6,7 +6,7 @@ import admin from 'firebase-admin';
  * @param {Object} res - Express response object
  * @param {Function} next - Express next function
  */
-export const logActivity = async (req, res, next) => {
+const logActivity = async (req, res, next) => {
   // Store original json method
   const originalJson = res.json.bind(res);
   
@@ -163,7 +163,7 @@ function sanitizeBody(body) {
 /**
  * Manual logging function for custom actions
  */
-export const logCustomActivity = async (adminId, action, targetType, targetId, metadata = {}) => {
+const logCustomActivity = async (adminId, action, targetType, targetId, metadata = {}) => {
   try {
     const db = admin.firestore();
     
@@ -182,6 +182,8 @@ export const logCustomActivity = async (adminId, action, targetType, targetId, m
     console.error('Error logging custom activity:', error);
   }
 };
+
+module.exports = { logActivity, logCustomActivity };
 
 
 
