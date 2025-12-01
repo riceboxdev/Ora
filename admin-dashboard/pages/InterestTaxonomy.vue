@@ -609,11 +609,14 @@ const fetchInterests = async () => {
       includeStats: true,
       includeInactive: true
     });
-    interests.value = response.data;
+    // The service already returns response.data, so we use response directly
+    // Add fallback to ensure we always have an array
+    interests.value = Array.isArray(response) ? response : (Array.isArray(response?.data) ? response.data : []);
     loading.value = false;
   } catch (error) {
     console.error('Failed to fetch interests:', error);
     toast.error('Failed to load interests. Please try again.');
+    interests.value = []; // Ensure interests is still an array on error
     loading.value = false;
   }
 };
