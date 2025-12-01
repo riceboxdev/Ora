@@ -6,31 +6,60 @@
 **/node_modules/
 node_modules/
 
-# Build outputs (will be generated during build)
-**/dist/
-**/build/
-dist/
-build/
+# Build# Git
+.git
+.gitignore
 
-# iOS app files (not needed for web deployment)
+# macOS
+.DS_Store
+
+# Node
+node_modules
+npm-debug.log
+
+# Build
+dist
+build
+.next
+out
+.vercel
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Ignore admin-backend directory (consolidated into /api)
+admin-backend/
+
+# iOS/Xcode specific files
+*.xcodeproj
+*.xcworkspace
 OraBeta/
-OraBeta.xcodeproj/
-OraBetaAdminSDK/
 OraBetaTests/
 OraBetaUITests/
+*.pbxproj
+*.plist
+*.storyboard
+*.xib
 
-# Firebase functions (deployed separately)
-functions/
+# Swift Package Manager
+.swiftpm
+.build
 
-# Log files
+# Other
 *.log
-build*.log
+.cachebuild*.log
 
 # OS files
 .DS_Store
-Thumbs.db
-
-# IDE files
 .idea/
 .vscode/
 
