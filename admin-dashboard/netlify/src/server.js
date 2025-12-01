@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
-import classificationRoutes from './routes/classification.js';
 
 // Load environment variables
 dotenv.config();
@@ -19,66 +18,69 @@ if (process.env.VERCEL !== '1') {
 // Configure CORS
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (same-origin requests, mobile apps, curl)
-    if (!origin) {
-      return callback(null, true);
-    }
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
     const allowedOrigins = [
       'http://localhost:5173',
       'http://localhost:3000',
+      'https://orabeta-admin-hotlny40o-nicks-projects-5b81dad2.vercel.app',
+      'https://oraadmin.netlify.app',
       process.env.DASHBOARD_URL,
       process.env.VERCEL_URL,
       process.env.VERCEL_BRANCH_URL
     ].filter(Boolean);
 
+    // Allow all origins in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Allowing CORS for origin: ${origin} (development mode)`);
+      return callback(null, true);
+    }
+
     // In production, check against allowed origins
-    if (process.env.NODE_ENV === 'production' && allowedOrigins.length > 0) {
-      if (allowedOrigins.some(allowed => origin.includes(allowed))) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Allow all for now, can restrict later
-      }
-    } else {
-      // In development, allow all
+    if (allowedOrigins.some(allowed => 
+      origin === allowed || 
+      origin.includes(allowed) ||
+      (new URL(allowed).hostname && origin.endsWith(new URL(allowed).hostname))
+    )) {
+      console.log(`Allowing CORS for origin: ${origin}`);
       callback(null, true);
+    } else {
+      console.warn('CORS blocked request from origin:', origin);
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   exposedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  preflightContinue: false
 };
 
+// Apply CORS middleware with preflight support
+app.options('*', cors(corsOptions)); // Enable preflight for all routes
 app.use(cors(corsOptions));
+
+// Ensure DB connection for serverless functions (skip for OPTIONS)
+app.use(async (req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error('Database connection error:', error);
+    res.status(500).json({ message: 'Database connection failed' });
+  }
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Ensure DB connection for serverless functions (skip for OPTIONS)
-// Note: MongoDB is only needed for AdminUser authentication, not for Firestore routes
-// So we make this optional - routes that need MongoDB will handle connection errors
-app.use(async (req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    return next();
-  }
-  // Only attempt MongoDB connection if MONGODB_URI is configured
-  // Most routes use Firestore, so MongoDB connection is optional
-  if (process.env.MONGODB_URI) {
-    try {
-      await connectDB();
-    } catch (error) {
-      // Log but don't block - routes that need MongoDB will handle the error
-      // Most routes (announcements, settings, etc.) use Firestore, not MongoDB
-      console.warn('MongoDB connection warning (non-blocking):', error.message);
-    }
-  }
-  next();
-});
-
 // Routes
 app.use('/api/admin/auth', authRoutes);
-app.use('/api/admin/classifications', classificationRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Health check

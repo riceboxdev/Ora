@@ -127,3 +127,7 @@ dist/
 # ML Model files (too large for GitHub)
 *.mlpackage/
 **/weights/*.bin
+.vercel
+
+# Local Netlify folder
+.netlify

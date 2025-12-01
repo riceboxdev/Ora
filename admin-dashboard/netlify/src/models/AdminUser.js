@@ -55,15 +55,3 @@ const AdminUser = mongoose.model('AdminUser', adminUserSchema);
 
 export default AdminUser;
 
-
-
-
-
-
-
-
-
-
-
-
-
