@@ -466,6 +466,7 @@ const stats = computed(() => {
 // Methods
 const openCreateModal = () => {
   currentInterest.value = {
+    id: null,
     name: '',
     displayName: '',
     parentId: null,
@@ -473,14 +474,32 @@ const openCreateModal = () => {
     isActive: true,
     keywords: [],
     synonyms: [],
-    relatedInterestIds: []
+    relatedInterestIds: [],
+    postCount: 0,
+    followerCount: 0,
+    level: 0,
+    path: []
   };
   modalMode.value = 'create';
   showInterestModal.value = true;
 };
 
 const openEditModal = (interest) => {
-  currentInterest.value = { ...interest };
+  currentInterest.value = { 
+    id: interest.id || null,
+    name: interest.name || '',
+    displayName: interest.displayName || '',
+    parentId: interest.parentId || null,
+    description: interest.description || '',
+    isActive: interest.isActive !== undefined ? interest.isActive : true,
+    keywords: Array.isArray(interest.keywords) ? [...interest.keywords] : [],
+    synonyms: Array.isArray(interest.synonyms) ? [...interest.synonyms] : [],
+    relatedInterestIds: Array.isArray(interest.relatedInterestIds) ? [...interest.relatedInterestIds] : [],
+    postCount: interest.postCount || 0,
+    followerCount: interest.followerCount || 0,
+    level: interest.level || 0,
+    path: Array.isArray(interest.path) ? [...interest.path] : []
+  };
   modalMode.value = 'edit';
   showInterestModal.value = true;
 };
