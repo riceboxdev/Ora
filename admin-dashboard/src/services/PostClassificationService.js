@@ -2,30 +2,30 @@ import api from './api';
 
 export default {
     getClassifications(params) {
-        return api.get('/admin/classifications', { params });
+        return api.get('/api/admin/classifications', { params });
     },
     getClassification(postId) {
-        return api.get(`/admin/classifications/${postId}`);
+        return api.get(`/api/admin/classifications/${postId}`);
     },
     addInterest(postId, data) {
-        return api.post(`/admin/classifications/${postId}/interests`, data);
+        return api.post(`/api/admin/classifications/${postId}/interests`, data);
     },
     removeInterest(postId, interestId) {
-        return api.delete(`/admin/classifications/${postId}/interests/${interestId}`);
+        return api.delete(`/api/admin/classifications/${postId}/interests/${interestId}`);
     },
     reclassifyPost(postId) {
-        return api.post(`/admin/classifications/${postId}/reclassify`);
+        return api.post(`/api/admin/classifications/${postId}/reclassify`);
     },
     bulkClassify(data) {
-        return api.post('/admin/classifications/bulk/classify', data);
+        return api.post('/api/admin/classifications/bulk/classify', data);
     },
     bulkReclassify(data) {
-        return api.post('/admin/classifications/bulk/reclassify', data);
+        return api.post('/api/admin/classifications/bulk/reclassify', data);
     },
     getAnalytics() {
-        return api.get('/admin/classifications/analytics');
+        return api.get('/api/admin/classifications/analytics');
     },
     getLowConfidencePosts(params) {
-        return api.get('/admin/classifications/quality/low-confidence', { params });
+        return api.get('/api/admin/classifications/quality/low-confidence', { params });
     }
 };

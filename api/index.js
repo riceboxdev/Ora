@@ -10,6 +10,11 @@ const connectDB = (await import('./src/config/database.js')).default;
 const authRoutes = (await import('./src/routes/auth.js')).default;
 const adminRoutes = (await import('./src/routes/admin.js')).default;
 const reportsRoutes = (await import('./src/routes/reports.js')).default;
+const interestsRoutes = (await import('./src/routes/interests.js')).default;
+const classificationRoutes = (await import('./src/routes/classification.js')).default;
+
+// Import Firebase config to ensure initialization
+await import('./src/config/firebase.js');
 
 const app = express();
 
@@ -82,6 +87,8 @@ app.use(async (req, res, next) => {
 // Routes - Vercel routes /api/* to this function
 // The path Express receives is the full path including /api
 app.use('/api/admin/auth', authRoutes);
+app.use('/api/admin/classifications', classificationRoutes);
+app.use('/api/admin/interests', interestsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportsRoutes);
 
