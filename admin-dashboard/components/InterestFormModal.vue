@@ -341,7 +341,7 @@ const emit = defineEmits(['close', 'saved']);
 // Form data
 const formData = ref({
   ...props.interest,
-  relatedInterestIds: props.interest.relatedInterestIds || []
+  relatedInterestIds: Array.isArray(props.interest?.relatedInterestIds) ? props.interest.relatedInterestIds : []
 });
 
 // UI state
@@ -353,8 +353,16 @@ const lastRemovedSynonym = ref(null);
 
 // Computed properties
 const availableRelatedInterests = computed(() => {
+  if (!Array.isArray(props.parentInterests)) return [];
+  
+  const currentInterestId = props.interest?.id;
+  const relatedIds = Array.isArray(formData.value.relatedInterestIds) 
+    ? formData.value.relatedInterestIds 
+    : [];
+    
   return props.parentInterests
-    .filter(interest => interest.id !== props.interest?.id) // Exclude self
+    .filter(interest => interest.id !== currentInterestId)
+    .filter(interest => !relatedIds.includes(interest.id))
     .map(interest => ({
       id: interest.id,
       displayName: interest.path ? `${interest.path} > ${interest.name}` : interest.name
