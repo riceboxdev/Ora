@@ -1,21 +1,21 @@
 import axios from 'axios';
 
-// Use environment variable or default to relative URL (same domain in production)
-// In production, use relative URLs to work with Vercel rewrites
-// In development, use localhost
-// Get API URL - check at runtime to ensure correct detection
+// Get API URL based on environment
 function getApiUrl() {
+  // Use VITE_API_URL if explicitly set
   if (import.meta.env.VITE_API_URL) {
+    console.log('Using VITE_API_URL:', import.meta.env.VITE_API_URL);
     return import.meta.env.VITE_API_URL;
   }
-  // Check if we're in production (not localhost)
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    if (!hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
-      return ''; // Relative URL for production
-    }
+
+  // In production, use relative URL (same domain)
+  if (process.env.NODE_ENV === 'production' || import.meta.env.PROD) {
+    console.log('Running in production mode, using relative URL');
+    return ''; // Relative URL for production
   }
+
   // Default to localhost for development
+  console.log('Running in development mode, using localhost:3000');
   return 'http://localhost:3000';
 }
 
