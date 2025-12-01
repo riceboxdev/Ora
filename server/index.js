@@ -156,4 +156,13 @@ app.use((err, req, res, next) => {
 });
 
 // Export for Vercel serverless functions
+// Vercel needs a default export that handles (req, res)
 export default app;
+
+// Also support direct invocation for local development
+if (process.env.NODE_ENV !== 'production' && process.env.VERCEL !== '1') {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
