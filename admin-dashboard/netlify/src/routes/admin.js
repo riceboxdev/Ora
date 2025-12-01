@@ -1,10 +1,10 @@
-import express from 'express';
-import { protect, requireRole } from '../middleware/adminAuth.js';
-import { apiRateLimiter } from '../middleware/rateLimit.js';
-import admin from 'firebase-admin';
-import multer from 'multer';
-import FormData from 'form-data';
-import { processFirebasePrivateKey, validateFirebaseCredentials } from '../utils/firebaseKeyProcessor.js';
+const express = require('express');
+const { protect, requireRole } = require('../middleware/adminAuth.js');
+const { apiRateLimiter } = require('../middleware/rateLimit.js');
+const admin = require('firebase-admin');
+const multer = require('multer');
+const FormData = require('form-data');
+const { processFirebasePrivateKey, validateFirebaseCredentials } = require('../utils/firebaseKeyProcessor.js');
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
@@ -2557,5 +2557,5 @@ router.get('/announcements/:id/stats', requireRole('super_admin'), async (req, r
   }
 });
 
-export default router;
+module.exports = router;
 
