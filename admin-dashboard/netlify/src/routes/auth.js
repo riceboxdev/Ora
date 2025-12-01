@@ -1,11 +1,11 @@
-import express from 'express';
-import jwt from 'jsonwebtoken';
-import { body, validationResult } from 'express-validator';
-import AdminUser from '../models/AdminUser.js';
-import { protect } from '../middleware/adminAuth.js';
-import { authRateLimiter } from '../middleware/rateLimit.js';
-import admin from 'firebase-admin';
-import { processFirebasePrivateKey, validateFirebaseCredentials } from '../utils/firebaseKeyProcessor.js';
+const express = require('express');
+const jwt = require('jsonwebtoken');
+const { body, validationResult } = require('express-validator');
+const AdminUser = require('../models/AdminUser.js');
+const { protect } = require('../middleware/adminAuth.js');
+const { authRateLimiter } = require('../middleware/rateLimit.js');
+const admin = require('firebase-admin');
+const { processFirebasePrivateKey, validateFirebaseCredentials } = require('../utils/firebaseKeyProcessor.js');
 
 const router = express.Router();
 
@@ -211,5 +211,5 @@ router.post('/refresh', protect, async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;
 
