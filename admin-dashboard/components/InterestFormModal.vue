@@ -338,10 +338,25 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'saved']);
 
-// Form data
+// Form data with all required fields and default values
 const formData = ref({
-  ...props.interest,
-  relatedInterestIds: Array.isArray(props.interest?.relatedInterestIds) ? props.interest.relatedInterestIds : []
+  id: null,
+  name: '',
+  displayName: '',
+  parentId: null,
+  description: '',
+  isActive: true,
+  keywords: [],
+  synonyms: [],
+  relatedInterestIds: [],
+  postCount: 0,
+  followerCount: 0,
+  level: 0,
+  path: [],
+  ...props.interest, // This will override the defaults with any provided props
+  relatedInterestIds: Array.isArray(props.interest?.relatedInterestIds) ? props.interest.relatedInterestIds : [],
+  keywords: Array.isArray(props.interest?.keywords) ? [...props.interest.keywords] : [],
+  synonyms: Array.isArray(props.interest?.synonyms) ? [...props.interest.synonyms] : []
 });
 
 // UI state
@@ -479,11 +494,26 @@ const isDescendant = (currentId, parentId) => {
 
 // Watch for prop changes
 watch(() => props.interest, (newInterest) => {
-  formData.value = {
-    ...newInterest,
-    relatedInterestIds: newInterest.relatedInterestIds || []
-  };
-}, { immediate: true });
+  if (!newInterest) {
+    formData.value = {
+      name: '',
+      displayName: '',
+      parentId: null,
+      description: '',
+      isActive: true,
+      keywords: [],
+      synonyms: [],
+      relatedInterestIds: []
+    };
+  } else {
+    formData.value = {
+      ...newInterest,
+      relatedInterestIds: Array.isArray(newInterest.relatedInterestIds) ? newInterest.relatedInterestIds : [],
+      keywords: Array.isArray(newInterest.keywords) ? [...newInterest.keywords] : [],
+      synonyms: Array.isArray(newInterest.synonyms) ? [...newInterest.synonyms] : []
+    };
+  }
+}, { immediate: true, deep: true });
 </script>
 
 <style scoped>
