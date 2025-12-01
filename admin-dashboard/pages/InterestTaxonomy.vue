@@ -20,6 +20,12 @@
             >
               Export
             </button>
+            <button
+              @click="confirmSeed"
+              class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              Seed Taxonomy
+            </button>
             <input
               v-model="searchQuery"
               type="text"
@@ -323,6 +329,19 @@
       @saved="handleInterestSaved"
     />
 
+    <!-- Seed Confirmation Modal -->
+    <ConfirmationModal
+      :show="showSeedModal"
+      title="Seed Interest Taxonomy"
+      :message="seedStatus || 'This will create 18 foundational interests. Existing interests with the same IDs will be skipped. Continue?'"
+      :confirm-button-text="seedStatus ? 'Close' : 'Seed Taxonomy'"
+      :cancel-button-text="seedStatus ? '' : 'Cancel'"
+      :is-loading="isSeeding"
+      :show-cancel="!seedStatus"
+      @confirm="seedStatus ? (showSeedModal = false) : seedTaxonomy()"
+      @cancel="showSeedModal = false"
+    />
+
     <!-- Delete Confirmation Modal -->
     <ConfirmationModal
       :show="showDeleteModal"
@@ -361,11 +380,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toastification';
 import AppHeader from '../components/AppHeader.vue';
 import InterestFormModal from '../components/InterestFormModal.vue';
 import ConfirmationModal from '../components/ConfirmationModal.vue';
-import * as interestService from '../src/services/interestService';
-import { useToast } from 'vue-toastification';
+import interestService from '../services/interestService';
 
 // State
 const loading = ref(true);
@@ -375,10 +394,11 @@ const currentPage = ref(1);
 const pageSize = 20;
 const showInterestModal = ref(false);
 const showDeleteModal = ref(false);
-const modalMode = ref('create');
+const showSeedModal = ref(false);
+const isSeeding = ref(false);
+const seedStatus = ref('');
 const currentInterest = ref(null);
-
-// State
+const interestToDelete = ref(null);
 const interests = ref([]);
 const toast = useToast();
 
@@ -521,7 +541,9 @@ const openEditModal = (interest) => {
 const closeModal = () => {
   showInterestModal.value = false;
   showDeleteModal.value = false;
+  showSeedModal.value = false;
   currentInterest.value = null;
+  interestToDelete.value = null;
 };
 
 const handleInterestSaved = async (formData) => {
@@ -552,28 +574,59 @@ const handleInterestSaved = async (formData) => {
 };
 
 const confirmDelete = (interest) => {
-  currentInterest.value = { ...interest };
+  interestToDelete.value = interest;
   showDeleteModal.value = true;
 };
 
 const deleteInterest = async () => {
-  if (!currentInterest.value) return;
+  if (!interestToDelete.value) return;
   
   try {
-    await interestService.deleteInterest(currentInterest.value.id);
+    await interestService.deleteInterest(interestToDelete.value.id);
     
     // Update local state
-    const index = interests.value.findIndex(i => i.id === currentInterest.value.id);
+    const index = interests.value.findIndex(i => i.id === interestToDelete.value.id);
     if (index !== -1) {
       interests.value.splice(index, 1);
     }
     
-    toast.success(`Interest "${currentInterest.value.displayName}" deleted successfully`);
+    toast.success(`Interest "${interestToDelete.value.displayName}" deleted successfully`);
     showDeleteModal.value = false;
-    currentInterest.value = null;
+    interestToDelete.value = null;
   } catch (error) {
-    console.error('Failed to delete interest:', error);
+    console.error('Error deleting interest:', error);
     toast.error(`Failed to delete interest: ${error.response?.data?.message || error.message}`);
+  }
+};
+
+const confirmSeed = () => {
+  showSeedModal.value = true;
+};
+
+const seedTaxonomy = async () => {
+  try {
+    isSeeding.value = true;
+    seedStatus.value = 'Seeding taxonomy with default categories...';
+    
+    const response = await interestService.seedTaxonomy();
+    
+    if (response.success) {
+      seedStatus.value = 'Successfully seeded taxonomy!';
+      // Refresh the interests list
+      await fetchInterests();
+      // Close the modal after a short delay
+      setTimeout(() => {
+        showSeedModal.value = false;
+        seedStatus.value = '';
+      }, 1500);
+    } else {
+      seedStatus.value = 'Error seeding taxonomy: ' + (response.message || 'Unknown error');
+    }
+  } catch (error) {
+    console.error('Error seeding taxonomy:', error);
+    seedStatus.value = 'Error: ' + (error.response?.data?.message || error.message || 'Failed to seed taxonomy');
+  } finally {
+    isSeeding.value = false;
   }
 };
 

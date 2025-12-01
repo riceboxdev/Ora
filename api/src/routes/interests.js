@@ -511,6 +511,72 @@ async function deleteInterestAndDescendants(session, interestId) {
   session.delete(interestRef);
 }
 
+// @route   POST /api/interests/seed
+// @desc    Seed the interest taxonomy with default categories
+// @access  Private (super_admin+)
+router.post('/seed', requireRole('super_admin'), async (req, res) => {
+  const batch = db.batch();
+  const now = new Date();
+  
+  try {
+    // First, get all existing interests to avoid duplicates
+    const existingInterests = await interestsRef.get();
+    const existingIds = new Set(existingInterests.docs.map(doc => doc.id));
+    
+    // Import the seed data
+    const seedData = require('../seed/interestTaxonomySeed');
+    
+    // Generate all seed interests (top level and sub-interests)
+    const seedInterests = [
+      ...seedData.generateTopLevelInterests(),
+      ...seedData.generateFashionSubInterests(),
+      ...seedData.generateModelsSubInterests(),
+      ...seedData.generatePhotographySubInterests()
+    ];
+    
+    console.log(`Generated ${seedInterests.length} seed interests`);
+    
+    let createdCount = 0;
+    let skippedCount = 0;
+    
+    // Add each seed interest to the batch if it doesn't exist
+    for (const interest of seedInterests) {
+      if (!existingIds.has(interest.id)) {
+        const interestRef = interestsRef.doc(interest.id);
+        batch.set(interestRef, {
+          ...interest,
+          createdAt: now,
+          updatedAt: now,
+          postCount: 0,
+          followerCount: 0,
+          isActive: true
+        });
+        createdCount++;
+      } else {
+        skippedCount++;
+      }
+    }
+    
+    // Commit the batch
+    await batch.commit();
+    
+    res.status(200).json({
+      success: true,
+      message: `Seeded ${createdCount} new interests, ${skippedCount} already existed`,
+      created: createdCount,
+      skipped: skippedCount
+    });
+    
+  } catch (error) {
+    console.error('Error seeding interests:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error seeding interests',
+      error: error.message
+    });
+  }
+});
+
 // @route   POST /api/interests/import
 // @desc    Import interests from CSV
 // @access  Private (super_admin+)
