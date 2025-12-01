@@ -3,6 +3,12 @@
   "outputDirectory": "admin-dashboard/dist",
   "installCommand": "cd api && npm install && cd ../admin-dashboard && npm install",
   "framework": "vite",
+  "functions": {
+    "api/index.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
