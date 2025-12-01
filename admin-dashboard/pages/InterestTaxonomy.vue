@@ -207,7 +207,7 @@
                         </div>
                         <div class="mt-1 flex items-center text-sm text-gray-500">
                           <span class="truncate">
-                            {{ interest.path.join(' > ') }}
+                            {{ Array.isArray(interest.path) ? interest.path.join(' > ') : '' }}
                           </span>
                         </div>
                       </div>
@@ -215,10 +215,10 @@
                     <div class="ml-2 flex-shrink-0 flex">
                       <div class="flex items-center space-x-4">
                         <div class="text-sm text-gray-500">
-                          <span class="font-medium text-gray-900">{{ interest.postCount }}</span> posts
+                          <span class="font-medium text-gray-900">{{ interest.postCount || 0 }}</span> posts
                         </div>
                         <div class="text-sm text-gray-500">
-                          <span class="font-medium text-gray-900">{{ interest.followerCount }}</span> followers
+                          <span class="font-medium text-gray-900">{{ interest.followerCount || 0 }}</span> followers
                         </div>
                         <div class="flex space-x-2">
                           <button
@@ -343,8 +343,8 @@
           <div class="ml-3">
             <h3 class="text-sm font-medium text-yellow-800">Warning</h3>
             <div class="mt-2 text-sm text-yellow-700">
-              <p v-if="currentInterest.postCount > 0 || currentInterest.followerCount > 0">
-                This interest has {{ currentInterest.postCount }} posts and {{ currentInterest.followerCount }} followers.
+              <p v-if="(currentInterest.postCount || 0) > 0 || (currentInterest.followerCount || 0) > 0">
+                This interest has {{ currentInterest.postCount || 0 }} posts and {{ currentInterest.followerCount || 0 }} followers.
                 Consider deactivating it instead of deleting to preserve content and user preferences.
               </p>
               <p v-else>
@@ -406,20 +406,20 @@ const filteredInterests = computed(() => {
 });
 
 const sortedInterests = computed(() => {
-  const sorted = [...filteredInterests.value];
+  const sorted = [...filteredInterests.value].filter(item => item != null);
   
   switch (sortBy.value) {
     case 'name':
-      sorted.sort((a, b) => a.displayName.localeCompare(b.displayName));
+      sorted.sort((a, b) => (a?.displayName || '').localeCompare(b?.displayName || ''));
       break;
     case 'postCount':
-      sorted.sort((a, b) => b.postCount - a.postCount);
+      sorted.sort((a, b) => (b?.postCount || 0) - (a?.postCount || 0));
       break;
     case 'followerCount':
-      sorted.sort((a, b) => b.followerCount - a.followerCount);
+      sorted.sort((a, b) => (b?.followerCount || 0) - (a?.followerCount || 0));
       break;
     case 'level':
-      sorted.sort((a, b) => a.level - b.level || a.displayName.localeCompare(b.displayName));
+      sorted.sort((a, b) => (a?.level || 0) - (b?.level || 0) || (a?.displayName || '').localeCompare(b?.displayName || ''));
       break;
   }
   
@@ -454,21 +454,25 @@ const visiblePages = computed(() => {
 });
 
 const parentInterests = computed(() => {
+  if (!Array.isArray(interests.value)) return [];
+  
   return interests.value
-    .filter(interest => interest.isActive)
+    .filter(interest => interest && interest.isActive)
     .map(interest => ({
       id: interest.id,
-      name: interest.displayName,
-      level: interest.level,
-      path: interest.path.join(' > ')
+      name: interest.displayName || '',
+      level: interest.level || 0,
+      path: Array.isArray(interest.path) ? interest.path.join(' > ') : ''
     }));
 });
 
 const stats = computed(() => {
+  const interestsArray = Array.isArray(interests.value) ? interests.value : [];
+  
   return {
-    totalInterests: interests.value.length,
-    totalPosts: interests.value.reduce((sum, interest) => sum + interest.postCount, 0),
-    totalFollowers: interests.value.reduce((sum, interest) => sum + interest.followerCount, 0),
+    totalInterests: interestsArray.length,
+    totalPosts: interestsArray.reduce((sum, interest) => sum + (interest?.postCount || 0), 0),
+    totalFollowers: interestsArray.reduce((sum, interest) => sum + (interest?.followerCount || 0), 0),
     weeklyGrowth: 2.5 // This would be calculated from actual data
   };
 });
