@@ -62,13 +62,10 @@ const corsOptions = {
 app.options('*', cors(corsOptions)); // Enable preflight for all routes
 app.use(cors(corsOptions));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 // Ensure DB connection for serverless functions (skip for OPTIONS)
 app.use(async (req, res, next) => {
   if (req.method === 'OPTIONS') {
-    return next();
+    return res.status(200).end();
   }
   try {
     await connectDB();
@@ -78,6 +75,9 @@ app.use(async (req, res, next) => {
     res.status(500).json({ message: 'Database connection failed' });
   }
 });
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/admin/auth', authRoutes);
