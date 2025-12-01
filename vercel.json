@@ -1,10 +1,10 @@
 {
   "buildCommand": "cd admin-dashboard && npm install && npm run build",
   "outputDirectory": "admin-dashboard/dist",
-  "installCommand": "cd api && npm install && cd ../admin-dashboard && npm install",
+  "installCommand": "cd server && npm install && cd ../admin-dashboard && npm install",
   "framework": "vite",
   "functions": {
-    "api/index.js": {
+    "server/index.js": {
       "memory": 1024,
       "maxDuration": 10
     }
@@ -12,7 +12,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.js"
+      "destination": "/server/index.js"
     },
     {
       "source": "/(.*)",
