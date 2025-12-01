@@ -384,15 +384,25 @@ const toast = useToast();
 
 // Computed properties
 const filteredInterests = computed(() => {
+  if (!Array.isArray(interests.value)) return [];
+  
   if (!searchQuery.value) return interests.value;
   
   const query = searchQuery.value.toLowerCase();
-  return interests.value.filter(interest => 
-    interest.name.toLowerCase().includes(query) ||
-    interest.displayName.toLowerCase().includes(query) ||
-    interest.keywords.some(kw => kw.toLowerCase().includes(query)) ||
-    interest.synonyms.some(syn => syn.toLowerCase().includes(query))
-  );
+  return interests.value.filter(interest => {
+    if (!interest) return false;
+    
+    const nameMatch = interest.name?.toLowerCase().includes(query) || false;
+    const displayNameMatch = interest.displayName?.toLowerCase().includes(query) || false;
+    const keywordsMatch = Array.isArray(interest.keywords) 
+      ? interest.keywords.some(kw => kw?.toLowerCase().includes(query))
+      : false;
+    const synonymsMatch = Array.isArray(interest.synonyms)
+      ? interest.synonyms.some(syn => syn?.toLowerCase().includes(query))
+      : false;
+      
+    return nameMatch || displayNameMatch || keywordsMatch || synonymsMatch;
+  });
 });
 
 const sortedInterests = computed(() => {
