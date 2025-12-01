@@ -92,6 +92,14 @@ app.use('/api/admin/interests', interestsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportsRoutes);
 
+// ALSO register routes WITHOUT /api prefix
+// Vercel rewrites might strip the /api prefix when routing to the function
+app.use('/admin/auth', authRoutes);
+app.use('/admin/classifications', classificationRoutes);
+app.use('/admin/interests', interestsRoutes);
+app.use('/admin', adminRoutes);
+app.use('/reports', reportsRoutes);
+
 // Health check
 app.get('/api/health', async (req, res) => {
   const result = {
