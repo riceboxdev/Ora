@@ -4,51 +4,18 @@ const { body, validationResult } = require('express-validator');
 const AdminUser = require('../models/AdminUser.js');
 const { protect } = require('../middleware/adminAuth.js');
 const { authRateLimiter } = require('../middleware/rateLimit.js');
-const admin = require('firebase-admin');
-const { processFirebasePrivateKey, validateFirebaseCredentials } = require('../utils/firebaseKeyProcessor.js');
 
 const router = express.Router();
 
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-  try {
-    const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
-    const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
-    
-    // Validate credentials first
-    validateFirebaseCredentials(projectId, rawPrivateKey, clientEmail);
-    
-    // Process and format the private key
-    const privateKey = processFirebasePrivateKey(rawPrivateKey);
-    
-    // Initialize Firebase Admin
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId,
-        privateKey,
-        clientEmail,
-      }),
-    });
-    console.log('Firebase Admin initialized successfully');
-  } catch (error) {
-    console.error('Firebase Admin initialization error:', error.message);
-    console.error('Error details:', {
-      code: error.code,
-      name: error.name,
-      stack: error.stack
-    });
-    // Log environment variable status (without sensitive values)
-    console.error('Environment variable status:', {
-      hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
-      hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
-      hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
-      privateKeyLength: process.env.FIREBASE_PRIVATE_KEY?.length || 0,
-      projectIdValue: process.env.FIREBASE_PROJECT_ID || 'NOT SET',
-      clientEmailValue: process.env.FIREBASE_CLIENT_EMAIL || 'NOT SET'
-    });
+// Middleware to get Firebase Admin instance from the app
+const getAdmin = (req, res, next) => {
+  const admin = req.app.get('firebaseAdmin');
+  if (!admin) {
+    return res.status(500).json({ message: 'Firebase Admin not initialized' });
   }
-}
+  req.admin = admin;
+  next();
+};
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -63,6 +30,7 @@ const generateToken = (id) => {
 router.post(
   '/login',
   authRateLimiter,
+  getAdmin,
   [
     body('firebaseToken').optional().isString(),
     body('email').optional().isEmail(),
@@ -76,7 +44,7 @@ router.post(
       }
 
       const { firebaseToken, email, password } = req.body;
-
+      const admin = req.admin; // Get Firebase Admin from request
       let adminUser;
 
       // Firebase token login

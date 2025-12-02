@@ -1,51 +1,18 @@
 const express = require('express');
 const { protect, requireRole } = require('../middleware/adminAuth.js');
 const { apiRateLimiter } = require('../middleware/rateLimit.js');
-const admin = require('firebase-admin');
 const multer = require('multer');
 const FormData = require('form-data');
-const { processFirebasePrivateKey, validateFirebaseCredentials } = require('../utils/firebaseKeyProcessor.js');
 
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-  try {
-    const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
-    const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
-    
-    // Validate credentials first
-    validateFirebaseCredentials(projectId, rawPrivateKey, clientEmail);
-    
-    // Process and format the private key
-    const privateKey = processFirebasePrivateKey(rawPrivateKey);
-    
-    // Initialize Firebase Admin
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId,
-        privateKey,
-        clientEmail,
-      }),
-    });
-    console.log('Firebase Admin initialized successfully');
-  } catch (error) {
-    console.error('Firebase Admin initialization error:', error.message);
-    console.error('Error details:', {
-      code: error.code,
-      name: error.name,
-      stack: error.stack
-    });
-    // Log environment variable status (without sensitive values)
-    console.error('Environment variable status:', {
-      hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
-      hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
-      hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
-      privateKeyLength: process.env.FIREBASE_PRIVATE_KEY?.length || 0,
-      projectIdValue: process.env.FIREBASE_PROJECT_ID || 'NOT SET',
-      clientEmailValue: process.env.FIREBASE_CLIENT_EMAIL || 'NOT SET'
-    });
+// Middleware to get Firebase Admin instance from the app
+const getAdmin = (req, res, next) => {
+  const admin = req.app.get('firebaseAdmin');
+  if (!admin) {
+    return res.status(500).json({ message: 'Firebase Admin not initialized' });
   }
-}
+  req.admin = admin;
+  next();
+};
 
 const router = express.Router();
 
@@ -94,7 +61,7 @@ const callFirebaseFunction = async (functionName, data, adminUser) => {
   // For now, we'll use Firebase Admin SDK to interact with Firestore directly
   // This is a simplified approach - in production, you'd want to use HTTP callable functions
   
-  const db = admin.firestore();
+  const db = adminUser.firestore();
   
   switch (functionName) {
     case 'getAdminUsers':
@@ -144,7 +111,7 @@ async function getAnalyticsFromFirestore(db) {
   const totalUsers = usersSnapshot.size;
   
   // Get posts in last 30 days
-  const thirtyDaysAgoTimestamp = admin.firestore.Timestamp.fromMillis(thirtyDaysAgo);
+  const thirtyDaysAgoTimestamp = db.Timestamp.fromMillis(thirtyDaysAgo);
   const postsSnapshot = await db.collection('posts')
     .where('createdAt', '>=', thirtyDaysAgoTimestamp)
     .get();
@@ -233,7 +200,7 @@ async function getModerationQueueFromFirestore(db, statusFilter = null) {
 // @route   GET /api/admin/users
 // @desc    Get all users (with pagination)
 // @access  Private (moderator+)
-router.get('/users', requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
+router.get('/users', getAdmin, requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
   try {
     const result = await callFirebaseFunction('getAdminUsers', {}, req.admin);
     res.json(result);
@@ -246,7 +213,7 @@ router.get('/users', requireRole('super_admin', 'moderator', 'viewer'), async (r
 // @route   GET /api/admin/analytics
 // @desc    Get analytics data
 // @access  Private (viewer+)
-router.get('/analytics', requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
+router.get('/analytics', getAdmin, requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
   try {
     const result = await callFirebaseFunction('getAdminAnalytics', {}, req.admin);
     res.json(result);
@@ -256,10 +223,10 @@ router.get('/analytics', requireRole('super_admin', 'moderator', 'viewer'), asyn
   }
 });
 
-// @route   GET /api/admin/moderation/queue
+// @route   GET /api/admin/moderation-queue
 // @desc    Get moderation queue
 // @access  Private (moderator+)
-router.get('/moderation/queue', requireRole('super_admin', 'moderator'), async (req, res) => {
+router.get('/moderation-queue', getAdmin, requireRole('super_admin', 'moderator'), async (req, res) => {
   try {
     const { status } = req.query;
     const result = await callFirebaseFunction('getModerationQueue', { status }, req.admin);
@@ -352,7 +319,7 @@ router.post('/moderation/flag', requireRole('super_admin', 'moderator'), async (
 // @route   POST /api/admin/users/ban
 // @desc    Ban a user
 // @access  Private (super_admin+)
-router.post('/users/ban', requireRole('super_admin', 'moderator'), async (req, res) => {
+router.post('/users/ban', getAdmin, requireRole('super_admin', 'moderator'), async (req, res) => {
   try {
     const { userId } = req.body;
     if (!userId) {
@@ -376,7 +343,7 @@ router.post('/users/ban', requireRole('super_admin', 'moderator'), async (req, r
 // @route   POST /api/admin/users/unban
 // @desc    Unban a user
 // @access  Private (super_admin+)
-router.post('/users/unban', requireRole('super_admin', 'moderator'), async (req, res) => {
+router.post('/users/unban', getAdmin, requireRole('super_admin', 'moderator'), async (req, res) => {
   try {
     const { userId } = req.body;
     if (!userId) {
@@ -723,7 +690,7 @@ async function syncToFirebaseRemoteConfig(featureFlags, remoteConfig, maintenanc
 // @route   POST /api/admin/settings
 // @desc    Update system settings
 // @access  Private (super_admin only)
-router.post('/settings', requireRole('super_admin'), async (req, res) => {
+router.post('/settings', getAdmin, requireRole('super_admin'), async (req, res) => {
   try {
     const { featureFlags, remoteConfig, maintenanceMode, uiSettings } = req.body;
     const db = admin.firestore();
@@ -807,7 +774,7 @@ router.post('/settings', requireRole('super_admin'), async (req, res) => {
 // @route   GET /api/admin/posts
 // @desc    Get posts (for content management) with filtering and sorting
 // @access  Private (viewer+)
-router.get('/posts', requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
+router.get('/posts', getAdmin, requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
   try {
     const { 
       limit = 50, 
@@ -906,7 +873,7 @@ router.get('/posts', requireRole('super_admin', 'moderator', 'viewer'), async (r
 // @route   GET /api/admin/posts/:id
 // @desc    Get detailed post view
 // @access  Private (viewer+)
-router.get('/posts/:id', requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
+router.get('/posts/:id', getAdmin, requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
   try {
     const { id } = req.params;
     const db = admin.firestore();
@@ -1039,7 +1006,7 @@ router.put('/posts/:id', requireRole('super_admin', 'moderator'), async (req, re
 // @route   POST /api/admin/posts/bulk
 // @desc    Perform bulk actions on posts
 // @access  Private (moderator+)
-router.post('/posts/bulk', requireRole('super_admin', 'moderator'), async (req, res) => {
+router.post('/posts/bulk', getAdmin, requireRole('super_admin', 'moderator'), async (req, res) => {
   try {
     const { postIds, action, moderationStatus, moderationReason } = req.body;
     
@@ -1171,7 +1138,7 @@ const upload = multer({
 // @route   POST /api/admin/posts/upload-image
 // @desc    Upload a single image to Cloudflare Images
 // @access  Private (moderator+)
-router.post('/posts/upload-image', requireRole('super_admin', 'moderator'), upload.single('image'), async (req, res) => {
+router.post('/posts/upload-image', getAdmin, requireRole('super_admin', 'moderator'), upload.single('image'), async (req, res) => {
   try {
     // Debug logging
     console.log('Upload request received:', {
@@ -1499,7 +1466,7 @@ router.post('/posts/bulk-create', requireRole('super_admin', 'moderator'), async
 // @route   POST /api/admin/notifications
 // @desc    Create promotional notification
 // @access  Private (super_admin+)
-router.post('/notifications', requireRole('super_admin'), async (req, res) => {
+router.post('/notifications', getAdmin, requireRole('super_admin'), async (req, res) => {
   try {
     const { title, body, type, targetAudience, imageUrl, deepLink, scheduledFor } = req.body;
     
@@ -1882,7 +1849,7 @@ router.post('/notifications', requireRole('super_admin'), async (req, res) => {
 // @route   GET /api/admin/notifications
 // @desc    Get all promotional notifications
 // @access  Private (super_admin+)
-router.get('/notifications', requireRole('super_admin'), async (req, res) => {
+router.get('/notifications', getAdmin, requireRole('super_admin'), async (req, res) => {
   try {
     const db = admin.firestore();
     const snapshot = await db.collection('promotional_notifications')
@@ -2007,7 +1974,7 @@ router.get('/welcome-images', requireRole('super_admin', 'moderator', 'viewer'),
 // @route   POST /api/admin/welcome-images
 // @desc    Upload a new welcome screen image
 // @access  Private (moderator+)
-router.post('/welcome-images', requireRole('super_admin', 'moderator'), upload.single('image'), async (req, res) => {
+router.post('/welcome-images', getAdmin, requireRole('super_admin', 'moderator'), upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No image file provided' });
@@ -2156,7 +2123,7 @@ router.post('/welcome-images', requireRole('super_admin', 'moderator'), upload.s
 // @route   DELETE /api/admin/welcome-images/:id
 // @desc    Delete a welcome screen image
 // @access  Private (moderator+)
-router.delete('/welcome-images/:id', requireRole('super_admin', 'moderator'), async (req, res) => {
+router.delete('/welcome-images/:id', getAdmin, requireRole('super_admin', 'moderator'), async (req, res) => {
   try {
     const { id } = req.params;
     const db = admin.firestore();
@@ -2272,7 +2239,7 @@ router.put('/welcome-images/reorder', requireRole('super_admin', 'moderator'), a
 // @route   POST /api/admin/announcements
 // @desc    Create announcement
 // @access  Private (super_admin+)
-router.post('/announcements', requireRole('super_admin'), async (req, res) => {
+router.post('/announcements', getAdmin, requireRole('super_admin'), async (req, res) => {
   try {
     const { title, pages, targetAudience, status } = req.body;
     
@@ -2427,7 +2394,7 @@ router.get('/announcements/:id', requireRole('super_admin'), async (req, res) =>
 // @route   PUT /api/admin/announcements/:id
 // @desc    Update announcement
 // @access  Private (super_admin+)
-router.put('/announcements/:id', requireRole('super_admin'), async (req, res) => {
+router.put('/announcements/:id', getAdmin, requireRole('super_admin'), async (req, res) => {
   try {
     const db = admin.firestore();
     const { id } = req.params;

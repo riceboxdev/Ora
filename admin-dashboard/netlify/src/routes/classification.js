@@ -4,8 +4,18 @@ const classificationController = require('../controllers/classificationControlle
 
 const router = express.Router();
 
+// Middleware to get Firebase Admin instance from the app
+const getAdmin = (req, res, next) => {
+  const admin = req.app.get('firebaseAdmin');
+  if (!admin) {
+    return res.status(500).json({ message: 'Firebase Admin not initialized' });
+  }
+  req.admin = admin;
+  next();
+};
+
 // All routes require authentication and at least 'viewer' role
-router.use(protect);
+router.use(protect, getAdmin);
 router.use(requireRole('super_admin', 'moderator', 'viewer'));
 
 // Analytics

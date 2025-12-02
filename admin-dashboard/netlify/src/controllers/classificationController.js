@@ -1,8 +1,7 @@
 const { db } = require('../config/firebase.js');
-const admin = require('firebase-admin');
 
 // Helper to update post interest fields
-async function updatePostInterestFields(postId) {
+async function updatePostInterestFields(postId, admin) {
     const classDoc = await db.collection('post_classifications').doc(postId).get();
 
     if (!classDoc.exists) {
@@ -34,6 +33,7 @@ async function updatePostInterestFields(postId) {
 }
 
 const getClassifications = async (req, res) => {
+  const admin = req.admin; // Get Firebase Admin from request
     try {
         const {
             interestId,
@@ -98,6 +98,7 @@ const getClassifications = async (req, res) => {
 };
 
 export const getClassification = async (req, res) => {
+  const admin = req.admin; // Get Firebase Admin from request
     try {
         const { postId } = req.params;
         const doc = await db.collection('post_classifications').doc(postId).get();
@@ -120,6 +121,7 @@ export const getClassification = async (req, res) => {
 };
 
 export const addInterest = async (req, res) => {
+  const admin = req.admin; // Get Firebase Admin from request
     try {
         const { postId } = req.params;
         const { interestId, confidence = 1.0 } = req.body;
@@ -177,6 +179,7 @@ export const addInterest = async (req, res) => {
 };
 
 export const removeInterest = async (req, res) => {
+  const admin = req.admin; // Get Firebase Admin from request
     try {
         const { postId, interestId } = req.params;
 
@@ -210,6 +213,7 @@ export const removeInterest = async (req, res) => {
 };
 
 export const reclassifyPost = async (req, res) => {
+  const admin = req.admin; // Get Firebase Admin from request
     try {
         const { postId } = req.params;
         // In a real scenario, this would trigger the Cloud Function
@@ -227,6 +231,7 @@ export const reclassifyPost = async (req, res) => {
 };
 
 export const bulkClassify = async (req, res) => {
+  const admin = req.admin; // Get Firebase Admin from request
     try {
         const { batchSize = 100 } = req.body;
 
@@ -255,6 +260,7 @@ export const bulkClassify = async (req, res) => {
 };
 
 export const bulkReclassify = async (req, res) => {
+  const admin = req.admin; // Get Firebase Admin from request
     try {
         const { interestId, postIds } = req.body;
 
@@ -291,6 +297,7 @@ export const bulkReclassify = async (req, res) => {
 };
 
 export const getAnalytics = async (req, res) => {
+  const admin = req.admin; // Get Firebase Admin from request
     try {
         // This can be expensive, so we should probably cache this or use aggregation queries
         // For now, implementing a simplified version
@@ -340,6 +347,7 @@ export const getAnalytics = async (req, res) => {
 };
 
 export const getLowConfidencePosts = async (req, res) => {
+  const admin = req.admin; // Get Firebase Admin from request
     try {
         const { threshold = 0.5, limit = 50 } = req.query;
         const thresholdNum = parseFloat(threshold);

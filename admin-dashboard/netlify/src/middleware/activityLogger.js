@@ -1,5 +1,3 @@
-const admin = require('firebase-admin');
-
 /**
  * Middleware to log admin actions to Firestore
  * @param {Object} req - Express request object
@@ -29,6 +27,12 @@ const logActivity = async (req, res, next) => {
  */
 async function logActivityAsync(req, res, responseData) {
   try {
+    // Get Firebase Admin from the app
+    const admin = req.app.get('firebaseAdmin');
+    if (!admin) {
+      console.error('Firebase Admin not available for activity logging');
+      return;
+    }
     // Only log successful operations (2xx status codes)
     if (res.statusCode < 200 || res.statusCode >= 300) {
       return;
@@ -163,8 +167,14 @@ function sanitizeBody(body) {
 /**
  * Manual logging function for custom actions
  */
-const logCustomActivity = async (adminId, action, targetType, targetId, metadata = {}) => {
+const logCustomActivity = async (req, adminId, action, targetType, targetId, metadata = {}) => {
   try {
+    // Get Firebase Admin from the app
+    const admin = req.app.get('firebaseAdmin');
+    if (!admin) {
+      console.error('Firebase Admin not available for custom activity logging');
+      return;
+    }
     const db = admin.firestore();
     
     const activityLog = {
