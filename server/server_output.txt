@@ -1,0 +1,28 @@
+Firebase Admin initialized successfully
+MongoDB connection error: Error: MONGODB_URI environment variable is not set
+    at getMongoUri (file:///Users/nickrogers/DEV/ORA%20MAIN/server/src/config/database.js:45:11)
+    at connectDB (file:///Users/nickrogers/DEV/ORA%20MAIN/server/src/config/database.js:72:17)
+    at file:///Users/nickrogers/DEV/ORA%20MAIN/server/index.js:26:1
+Error: MONGODB_URI environment variable is not set
+    at getMongoUri (file:///Users/nickrogers/DEV/ORA%20MAIN/server/src/config/database.js:45:11)
+    at connectDB (file:///Users/nickrogers/DEV/ORA%20MAIN/server/src/config/database.js:72:17)
+    at file:///Users/nickrogers/DEV/ORA%20MAIN/server/index.js:26:1
+Server running on port 3000
+=== INCOMING REQUEST ===
+Method: POST
+URL: /api/admin/auth/login
+Path: /api/admin/auth/login
+Original URL: /api/admin/auth/login
+Base URL: 
+Headers: {
+  "host": "localhost:3000",
+  "user-agent": "curl/8.7.1",
+  "accept": "*/*",
+  "content-type": "application/json",
+  "content-length": "51"
+}
+========================
+Login error: MongooseError: Operation `adminusers.findOne()` buffering timed out after 10000ms
+    at Timeout.<anonymous> (/Users/nickrogers/DEV/ORA MAIN/server/node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:187:23)
+    at listOnTimeout (node:internal/timers:594:17)
+    at process.processTimers (node:internal/timers:529:7)
