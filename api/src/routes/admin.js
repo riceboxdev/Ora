@@ -3081,20 +3081,17 @@ router.get('/posts/migration-stats', requireRole('super_admin'), async (req, res
   try {
     const db = admin.firestore();
 
-    // Get counts using aggregation queries
-    const totalSnapshot = await db.collection('posts').count().get();
+    const totalSnapshot = await db.collection('posts').get();
     const migratedSnapshot = await db.collection('posts')
       .where('migrationStatus', '==', 'completed')
-      .count()
       .get();
     const pendingSnapshot = await db.collection('posts')
       .where('interests', '==', null)
-      .count()
       .get();
 
-    const total = totalSnapshot.data().count;
-    const migrated = migratedSnapshot.data().count;
-    const pending = pendingSnapshot.data().count;
+    const total = totalSnapshot.size;
+    const migrated = migratedSnapshot.size;
+    const pending = pendingSnapshot.size;
     const percentage = total > 0 ? Math.round((migrated / total) * 100) : 0;
 
     res.json({
