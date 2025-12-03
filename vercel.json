@@ -1,13 +1,9 @@
 {
   "buildCommand": "cd admin-dashboard && npm install && npm run build",
   "outputDirectory": "admin-dashboard/dist",
-  "installCommand": "cd server && npm install && cd ../admin-dashboard && npm install",
+  "installCommand": "cd api && npm install && cd ../admin-dashboard && npm install",
   "framework": "vite",
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/server/index.js"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
