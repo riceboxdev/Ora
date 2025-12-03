@@ -22,6 +22,9 @@ OraBetaUITests/
 # Firebase functions (deployed separately)
 functions/
 
+# Server directory (duplicate of api/ - not needed for Vercel deployment)
+server/
+
 # Log files
 *.log
 build*.log
