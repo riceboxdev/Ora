@@ -8,6 +8,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
+      - key: VITE_API_URL
+        sync: false # Set this in Render Dashboard to your backend URL
     routes:
       - type: rewrite
         source: /*

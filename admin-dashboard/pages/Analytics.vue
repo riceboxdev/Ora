@@ -146,17 +146,19 @@ import AppHeader from '../components/AppHeader.vue';
 const analytics = ref(null);
 const loading = ref(true);
 const period = ref('30d');
+const error = ref(null); // Added error ref
 
-const fetchAnalytics = async () => {
+async function fetchAnalytics() {
+  loading.value = true;
   try {
-    loading.value = true;
     const response = await api.get('/api/admin/analytics', {
-      params: { period: period.value }
+      params: { period: period.value } // Kept params based on original functionality
     });
-    analytics.value = response.data;
-  } catch (error) {
-    console.error('Error fetching analytics:', error);
-    alert('Failed to load analytics');
+    const data = response.data;
+    analytics.value = data;
+  } catch (err) {
+    console.error('Error fetching analytics:', err);
+    error.value = 'Failed to load analytics data';
   } finally {
     loading.value = false;
   }

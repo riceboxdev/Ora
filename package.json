@@ -4,22 +4,9 @@
   "description": "OraBeta Admin Dashboard and Backend",
   "private": true,
   "scripts": {
-    "install:all": "cd admin-backend && npm install && cd ../admin-dashboard && npm install",
-    "dev:backend": "cd admin-backend && npm run dev",
+    "install:all": "cd api && npm install && cd ../admin-dashboard && npm install",
+    "dev:backend": "cd api && npm run dev",
     "dev:dashboard": "cd admin-dashboard && npm run dev",
     "build": "cd admin-dashboard && npm run build"
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

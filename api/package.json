@@ -12,6 +12,8 @@
     "express-rate-limit": "^7.1.5",
     "multer": "^2.0.2",
     "form-data": "^4.0.5"
+  },
+  "scripts": {
+    "dev": "node index.js"
   }
 }
-

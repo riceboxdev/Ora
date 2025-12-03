@@ -119,19 +119,22 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import api from '../services/api';
+import api from '@/services/api';
 import AppHeader from '../components/AppHeader.vue';
 
 const analytics = ref(null);
 const loading = ref(true);
+const stats = ref(null); // Added to match the new function's assignment
 
-const fetchAnalytics = async () => {
+async function fetchDashboardData() {
+  loading.value = true;
   try {
-    loading.value = true;
     const response = await api.get('/api/admin/analytics');
-    analytics.value = response.data;
-  } catch (error) {
-    console.error('Error fetching analytics:', error);
+    const data = response.data;
+    stats.value = data;
+    analytics.value = data; // Assign to analytics as well to keep template working
+  } catch (err) {
+    console.error('Error fetching dashboard data:', err);
   } finally {
     loading.value = false;
   }

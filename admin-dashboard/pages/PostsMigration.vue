@@ -299,11 +299,15 @@ function formatInterestName(interest) {
     .join(' ');
 }
 
+import api from '@/services/api';
+
+// ... (inside script setup)
+
 async function refreshStats() {
   try {
     error.value = null;
-    const response = await fetch('/api/admin/posts/migration-stats');
-    const data = await response.json();
+    const response = await api.get('/api/admin/posts/migration-stats');
+    const data = response.data;
     if (data.success) {
       stats.value = data.stats;
     }
@@ -321,10 +325,10 @@ async function loadPreview() {
   previewLoading.value = true;
   try {
     const mappingsJson = JSON.stringify(tagMappings.value);
-    const response = await fetch(
+    const response = await api.get(
       `/api/admin/posts/migration-preview?tagMappings=${encodeURIComponent(mappingsJson)}`
     );
-    const data = await response.json();
+    const data = response.data;
     if (data.success) {
       previewData.value = data;
     }
@@ -343,18 +347,14 @@ async function startMigration() {
   error.value = null;
   
   try {
-    const response = await fetch('/api/admin/posts/migrate-interests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        batchSize: batchSize.value,
-        limit: limit.value || null,
-        tagMappings: tagMappings.value,
-        updateAll: migrateMode.value === 'all'
-      })
+    const response = await api.post('/api/admin/posts/migrate-interests', {
+      batchSize: batchSize.value,
+      limit: limit.value || null,
+      tagMappings: tagMappings.value,
+      updateAll: migrateMode.value === 'all'
     });
     
-    const data = await response.json();
+    const data = response.data;
     if (data.success) {
       migrationResult.value = data;
       setTimeout(() => {
@@ -364,7 +364,7 @@ async function startMigration() {
       error.value = data.message || 'Migration failed';
     }
   } catch (err) {
-    error.value = err.message || 'Migration error';
+    error.value = err.response?.data?.message || err.message || 'Migration error';
     console.error('Migration error:', err);
   } finally {
     isProcessing.value = false;

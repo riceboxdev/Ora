@@ -435,17 +435,33 @@ const handleSaveEdit = async (postId, updateData) => {
   }
 };
 
-const handleDelete = async (postId) => {
-  if (!confirm('Are you sure you want to delete this post?')) {
-    return;
-  }
+import api from '@/services/api';
+
+// ... (inside script setup)
+
+async function fetchContent() {
+  loading.value = true;
   try {
-    await api.delete(`/api/admin/posts/${postId}`);
-    alert('Post deleted successfully');
-    await fetchPosts();
-  } catch (error) {
-    console.error('Error deleting post:', error);
-    alert('Failed to delete post');
+    const response = await api.get('/api/admin/content');
+    const data = response.data;
+    content.value = data.items;
+  } catch (err) {
+    console.error('Error fetching content:', err);
+    error.value = 'Failed to load content';
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function deleteContent(id) {
+  if (!confirm('Are you sure you want to delete this item?')) return;
+  
+  try {
+    await api.delete(`/api/admin/content/${id}`);
+    content.value = content.value.filter(item => item.id !== id);
+  } catch (err) {
+    console.error('Error deleting content:', err);
+    alert('Failed to delete content');
   }
 };
 

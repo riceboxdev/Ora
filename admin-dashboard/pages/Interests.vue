@@ -285,9 +285,10 @@ async function loadInterests() {
   try {
     loading.value = true;
     error.value = null;
-    interests.value = await getInterests();  // Fetches root interests only
+    const response = await api.get('/api/admin/interests');
+    interests.value = response.data.interests;
   } catch (err) {
-    error.value = err.message || 'Failed to load interests';
+    error.value = 'Failed to load interests';
     console.error('Error loading interests:', err);
   } finally {
     loading.value = false;
@@ -311,7 +312,7 @@ async function submitCreateInterest() {
       .filter(k => k);
 
     // Send to API (backend calculates level and path based on parent)
-    await createInterest({
+    await api.post('/api/admin/interests', {
       name: form.value.name,
       displayName: form.value.displayName,
       description: form.value.description || null,

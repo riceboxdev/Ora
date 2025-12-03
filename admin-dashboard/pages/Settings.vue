@@ -632,24 +632,24 @@ const showToast = (message, type = 'success') => {
   }, 3000);
 };
 
-const fetchSettings = async () => {
+async function fetchSettings() {
+  loading.value = true;
   try {
-    loading.value = true;
     const response = await api.get('/api/admin/settings');
     const settings = response.data.settings || {};
     featureFlags.value = settings.featureFlags || {};
     remoteConfig.value = settings.remoteConfig || {};
     maintenanceMode.value = settings.maintenanceMode || false;
-    
+
     // Fetch welcome images
     await fetchWelcomeImages();
-    
+
     // Merge saved UI settings with defaults, ensuring proper types
     const savedUISettings = settings.uiSettings;
     console.log('Fetched settings from server:', settings);
     console.log('Fetched UI settings from server:', savedUISettings);
     console.log('Type of uiSettings:', typeof savedUISettings, Array.isArray(savedUISettings));
-    
+
     // Always update uiSettings, merging with defaults
     // Use nullish coalescing to preserve falsy values (0, false, empty string)
     if (savedUISettings && typeof savedUISettings === 'object' && !Array.isArray(savedUISettings)) {

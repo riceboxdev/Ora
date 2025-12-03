@@ -181,47 +181,47 @@ const appealStatusFilter = ref('');
 const reviewNotes = ref({});
 const showReviewNotes = ref({});
 
-const fetchQueue = async () => {
+async function fetchQueue() {
+  loading.value = true;
   try {
-    loading.value = true;
-    const response = await api.get('/api/admin/moderation/queue', {
-      params: {
-        status: statusFilter.value === 'all' ? undefined : statusFilter.value
-      }
-    });
-    posts.value = response.data.posts || [];
-  } catch (error) {
-    console.error('Error fetching moderation queue:', error);
+    const statusParam = statusFilter.value === 'all' ? '' : `status=${statusFilter.value}`;
+    const response = await api.get(`/api/admin/moderation/queue?${statusParam}`);
+    const data = response.data;
+    posts.value = data.posts;
+  } catch (err) {
+    console.error('Error fetching queue:', err);
     alert('Failed to load moderation queue');
   } finally {
     loading.value = false;
   }
-};
+}
 
-const handleApprove = async (postId) => {
+async function handleApprove(post) {
   try {
-    await api.post('/api/admin/moderation/approve', { postId });
-    posts.value = posts.value.filter(p => p.id !== postId);
+    await api.post('/api/admin/moderation/approve', { postId: post.id });
+    // Remove from queue
+    posts.value = posts.value.filter(p => p.id !== post.id);
     alert('Post approved');
-  } catch (error) {
-    console.error('Error approving post:', error);
+  } catch (err) {
+    console.error('Error approving post:', err);
     alert('Failed to approve post');
   }
-};
+}
 
-const handleReject = async (postId) => {
+async function handleReject(post) {
   if (!confirm('Are you sure you want to reject this post?')) {
     return;
   }
   try {
-    await api.post('/api/admin/moderation/reject', { postId });
-    posts.value = posts.value.filter(p => p.id !== postId);
+    await api.post('/api/admin/moderation/reject', { postId: post.id });
+    // Remove from queue
+    posts.value = posts.value.filter(p => p.id !== post.id);
     alert('Post rejected');
-  } catch (error) {
-    console.error('Error rejecting post:', error);
+  } catch (err) {
+    console.error('Error rejecting post:', err);
     alert('Failed to reject post');
   }
-};
+}
 
 const handleFlag = async (postId) => {
   try {
