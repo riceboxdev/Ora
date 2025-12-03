@@ -1,0 +1,45 @@
+services:
+  # Admin Dashboard Frontend (Vite Static Site)
+  - type: web
+    name: ora-admin-dashboard
+    runtime: static
+    buildCommand: cd admin-dashboard && npm install && npm run build
+    staticPublishPath: admin-dashboard/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # Admin API (Node.js Express)
+  - type: web
+    name: ora-admin-api
+    runtime: node
+    plan: free
+    buildCommand: cd api && npm install
+    startCommand: cd api && node index.js
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      # Firebase Admin SDK credentials
+      - key: FIREBASE_PROJECT_ID
+        sync: false  # You'll add this manually in Render dashboard
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      # MongoDB (if still needed)
+      - key: MONGODB_URI
+        sync: false
+      # JWT Secret
+      - key: JWT_SECRET
+        sync: false
+      # Cloudflare (for image uploads)
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false
+      - key: CLOUDFLARE_IMAGES_ACCOUNT_HASH
+        sync: false
