@@ -7,7 +7,7 @@ services:
     staticPublishPath: admin-dashboard/dist
     envVars:
       - key: NODE_VERSION
-        value: 18
+        value: 20
     routes:
       - type: rewrite
         source: /*
@@ -22,7 +22,7 @@ services:
     startCommand: cd api && node index.js
     envVars:
       - key: NODE_VERSION
-        value: 18
+        value: 20
       # Firebase Admin SDK credentials
       - key: FIREBASE_PROJECT_ID
         sync: false  # You'll add this manually in Render dashboard

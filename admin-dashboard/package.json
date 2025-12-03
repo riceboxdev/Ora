@@ -1,6 +1,7 @@
 {
   "name": "ora-admin-dashboard",
   "version": "1.0.0",
+  "type": "module",
   "description": "ORA Admin Dashboard",
   "private": true,
   "scripts": {
