@@ -55,6 +55,12 @@ const routes = [
     name: 'Settings',
     component: () => import('../../pages/Settings.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/interests',
+    name: 'Interests',
+    component: () => import('../../pages/Interests.vue'),
+    meta: { requiresAuth: true }
   }
 ];
 

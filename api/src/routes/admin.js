@@ -2557,5 +2557,295 @@ router.get('/announcements/:id/stats', requireRole('super_admin'), async (req, r
   }
 });
 
+// ============================================
+// INTERESTS MANAGEMENT
+// ============================================
+
+// @route   GET /api/admin/interests
+// @desc    Get all interests with optional filters
+// @access  Private (super_admin+)
+router.get('/interests', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const { parentId, level } = req.query;
+    
+    let query = db.collection('interests');
+    
+    // Filter by parent if provided
+    if (parentId) {
+      query = query.where('parentId', '==', parentId);
+    } else {
+      // Get root interests only if no parent specified
+      query = query.where('parentId', '==', null);
+    }
+    
+    // Filter by level if provided
+    if (level) {
+      query = query.where('level', '==', parseInt(level));
+    }
+    
+    const snapshot = await query.orderBy('name').get();
+    const interests = [];
+    
+    snapshot.forEach(doc => {
+      interests.push({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toMillis?.() || null,
+        updatedAt: doc.data().updatedAt?.toMillis?.() || null
+      });
+    });
+    
+    res.json({ success: true, interests, count: interests.length });
+  } catch (error) {
+    console.error('Error fetching interests:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   GET /api/admin/interests/tree
+// @desc    Get complete interest taxonomy tree
+// @access  Private (super_admin+)
+router.get('/interests/tree', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const maxDepth = req.query.maxDepth ? parseInt(req.query.maxDepth) : null;
+    
+    const snapshot = await db.collection('interests')
+      .where('isActive', '==', true)
+      .orderBy('name')
+      .get();
+    
+    const allInterests = [];
+    const interestMap = {};
+    
+    snapshot.forEach(doc => {
+      const data = {
+        id: doc.id,
+        ...doc.data(),
+        children: [],
+        createdAt: doc.data().createdAt?.toMillis?.() || null,
+        updatedAt: doc.data().updatedAt?.toMillis?.() || null
+      };
+      interestMap[doc.id] = data;
+      allInterests.push(data);
+    });
+    
+    // Build tree structure
+    const tree = [];
+    allInterests.forEach(interest => {
+      if (!interest.parentId) {
+        // Root interest
+        if (!maxDepth || interest.level <= maxDepth) {
+          tree.push(interest);
+        }
+      } else if (interestMap[interest.parentId]) {
+        // Add to parent's children
+        interestMap[interest.parentId].children.push(interest);
+      }
+    });
+    
+    res.json({ success: true, tree });
+  } catch (error) {
+    console.error('Error fetching interests tree:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   POST /api/admin/interests
+// @desc    Create new interest
+// @access  Private (super_admin+)
+router.post('/interests', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const { name, displayName, parentId, description, keywords, synonyms } = req.body;
+    
+    if (!name || !displayName) {
+      return res.status(400).json({ message: 'name and displayName are required' });
+    }
+    
+    let level = 0;
+    let path = [name];
+    
+    // If has parent, get parent level and path
+    if (parentId) {
+      const parentRef = db.collection('interests').doc(parentId);
+      const parentDoc = await parentRef.get();
+      
+      if (!parentDoc.exists) {
+        return res.status(404).json({ message: 'Parent interest not found' });
+      }
+      
+      const parentData = parentDoc.data();
+      level = parentData.level + 1;
+      path = [...(parentData.path || []), name];
+    }
+    
+    const interestId = name.toLowerCase().replace(/\s+/g, '-');
+    const interestRef = db.collection('interests').doc(interestId);
+    
+    await interestRef.set({
+      id: interestId,
+      name,
+      displayName,
+      parentId: parentId || null,
+      level,
+      path,
+      description: description || null,
+      coverImageUrl: null,
+      isActive: true,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      postCount: 0,
+      followerCount: 0,
+      weeklyGrowth: 0.0,
+      monthlyGrowth: 0.0,
+      relatedInterestIds: [],
+      keywords: keywords || [],
+      synonyms: synonyms || []
+    });
+    
+    res.json({
+      success: true,
+      message: 'Interest created successfully',
+      interest: { id: interestId, name, displayName, level, path }
+    });
+  } catch (error) {
+    console.error('Error creating interest:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   PUT /api/admin/interests/:id
+// @desc    Update interest
+// @access  Private (super_admin+)
+router.put('/interests/:id', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const { id } = req.params;
+    const { displayName, description, keywords, synonyms, isActive } = req.body;
+    
+    const interestRef = db.collection('interests').doc(id);
+    const doc = await interestRef.get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ message: 'Interest not found' });
+    }
+    
+    const updateData = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    if (displayName) updateData.displayName = displayName;
+    if (description !== undefined) updateData.description = description;
+    if (keywords) updateData.keywords = keywords;
+    if (synonyms) updateData.synonyms = synonyms;
+    if (isActive !== undefined) updateData.isActive = isActive;
+    
+    await interestRef.update(updateData);
+    
+    res.json({ success: true, message: 'Interest updated successfully' });
+  } catch (error) {
+    console.error('Error updating interest:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   DELETE /api/admin/interests/:id
+// @desc    Deactivate interest (soft delete)
+// @access  Private (super_admin+)
+router.delete('/interests/:id', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const { id } = req.params;
+    
+    const interestRef = db.collection('interests').doc(id);
+    const doc = await interestRef.get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ message: 'Interest not found' });
+    }
+    
+    // Soft delete by deactivating
+    await interestRef.update({
+      isActive: false,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    res.json({ success: true, message: 'Interest deactivated successfully' });
+  } catch (error) {
+    console.error('Error deleting interest:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   POST /api/admin/interests/seed
+// @desc    Seed initial interest taxonomy
+// @access  Private (super_admin+)
+router.post('/interests/seed', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    
+    // Check if interests already exist
+    const existingSnapshot = await db.collection('interests').limit(1).get();
+    if (!existingSnapshot.empty) {
+      return res.status(400).json({ message: 'Interests already seeded' });
+    }
+    
+    // Seed base interests
+    const baseInterests = [
+      { name: 'fashion', displayName: 'Fashion', keywords: ['fashion', 'style', 'clothing'] },
+      { name: 'beauty', displayName: 'Beauty', keywords: ['beauty', 'makeup', 'skincare'] },
+      { name: 'food', displayName: 'Food & Dining', keywords: ['food', 'recipe', 'cooking'] },
+      { name: 'fitness', displayName: 'Fitness', keywords: ['fitness', 'workout', 'exercise'] },
+      { name: 'home', displayName: 'Home & Decor', keywords: ['home', 'decor', 'interior'] },
+      { name: 'travel', displayName: 'Travel', keywords: ['travel', 'destination', 'adventure'] },
+      { name: 'photography', displayName: 'Photography', keywords: ['photography', 'photo', 'camera'] },
+      { name: 'entertainment', displayName: 'Entertainment', keywords: ['entertainment', 'movies', 'music'] },
+      { name: 'technology', displayName: 'Technology', keywords: ['technology', 'tech', 'gadget'] },
+      { name: 'pets', displayName: 'Pets', keywords: ['pets', 'animals', 'dogs', 'cats'] }
+    ];
+    
+    const batch = db.batch();
+    let count = 0;
+    
+    for (const interest of baseInterests) {
+      const interestRef = db.collection('interests').doc(interest.name);
+      batch.set(interestRef, {
+        id: interest.name,
+        name: interest.name,
+        displayName: interest.displayName,
+        parentId: null,
+        level: 0,
+        path: [interest.name],
+        description: null,
+        coverImageUrl: null,
+        isActive: true,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        postCount: 0,
+        followerCount: 0,
+        weeklyGrowth: 0.0,
+        monthlyGrowth: 0.0,
+        relatedInterestIds: [],
+        keywords: interest.keywords,
+        synonyms: []
+      });
+      count++;
+    }
+    
+    await batch.commit();
+    
+    res.json({
+      success: true,
+      message: `Seeded ${count} base interests`,
+      count
+    });
+  } catch (error) {
+    console.error('Error seeding interests:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
 

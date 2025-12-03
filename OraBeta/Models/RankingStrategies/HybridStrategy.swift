@@ -21,7 +21,7 @@ struct HybridStrategy: RankingStrategy {
         self.popularityWeight = popularityWeight
     }
     
-    func rank(posts: [Post], for userId: String?) -> [Post] {
+    func rank(posts: [Post], for userId: String?) async -> [Post] {
         guard !posts.isEmpty else { return posts }
         
         // Normalize scores

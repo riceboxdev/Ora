@@ -13,7 +13,7 @@ struct RecencyStrategy: RankingStrategy {
         return "recency"
     }
     
-    func rank(posts: [Post], for userId: String?) -> [Post] {
+    func rank(posts: [Post], for userId: String?) async -> [Post] {
         return posts.sorted { $0.createdAt > $1.createdAt }
     }
 }

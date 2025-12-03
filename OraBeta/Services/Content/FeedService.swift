@@ -14,6 +14,7 @@ class FeedService: FeedServiceProtocol {
     private let db = Firestore.firestore()
     private let profileService: ProfileService
     private let blockedUsersService: BlockedUsersService
+    private let rankingPipeline = FeedRankingPipeline.shared
     
     init(profileService: ProfileService? = nil, blockedUsersService: BlockedUsersService? = nil) {
         self.profileService = profileService ?? ProfileService()
@@ -112,22 +113,48 @@ class FeedService: FeedServiceProtocol {
         // Metrics will be updated on the next explicit refresh (pull to refresh)
         // This ensures the feed order remains stable during scrolling
         
-        // Analyze posts without semantic labels in background (non-blocking)
+        // Analyze and classify posts in background (non-blocking)
         Task {
             await PostAnalysisService.shared.analyzePostsInBackground(posts: filteredPosts, batchSize: 3)
+            
+            // Also classify posts that don't have interests yet
+            let unclassifiedPostIds = filteredPosts
+                .filter { $0.interestIds == nil || ($0.interestIds?.isEmpty ?? true) }
+                .map { $0.id }
+            
+            if !unclassifiedPostIds.isEmpty {
+                // Classify unclassified posts in background (non-blocking)
+                for postId in unclassifiedPostIds {
+                    do {
+                        let document = try await self.db.collection("posts").document(postId).getDocument()
+                        if let firestoreData = document.data(),
+                           let post = await Post.from(firestoreData: firestoreData, documentId: postId) {
+                            _ = try await PostClassificationService.shared.classifyPost(post)
+                        }
+                    } catch {
+                        // Silently fail - don't block feed with classification errors
+                    }
+                }
+            }
         }
         
         // Apply ranking strategy only if requested (typically on initial load or refresh)
         // For pagination, maintain Firestore order to prevent re-ranking existing posts
         let finalPosts: [Post]
-        if applyRanking {
-            finalPosts = strategy.rank(posts: filteredPosts, for: userId)
-            Logger.info("Applied ranking strategy - posts reordered", service: "FeedService")
+        if applyRanking, let userId = userId {
+            // Use multi-stage ranking pipeline with pre-ranking, main ranking, and diversity re-ranking
+            finalPosts = await rankingPipeline.rankFeed(
+                posts: filteredPosts,
+                userId: userId,
+                strategy: strategy
+            )
+        } else if applyRanking {
+            // Fallback to direct strategy if no user ID
+            finalPosts = await strategy.rank(posts: filteredPosts, for: userId)
         } else {
             // For pagination, maintain the order from Firestore (createdAt descending)
             // This ensures new posts are appended without affecting existing order
             finalPosts = filteredPosts
-            Logger.info("Skipped ranking - maintaining Firestore order for pagination", service: "FeedService")
         }
         
         // Get last document for pagination

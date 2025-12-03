@@ -14,7 +14,7 @@ protocol RankingStrategy {
     ///   - posts: Array of posts to rank
     ///   - userId: Optional user ID for personalized ranking
     /// - Returns: Ranked array of posts
-    func rank(posts: [Post], for userId: String?) -> [Post]
+    func rank(posts: [Post], for userId: String?) async -> [Post]
     
     /// Name of the ranking strategy
     var name: String { get }

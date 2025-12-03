@@ -42,13 +42,13 @@ struct PersonalizedTopicStrategy: RankingStrategy {
         self.popularityWeight = popularityWeight
     }
     
-    func rank(posts: [Post], for userId: String?) -> [Post] {
+    func rank(posts: [Post], for userId: String?) async -> [Post] {
         guard !posts.isEmpty else { return posts }
         
         // If no trending topics and no preferences, fall back to hybrid strategy
         if trendingTopics.isEmpty && userPreferences == nil {
             let hybridStrategy = HybridStrategy(recencyWeight: recencyWeight, popularityWeight: popularityWeight + topicWeight)
-            return hybridStrategy.rank(posts: posts, for: userId)
+            return await hybridStrategy.rank(posts: posts, for: userId)
         }
         
         // Create a map of topic IDs to trend scores for quick lookup

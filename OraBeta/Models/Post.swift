@@ -29,6 +29,10 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
     let saveCount: Int
     let createdAt: Date
     
+    let interestIds: [String]?
+    let interestScores: [String: Double]?
+    let primaryInterestId: String?
+    
     enum CodingKeys: String, CodingKey {
         case id
         case activityId
@@ -48,6 +52,9 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         case shareCount
         case saveCount
         case createdAt
+        case interestIds
+        case interestScores
+        case primaryInterestId
     }
     
     init(
@@ -67,7 +74,10 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         viewCount: Int = 0,
         shareCount: Int = 0,
         saveCount: Int = 0,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        interestIds: [String]? = nil,
+        interestScores: [String: Double]? = nil,
+        primaryInterestId: String? = nil
     ) {
         self.id = activityId
         self.activityId = activityId
@@ -87,6 +97,9 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         self.shareCount = shareCount
         self.saveCount = saveCount
         self.createdAt = createdAt
+        self.interestIds = interestIds
+        self.interestScores = interestScores
+        self.primaryInterestId = primaryInterestId
     }
     
     init(from decoder: Decoder) throws {
@@ -118,6 +131,10 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         } else {
             createdAt = Date()
         }
+        
+        interestIds = try container.decodeIfPresent([String].self, forKey: .interestIds)
+        interestScores = try container.decodeIfPresent([String: Double].self, forKey: .interestScores)
+        primaryInterestId = try container.decodeIfPresent(String.self, forKey: .primaryInterestId)
     }
     
     func encode(to encoder: Encoder) throws {
@@ -141,6 +158,9 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         try container.encode(shareCount, forKey: .shareCount)
         try container.encode(saveCount, forKey: .saveCount)
         try container.encode(createdAt, forKey: .createdAt)
+        try container.encodeIfPresent(interestIds, forKey: .interestIds)
+        try container.encodeIfPresent(interestScores, forKey: .interestScores)
+        try container.encodeIfPresent(primaryInterestId, forKey: .primaryInterestId)
     }
     
     // MARK: - Computed Properties for Image Dimensions
@@ -271,7 +291,10 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
             viewCount: 0,
             shareCount: 0,
             saveCount: 0,
-            createdAt: createdAt
+            createdAt: createdAt,
+            interestIds: nil,
+            interestScores: nil,
+            primaryInterestId: nil
         )
     }
     
@@ -323,6 +346,10 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
             }
         }
         
+        let interestIds = firestoreData["interestIds"] as? [String]
+        let interestScores = firestoreData["interestScores"] as? [String: Double]
+        let primaryInterestId = firestoreData["primaryInterestId"] as? String
+        
         return Post(
             activityId: activityId,
             userId: userId,
@@ -340,7 +367,10 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
             viewCount: viewCount,
             shareCount: shareCount,
             saveCount: saveCount,
-            createdAt: createdAt
+            createdAt: createdAt,
+            interestIds: interestIds,
+            interestScores: interestScores,
+            primaryInterestId: primaryInterestId
         )
     }
 }

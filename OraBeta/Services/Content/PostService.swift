@@ -15,12 +15,18 @@ class PostService: PostServiceProtocol {
     private let db = Firestore.firestore()
     private let profileService: ProfileService
     private let blockedUsersService: BlockedUsersService
+    private let classificationService: PostClassificationService
     private let functions = FunctionsConfig.functions(region: "us-central1")
     
-    init(profileService: ProfileService, blockedUsersService: BlockedUsersService? = nil) {
+    init(
+        profileService: ProfileService,
+        blockedUsersService: BlockedUsersService? = nil,
+        classificationService: PostClassificationService? = nil
+    ) {
         Logger.info("Initializing", service: "PostService")
         self.profileService = profileService
         self.blockedUsersService = blockedUsersService ?? BlockedUsersService()
+        self.classificationService = classificationService ?? PostClassificationService()
     }
     
     /// Create a new post - saves to Firestore via Firebase Function
@@ -477,5 +483,66 @@ class PostService: PostServiceProtocol {
         }
         
         return (deletedCount: deletedCount, errorCount: errorCount)
+    }
+    
+    // MARK: - Post Classification
+    
+    /// Classify a post and update it with interest data
+    func classifyPostAndUpdate(postId: String) async throws -> PostInterestClassification? {
+        do {
+            let document = try await db.collection("posts").document(postId).getDocument()
+            guard let firestoreData = document.data(),
+                  let post = await Post.from(firestoreData: firestoreData, documentId: postId) else {
+                return nil
+            }
+            
+            let classification = try await classificationService.classifyPost(post)
+            
+            // Update post with classification data
+            let topInterests = classification.topInterests(limit: 5)
+            var interestScores: [String: Double] = [:]
+            for interest in topInterests {
+                interestScores[interest.interestId] = interest.confidence
+            }
+            
+            let updateData: [String: Any] = [
+                "interestIds": topInterests.map { $0.interestId },
+                "interestScores": interestScores,
+                "primaryInterestId": topInterests.first?.interestId as Any,
+                "updatedAt": FieldValue.serverTimestamp()
+            ]
+            
+            try await db.collection("posts").document(postId).updateData(updateData)
+            
+            return classification
+        } catch {
+            Logger.warning("Failed to classify post \(postId): \(error.localizedDescription)", service: "PostService")
+            return nil
+        }
+    }
+    
+    /// Suggest interests for a post during creation
+    func suggestInterestsForPost(
+        caption: String? = nil,
+        tags: [String]? = nil
+    ) async throws -> [PostInterestClassification.Classification] {
+        return try await classificationService.suggestInterestsForPost(
+            caption: caption,
+            tags: tags,
+            boardId: nil
+        )
+    }
+    
+    /// Classify multiple posts in background (non-blocking)
+    func classifyPostsInBackground(postIds: [String]) {
+        Task {
+            for postId in postIds {
+                do {
+                    _ = try await classifyPostAndUpdate(postId: postId)
+                } catch {
+                    Logger.debug("Background classification failed for post \(postId)", service: "PostService")
+                }
+            }
+        }
     }
 }

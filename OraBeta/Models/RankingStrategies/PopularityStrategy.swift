@@ -13,7 +13,7 @@ struct PopularityStrategy: RankingStrategy {
         return "popularity"
     }
     
-    func rank(posts: [Post], for userId: String?) -> [Post] {
+    func rank(posts: [Post], for userId: String?) async -> [Post] {
         return posts.sorted { post1, post2 in
             let score1 = calculateEngagementScore(post1)
             let score2 = calculateEngagementScore(post2)
