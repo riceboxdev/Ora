@@ -3394,5 +3394,256 @@ router.put('/welcome-images/reorder', requireRole('super_admin', 'moderator'), a
   }
 });
 
+// @route   GET /api/admin/posts/migration-stats
+// @desc    Get statistics about post migration from tags to interests
+// @access  Private (viewer+)
+router.get('/posts/migration-stats', requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    
+    // Get total posts count
+    const postsSnapshot = await db.collection('posts').get();
+    const totalPosts = postsSnapshot.size;
+    
+    // Count posts that have been migrated (have interests field)
+    let migratedCount = 0;
+    let pendingCount = 0;
+    
+    postsSnapshot.forEach(doc => {
+      const data = doc.data();
+      const hasInterests = data.interests && Array.isArray(data.interests) && data.interests.length > 0;
+      
+      if (hasInterests) {
+        migratedCount++;
+      } else {
+        pendingCount++;
+      }
+    });
+    
+    const percentage = totalPosts > 0 ? Math.round((migratedCount / totalPosts) * 100) : 0;
+    
+    res.json({
+      success: true,
+      stats: {
+        total: totalPosts,
+        migrated: migratedCount,
+        pending: pendingCount,
+        percentage: percentage
+      }
+    });
+  } catch (error) {
+    console.error('Error getting migration stats:', error);
+    res.status(500).json({ 
+      success: false,
+      message: error.message 
+    });
+  }
+});
+
+// @route   GET /api/admin/posts/migration-preview
+// @desc    Preview what posts would be migrated with given tag mappings
+// @access  Private (viewer+)
+router.get('/posts/migration-preview', requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
+  try {
+    const { tagMappings } = req.query;
+    
+    if (!tagMappings) {
+      return res.status(400).json({
+        success: false,
+        message: 'tagMappings query parameter is required'
+      });
+    }
+    
+    let mappings;
+    try {
+      mappings = JSON.parse(decodeURIComponent(tagMappings));
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid tagMappings JSON format'
+      });
+    }
+    
+    const db = admin.firestore();
+    
+    // Get a sample of posts (limit to 100 for performance)
+    const postsSnapshot = await db.collection('posts').limit(100).get();
+    const sampleSize = postsSnapshot.size;
+    
+    const preview = [];
+    let wouldMigrate = 0;
+    
+    postsSnapshot.forEach(doc => {
+      const data = doc.data();
+      const postId = doc.id;
+      const originalTags = data.tags || [];
+      const originalCategories = data.categories || [];
+      const allTags = [...originalTags, ...originalCategories];
+      
+      // Find mapped interests for this post's tags
+      const mappedInterests = [];
+      for (const tag of allTags) {
+        const tagLower = tag.toLowerCase();
+        if (mappings[tagLower]) {
+          const interest = mappings[tagLower];
+          if (!mappedInterests.includes(interest)) {
+            mappedInterests.push(interest);
+          }
+        }
+      }
+      
+      const willMigrate = mappedInterests.length > 0;
+      if (willMigrate) {
+        wouldMigrate++;
+      }
+      
+      preview.push({
+        postId,
+        originalTags: allTags,
+        mappedInterests,
+        willMigrate
+      });
+    });
+    
+    res.json({
+      success: true,
+      sampleSize,
+      wouldMigrate,
+      preview
+    });
+  } catch (error) {
+    console.error('Error generating migration preview:', error);
+    res.status(500).json({ 
+      success: false,
+      message: error.message 
+    });
+  }
+});
+
+// @route   POST /api/admin/posts/migrate-interests
+// @desc    Migrate posts from tags/categories to interests taxonomy
+// @access  Private (moderator+)
+router.post('/posts/migrate-interests', requireRole('super_admin', 'moderator'), async (req, res) => {
+  try {
+    const { 
+      batchSize = 100, 
+      limit = null, 
+      tagMappings = {}, 
+      updateAll = false 
+    } = req.body;
+    
+    if (!tagMappings || typeof tagMappings !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: 'tagMappings is required and must be an object'
+      });
+    }
+    
+    const db = admin.firestore();
+    let query = db.collection('posts');
+    
+    // If not updating all posts, only get posts without interests field or empty interests
+    if (!updateAll) {
+      // Note: Firestore doesn't support "where field is null" directly
+      // We'll fetch all posts and filter client-side for simplicity
+      // In production, you might want to use a compound query or maintain a separate collection
+    }
+    
+    // Apply limit if specified
+    if (limit && limit > 0) {
+      query = query.limit(limit);
+    }
+    
+    const postsSnapshot = await query.get();
+    const totalPosts = postsSnapshot.size;
+    
+    let migrated = 0;
+    let skipped = 0;
+    const errors = [];
+    let batch = db.batch();
+    let batchCount = 0;
+    
+    for (const doc of postsSnapshot.docs) {
+      const data = doc.data();
+      const postId = doc.id;
+      
+      // Skip if not updating all and post already has interests
+      if (!updateAll && data.interests && Array.isArray(data.interests) && data.interests.length > 0) {
+        skipped++;
+        continue;
+      }
+      
+      // Get tags and categories
+      const originalTags = data.tags || [];
+      const originalCategories = data.categories || [];
+      const allTags = [...originalTags, ...originalCategories];
+      
+      // Find mapped interests
+      const mappedInterests = [];
+      for (const tag of allTags) {
+        const tagLower = tag.toLowerCase();
+        if (tagMappings[tagLower]) {
+          const interest = tagMappings[tagLower];
+          if (!mappedInterests.includes(interest)) {
+            mappedInterests.push(interest);
+          }
+        }
+      }
+      
+      // Skip if no mapped interests found
+      if (mappedInterests.length === 0) {
+        skipped++;
+        continue;
+      }
+      
+      // Add to batch update
+      try {
+        const postRef = db.collection('posts').doc(postId);
+        batch.update(postRef, {
+          interests: mappedInterests,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          migratedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        
+        batchCount++;
+        migrated++;
+        
+        // Commit batch if it reaches the batch size
+        if (batchCount >= batchSize) {
+          await batch.commit();
+          batchCount = 0;
+          // Create a new batch for the next set of updates
+          batch = db.batch();
+        }
+      } catch (error) {
+        errors.push({
+          postId,
+          error: error.message
+        });
+      }
+    }
+    
+    // Commit any remaining updates in the batch
+    if (batchCount > 0) {
+      await batch.commit();
+    }
+    
+    res.json({
+      success: true,
+      message: `Migration completed. ${migrated} posts migrated, ${skipped} skipped.`,
+      migrated,
+      skipped,
+      errors,
+      total: totalPosts
+    });
+  } catch (error) {
+    console.error('Error during migration:', error);
+    res.status(500).json({ 
+      success: false,
+      message: error.message 
+    });
+  }
+});
+
 export default router;
 
