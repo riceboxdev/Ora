@@ -16,21 +16,21 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       loading.value = true;
       error.value = null;
-      
+
       // First, sign in with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseToken = await userCredential.user.getIdToken();
-      
+
       // Then, send Firebase token to backend to get JWT
       const response = await api.post('/api/admin/auth/login', {
         firebaseToken: firebaseToken
       });
-      
+
       token.value = response.data.token;
       admin.value = response.data.admin;
       localStorage.setItem('token', token.value);
       localStorage.setItem('admin', JSON.stringify(admin.value));
-      
+
       return response.data;
     } catch (err) {
       error.value = err.response?.data?.message || err.message || 'Login failed';
@@ -46,7 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (err) {
       console.error('Firebase sign out error:', err);
     }
-    
+
     token.value = null;
     admin.value = null;
     localStorage.removeItem('token');
@@ -67,8 +67,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   function initializeFromStorage() {
     const storedAdmin = localStorage.getItem('admin');
-    if (storedAdmin) {
-      admin.value = JSON.parse(storedAdmin);
+    if (storedAdmin && storedAdmin !== 'undefined' && storedAdmin !== 'null') {
+      try {
+        admin.value = JSON.parse(storedAdmin);
+      } catch (err) {
+        console.error('Failed to parse stored admin data:', err);
+        // Clear invalid data
+        localStorage.removeItem('admin');
+        localStorage.removeItem('token');
+      }
     }
   }
 
