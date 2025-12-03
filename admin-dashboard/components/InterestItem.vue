@@ -94,7 +94,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 
-defineProps({
+const props = defineProps({
   interest: {
     type: Object,
     required: true
