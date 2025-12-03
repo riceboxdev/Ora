@@ -22,9 +22,6 @@ OraBetaUITests/
 # Firebase functions (deployed separately)
 functions/
 
-# Backend API (deployed separately - on Hobby plan to avoid exceeding 12 function limit)
-api/
-
 # Log files
 *.log
 build*.log
