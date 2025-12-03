@@ -150,3 +150,10 @@ app.use((err, req, res, next) => {
 
 // Export for Vercel serverless functions
 export default app;
+
+// Start server for non-serverless environments (like Render)
+// Render requires binding to the PORT environment variable
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
