@@ -28,17 +28,18 @@ struct HomeTrendingTopicsSection: View {
                             .fontWeight(selectedTrendingTopic == nil ? .semibold : .regular)
                             .padding(.horizontal, ViewConstants.Layout.chipHorizontalPadding)
                             .padding(.vertical, ViewConstants.Layout.chipVerticalPadding)
-                            .background(
-                                selectedTrendingTopic == nil
-                                    ? Color.accentColor
-                                    : Color.gray.opacity(0.2)
-                            )
                             .foregroundColor(
                                 selectedTrendingTopic == nil
                                     ? .invertedAccent
                                     : .primary
                             )
-                            .cornerRadius(ViewConstants.Layout.chipCornerRadius)
+                           
+                    }
+                    .if(selectedTrendingTopic != nil) { view in
+                        view.buttonStyle(.glass)
+                    }
+                    .if(selectedTrendingTopic == nil) { view in
+                        view.buttonStyle(.glassProminent)
                     }
                     
                     // Loading indicator if loading and no topics yet
@@ -70,7 +71,7 @@ struct HomeTrendingTopicsSection: View {
             }
             .padding(.bottom, ViewConstants.Layout.sectionBottomPadding)
         }
-        .background(Color(.systemBackground))
+//        .background(Color(.systemBackground))
     }
 }
 
@@ -94,17 +95,18 @@ private struct TopicChip: View {
             }
             .padding(.horizontal, ViewConstants.Layout.chipHorizontalPadding)
             .padding(.vertical, ViewConstants.Layout.chipVerticalPadding)
-            .background(
-                isSelected
-                    ? Color.accentColor
-                    : Color.gray.opacity(0.2)
-            )
             .foregroundColor(
                 isSelected
                     ? .invertedAccent
                     : .primary
             )
-            .cornerRadius(ViewConstants.Layout.chipCornerRadius)
+          
+        }
+        .if(isSelected) { view in
+            view.buttonStyle(.glassProminent)
+        }
+        .if(!isSelected) { view in
+            view.buttonStyle(.glass)
         }
     }
 }

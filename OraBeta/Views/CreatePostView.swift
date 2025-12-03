@@ -31,7 +31,7 @@ struct CreatePostView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showErrorAlert = false
-    @State private var selectedPostIndex: Int = 0 // Track which image is being edited
+    @State private var selectedPostIndex: Int = 0
     @State private var showTagSheet = false
     
     // Processing progress
@@ -43,7 +43,26 @@ struct CreatePostView: View {
     @State private var showProgress = false
     @State private var enqueuedCount: Int = 0
     
-    let availableTags = ["Nature", "Abstract", "Space", "Animals", "Architecture", "Food", "Travel", "Art", "Minimalist", "Vintage", "Modern", "Classic", "Colorful", "Black & White", "Landscape", "Portrait"]
+    // Interests system (replaces hardcoded tags)
+    @State private var availableInterests: [Interest] = []
+    @State private var loadingInterests = false
+    
+    // MARK: - Data Models
+    
+    /// Represents a top-level interest from the interests taxonomy API
+    /// Used as selectable tags for posts (replaces hardcoded tag list)
+    struct Interest: Identifiable, Hashable {
+        let id: String
+        let displayName: String
+        
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(id)
+        }
+        
+        static func == (lhs: Interest, rhs: Interest) -> Bool {
+            lhs.id == rhs.id
+        }
+    }
     
     init() {
         print("🏗️ CreatePostView: View initialized")
@@ -96,6 +115,12 @@ struct CreatePostView: View {
             }
             .task(id: photoPickerItems) {
                 await loadSelectedImages()
+            }
+            .task {
+                // Load interests taxonomy on view appear
+                // Fetches top-level interests from interests API
+                // Used as selectable interests/tags for posts
+                await loadAvailableInterests()
             }
             .alert("Post Failed", isPresented: $showErrorAlert) {
                 Button("OK", role: .cancel) { }
@@ -418,6 +443,76 @@ struct CreatePostView: View {
         }
         
         isLoading = false
+    }
+    
+    // MARK: - Interests System
+    
+    /// Load available interests from API (replaces hardcoded tags)
+    /// Fetches top-level root interests from interests taxonomy
+    /// Used as selectable interests/tags for posts
+    /// Falls back to empty list if API unavailable
+    private func loadAvailableInterests() async {
+        loadingInterests = true
+        defer { loadingInterests = false }
+        
+        do {
+            // Call interests API: GET /api/admin/interests
+            // Returns root interests (parentId == null, level == 0)
+            guard let url = URL(string: "https://api.example.com/api/admin/interests") else {
+                print("⚠️ Invalid interests API URL")
+                return
+            }
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            
+            // Add auth token if available
+            if let token = try? await authViewModel.getIDToken() {
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            }
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                print("⚠️ Interests API returned non-200 status")
+                return
+            }
+            
+            // Parse interests response
+            // Expected format: { "interests": [{ "id": "...", "displayName": "..." }], "count": N }
+            let decoder = JSONDecoder()
+            let response = try decoder.decode(InterestsResponse.self, from: data)
+            
+            // Filter to only root interests (parentId == null)
+            let rootInterests = response.interests.filter { $0.parentId == nil }
+            
+            // Convert to view model (just keep id and displayName)
+            availableInterests = rootInterests.map { interest in
+                Interest(id: interest.id, displayName: interest.displayName)
+            }
+            
+            print("✅ Loaded \(availableInterests.count) interests for post creation")
+        } catch {
+            print("⚠️ Failed to load interests: \(error.localizedDescription)")
+            // Graceful fallback: keep empty list
+            // Tag selection will still work but with no pre-populated interests
+        }
+    }
+    
+    /// Response model for interests API
+    /// See docs/architecture/INTERESTS_SYSTEM.md for full schema
+    private struct InterestsResponse: Codable {
+        let interests: [InterestItem]
+        let count: Int
+    }
+    
+    /// Individual interest from API response
+    private struct InterestItem: Codable {
+        let id: String
+        let displayName: String
+        let parentId: String?
     }
     
     // MARK: - Multi-Image Upload

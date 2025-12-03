@@ -127,3 +127,8 @@ dist/
 # ML Model files (too large for GitHub)
 *.mlpackage/
 **/weights/*.bin
+
+# Secrets
+angles-423a4-firebase-adminsdk-fbsvc-56653420c7.json
+.env.production
+.env.firebase-fix

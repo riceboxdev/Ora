@@ -2558,23 +2558,42 @@ router.get('/announcements/:id/stats', requireRole('super_admin'), async (req, r
 });
 
 // ============================================
+// ============================================
 // INTERESTS MANAGEMENT
 // ============================================
+// Hierarchical interest taxonomy system for user content categorization.
+// Supports creating, reading, updating, and deleting interest categories.
+// Interests can be organized in a tree structure with parent-child relationships.
+// See docs/architecture/INTERESTS_SYSTEM.md for full system documentation.
 
 // @route   POST /api/admin/interests/seed
-// @desc    Seed initial interest taxonomy
+// @desc    Seed initial interest taxonomy with 10 base categories
 // @access  Private (super_admin+)
+// @note    Only runs if interests collection is empty. Call once during setup.
+// @returns {object} Success message with count of seeded interests
+//
+// Seeded Categories:
+//   - fashion, beauty, food, fitness, home, travel, photography, entertainment, technology, pets
+//
+// Each interest initialized with:
+//   - level: 0 (root)
+//   - parentId: null
+//   - isActive: true
+//   - postCount: 0
+//   - followerCount: 0
+//   - Metrics fields initialized to 0
 router.post('/interests/seed', requireRole('super_admin'), async (req, res) => {
   try {
     const db = admin.firestore();
 
-    // Check if interests already exist
+    // Check if interests already exist to prevent duplicate seeding
     const existingSnapshot = await db.collection('interests').limit(1).get();
     if (!existingSnapshot.empty) {
       return res.status(400).json({ message: 'Interests already seeded' });
     }
 
-    // Seed base interests
+    // Define base interest categories
+    // Each has a unique name (ID), display name, and searchable keywords
     const baseInterests = [
       { name: 'fashion', displayName: 'Fashion', keywords: ['fashion', 'style', 'clothing'] },
       { name: 'beauty', displayName: 'Beauty', keywords: ['beauty', 'makeup', 'skincare'] },
@@ -2588,34 +2607,36 @@ router.post('/interests/seed', requireRole('super_admin'), async (req, res) => {
       { name: 'pets', displayName: 'Pets', keywords: ['pets', 'animals', 'dogs', 'cats'] }
     ];
 
+    // Use batch operation for atomic write of all base interests
     const batch = db.batch();
     let count = 0;
 
     for (const interest of baseInterests) {
       const interestRef = db.collection('interests').doc(interest.name);
       batch.set(interestRef, {
-        id: interest.name,
-        name: interest.name,
-        displayName: interest.displayName,
-        parentId: null,
-        level: 0,
-        path: [interest.name],
-        description: null,
-        coverImageUrl: null,
-        isActive: true,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        postCount: 0,
-        followerCount: 0,
-        weeklyGrowth: 0.0,
-        monthlyGrowth: 0.0,
-        relatedInterestIds: [],
-        keywords: interest.keywords,
-        synonyms: []
+        id: interest.name,                                              // Unique identifier
+        name: interest.name,                                            // Internal name (lowercase, hyphenated)
+        displayName: interest.displayName,                              // User-facing display name
+        parentId: null,                                                 // No parent for root interests
+        level: 0,                                                       // Root level
+        path: [interest.name],                                          // Hierarchy path [root]
+        description: null,                                              // Can be added later
+        coverImageUrl: null,                                            // Can be added later
+        isActive: true,                                                 // Active by default
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),        // Server-set timestamp
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),        // Server-set timestamp
+        postCount: 0,                                                   // Posts counter (updated elsewhere)
+        followerCount: 0,                                               // Followers counter (updated elsewhere)
+        weeklyGrowth: 0.0,                                              // Weekly growth percentage
+        monthlyGrowth: 0.0,                                             // Monthly growth percentage
+        relatedInterestIds: [],                                         // Related interests for recommendations
+        keywords: interest.keywords,                                    // Searchable keywords
+        synonyms: []                                                    // Alternative names
       });
       count++;
     }
 
+    // Commit all writes atomically
     await batch.commit();
 
     res.json({
@@ -2630,13 +2651,30 @@ router.post('/interests/seed', requireRole('super_admin'), async (req, res) => {
 });
 
 // @route   GET /api/admin/interests/tree
-// @desc    Get complete interest taxonomy tree
+// @desc    Retrieve complete interest taxonomy as a hierarchical tree structure
 // @access  Private (super_admin+)
+// @query   {number} maxDepth - Optional. Limit tree depth (e.g., maxDepth=2 returns 2 levels)
+// @returns {object} tree - Nested array with children arrays showing full hierarchy
+//
+// Tree Structure Example:
+// [
+//   {
+//     id: "fashion",
+//     displayName: "Fashion",
+//     level: 0,
+//     children: [
+//       { id: "fashion-basics", level: 1, children: [] },
+//       { id: "fashion-accessories", level: 1, children: [] }
+//     ]
+//   }
+// ]
 router.get('/interests/tree', requireRole('super_admin'), async (req, res) => {
   try {
     const db = admin.firestore();
+    // Optional max depth parameter - useful for limiting tree expansion in UI
     const maxDepth = req.query.maxDepth ? parseInt(req.query.maxDepth) : null;
 
+    // Fetch all active interests ordered by name for consistent results
     const snapshot = await db.collection('interests')
       .where('isActive', '==', true)
       .orderBy('name')
@@ -2645,28 +2683,30 @@ router.get('/interests/tree', requireRole('super_admin'), async (req, res) => {
     const allInterests = [];
     const interestMap = {};
 
+    // Convert Firestore documents to objects and add children array
     snapshot.forEach(doc => {
       const data = {
         id: doc.id,
         ...doc.data(),
-        children: [],
-        createdAt: doc.data().createdAt?.toMillis?.() || null,
-        updatedAt: doc.data().updatedAt?.toMillis?.() || null
+        children: [],                                                  // Will hold child interests
+        createdAt: doc.data().createdAt?.toMillis?.() || null,        // Convert timestamp
+        updatedAt: doc.data().updatedAt?.toMillis?.() || null         // Convert timestamp
       };
-      interestMap[doc.id] = data;
+      interestMap[doc.id] = data;  // Create lookup map for fast parent-child linking
       allInterests.push(data);
     });
 
-    // Build tree structure
+    // Build tree structure by linking parents to children
     const tree = [];
     allInterests.forEach(interest => {
       if (!interest.parentId) {
-        // Root interest
+        // Root level interest - add to tree if within depth limit
         if (!maxDepth || interest.level <= maxDepth) {
           tree.push(interest);
         }
       } else if (interestMap[interest.parentId]) {
-        // Add to parent's children
+        // Sub-interest - add to parent's children array
+        // Note: Parent must exist in interestMap (should always be true if data is consistent)
         interestMap[interest.parentId].children.push(interest);
       }
     });
@@ -2679,8 +2719,19 @@ router.get('/interests/tree', requireRole('super_admin'), async (req, res) => {
 });
 
 // @route   GET /api/admin/interests
-// @desc    Get all interests with optional filters
+// @desc    Get interests with optional filtering by parent or level
 // @access  Private (super_admin+)
+// @query   {string} parentId - Optional. Filter by parent interest ID (e.g., ?parentId=fashion)
+// @query   {number} level - Optional. Filter by hierarchy level (e.g., ?level=1)
+// @returns {object} interests - Array of interest objects, count
+//
+// Filtering Behavior:
+//   - No params: Returns root interests (parentId == null)
+//   - parentId only: Returns direct children of that parent
+//   - level only: Returns interests at that level
+//   - Both: Returns interests matching both conditions
+//
+// Default: Returns only root level interests (level 0)
 router.get('/interests', requireRole('super_admin'), async (req, res) => {
   try {
     const db = admin.firestore();
@@ -2690,17 +2741,19 @@ router.get('/interests', requireRole('super_admin'), async (req, res) => {
 
     // Filter by parent if provided
     if (parentId) {
+      // Get specific parent's children
       query = query.where('parentId', '==', parentId);
     } else {
-      // Get root interests only if no parent specified
+      // Default: Get root interests only (no parent)
       query = query.where('parentId', '==', null);
     }
 
-    // Filter by level if provided
+    // Additional filter by level if provided
     if (level) {
       query = query.where('level', '==', parseInt(level));
     }
 
+    // Sort results by name for consistent ordering
     const snapshot = await query.orderBy('name').get();
     const interests = [];
 
@@ -2708,8 +2761,8 @@ router.get('/interests', requireRole('super_admin'), async (req, res) => {
       interests.push({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toMillis?.() || null,
-        updatedAt: doc.data().updatedAt?.toMillis?.() || null
+        createdAt: doc.data().createdAt?.toMillis?.() || null,  // Convert Firestore timestamp
+        updatedAt: doc.data().updatedAt?.toMillis?.() || null   // Convert Firestore timestamp
       });
     });
 
@@ -2721,21 +2774,37 @@ router.get('/interests', requireRole('super_admin'), async (req, res) => {
 });
 
 // @route   POST /api/admin/interests
-// @desc    Create new interest
+// @desc    Create new interest in the taxonomy
 // @access  Private (super_admin+)
+// @body    {string} name - Required. Unique internal name (converted to lowercase-hyphenated ID)
+// @body    {string} displayName - Required. User-facing display name
+// @body    {string} parentId - Optional. Parent interest ID for creating sub-interests
+// @body    {string} description - Optional. Detailed description
+// @body    {string[]} keywords - Optional. Searchable keywords array
+// @body    {string[]} synonyms - Optional. Alternative names array
+// @returns {object} interest - Created interest with calculated level and path
+//
+// Key Logic:
+//   - Automatically calculates level and path from parent
+//   - Converts name to ID (lowercase, hyphens)
+//   - Initializes metrics to 0
+//   - Sets isActive = true
+//   - Validates parent exists if provided
 router.post('/interests', requireRole('super_admin'), async (req, res) => {
   try {
     const db = admin.firestore();
     const { name, displayName, parentId, description, keywords, synonyms } = req.body;
 
+    // Validate required fields
     if (!name || !displayName) {
       return res.status(400).json({ message: 'name and displayName are required' });
     }
 
+    // Initialize as root level interest
     let level = 0;
     let path = [name];
 
-    // If has parent, get parent level and path
+    // If parent provided, fetch and use its level and path
     if (parentId) {
       const parentRef = db.collection('interests').doc(parentId);
       const parentDoc = await parentRef.get();
@@ -2745,32 +2814,34 @@ router.post('/interests', requireRole('super_admin'), async (req, res) => {
       }
 
       const parentData = parentDoc.data();
-      level = parentData.level + 1;
-      path = [...(parentData.path || []), name];
+      level = parentData.level + 1;                        // Increment level
+      path = [...(parentData.path || []), name];           // Append to parent's path
     }
 
+    // Generate interest ID from name: lowercase and replace spaces/special chars with hyphens
     const interestId = name.toLowerCase().replace(/\s+/g, '-');
     const interestRef = db.collection('interests').doc(interestId);
 
+    // Create new interest document with all required fields
     await interestRef.set({
-      id: interestId,
-      name,
-      displayName,
-      parentId: parentId || null,
-      level,
-      path,
-      description: description || null,
-      coverImageUrl: null,
-      isActive: true,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      postCount: 0,
-      followerCount: 0,
-      weeklyGrowth: 0.0,
-      monthlyGrowth: 0.0,
-      relatedInterestIds: [],
-      keywords: keywords || [],
-      synonyms: synonyms || []
+      id: interestId,                                               // Unique identifier
+      name,                                                         // Internal name (for reference)
+      displayName,                                                  // User-facing name
+      parentId: parentId || null,                                   // Parent reference or null
+      level,                                                        // Calculated hierarchy level
+      path,                                                         // Full path from root
+      description: description || null,                             // Optional description
+      coverImageUrl: null,                                          // Can be added later
+      isActive: true,                                               // Active by default
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),      // Server-set timestamp
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),      // Server-set timestamp
+      postCount: 0,                                                 // Posts counter (updated elsewhere)
+      followerCount: 0,                                             // Followers counter (updated elsewhere)
+      weeklyGrowth: 0.0,                                            // Weekly growth (updated elsewhere)
+      monthlyGrowth: 0.0,                                           // Monthly growth (updated elsewhere)
+      relatedInterestIds: [],                                       // Related interests (populated later)
+      keywords: keywords || [],                                    // Searchable terms
+      synonyms: synonyms || []                                     // Alternative names
     });
 
     res.json({
@@ -2785,8 +2856,21 @@ router.post('/interests', requireRole('super_admin'), async (req, res) => {
 });
 
 // @route   PUT /api/admin/interests/:id
-// @desc    Update interest
+// @desc    Update interest fields (partial updates allowed)
 // @access  Private (super_admin+)
+// @param   {string} id - Interest ID to update
+// @body    {string} displayName - Optional. Update user-facing name
+// @body    {string} description - Optional. Update description
+// @body    {string[]} keywords - Optional. Update searchable keywords
+// @body    {string[]} synonyms - Optional. Update alternative names
+// @body    {boolean} isActive - Optional. Activate/deactivate interest
+// @returns {object} Success message
+//
+// Important Restrictions:
+//   - Cannot change: id, name, parentId, level, path (structural integrity)
+//   - These fields are set at creation and cannot be modified
+//   - Use DELETE endpoint to deactivate instead of partial updates
+//   - updatedAt timestamp is auto-updated
 router.put('/interests/:id', requireRole('super_admin'), async (req, res) => {
   try {
     const db = admin.firestore();
@@ -2800,16 +2884,19 @@ router.put('/interests/:id', requireRole('super_admin'), async (req, res) => {
       return res.status(404).json({ message: 'Interest not found' });
     }
 
+    // Build update payload with only provided fields
     const updateData = {
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()  // Always update timestamp
     };
 
+    // Conditionally add fields if they were provided in request
     if (displayName) updateData.displayName = displayName;
-    if (description !== undefined) updateData.description = description;
+    if (description !== undefined) updateData.description = description;  // Check undefined to allow null
     if (keywords) updateData.keywords = keywords;
     if (synonyms) updateData.synonyms = synonyms;
     if (isActive !== undefined) updateData.isActive = isActive;
 
+    // Apply updates to document
     await interestRef.update(updateData);
 
     res.json({ success: true, message: 'Interest updated successfully' });
@@ -2820,8 +2907,22 @@ router.put('/interests/:id', requireRole('super_admin'), async (req, res) => {
 });
 
 // @route   DELETE /api/admin/interests/:id
-// @desc    Deactivate interest (soft delete)
+// @desc    Deactivate interest (soft delete - data preserved)
 // @access  Private (super_admin+)
+// @param   {string} id - Interest ID to deactivate
+// @returns {object} Success message
+//
+// Soft Delete Pattern:
+//   - Sets isActive = false instead of removing document
+//   - Preserves all historical data for auditing/recovery
+//   - Deactivated interests filtered out from active queries
+//   - Can be reactivated via PUT endpoint (set isActive = true)
+//   - Child interests remain in hierarchy (consider cascading logic if needed)
+//
+// Implementation Notes:
+//   - Does NOT delete from collection (soft delete)
+//   - updatedAt timestamp updated on deactivation
+//   - Useful for maintaining data consistency and audit trails
 router.delete('/interests/:id', requireRole('super_admin'), async (req, res) => {
   try {
     const db = admin.firestore();
@@ -2834,15 +2935,244 @@ router.delete('/interests/:id', requireRole('super_admin'), async (req, res) => 
       return res.status(404).json({ message: 'Interest not found' });
     }
 
-    // Soft delete by deactivating
+    // Soft delete by deactivating the interest
     await interestRef.update({
-      isActive: false,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      isActive: false,                                        // Mark as inactive
+      updatedAt: admin.firestore.FieldValue.serverTimestamp() // Track when deactivated
     });
 
     res.json({ success: true, message: 'Interest deactivated successfully' });
   } catch (error) {
     console.error('Error deleting interest:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ============================================
+// POST MIGRATION: Tags → Interests
+// ============================================
+// Utilities for migrating legacy post tags/categories to new interests taxonomy
+// Provides batch processing with progress tracking and tag mapping support
+
+// @route   POST /api/admin/posts/migrate-interests
+// @desc    Migrate posts from tags/categories to interests taxonomy
+// @access  Private (super_admin+)
+// @body    {number} batchSize - How many posts to process per request (default 100)
+// @body    {number} limit - Max posts to migrate (null = unlimited)
+// @body    {object} tagMappings - Map of tag -> interest ID (e.g., { "nature": "photography" })
+// @body    {boolean} updateAll - If true, migrate all posts; if false, only migrate unmigrated ones
+// @returns {object} Migration results with count of migrated/skipped posts
+//
+// Legacy Data Structure:
+//   - tags: [String]? - Arbitrary user-defined tags
+//   - categories: [String]? - Pre-defined categories
+//
+// New Data Structure:
+//   - interests: [String]? - Interest IDs from interests taxonomy
+//   - migratedAt: Date - When post was migrated
+//   - migrationStatus: String - "pending" or "completed"
+router.post('/posts/migrate-interests', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const {
+      batchSize = 100,
+      limit = null,
+      tagMappings = {},
+      updateAll = false
+    } = req.body;
+
+    // Query posts: if updateAll, migrate all; otherwise only unmigrated posts
+    let query = db.collection('posts');
+
+    if (!updateAll) {
+      // Only migrate posts without interests field set
+      query = query.where('interests', '==', null);
+    }
+
+    // Apply batch size and optional limit
+    let snapshot;
+    if (limit) {
+      snapshot = await query.limit(Math.min(limit, batchSize)).get();
+    } else {
+      snapshot = await query.limit(batchSize).get();
+    }
+
+    const batch = db.batch();
+    let migratedCount = 0;
+    let skippedCount = 0;
+    const errors = [];
+
+    // Process each post in the batch
+    for (const doc of snapshot.docs) {
+      try {
+        const post = doc.data();
+        const tags = post.tags || [];
+        const categories = post.categories || [];
+
+        // Collect interests by applying tag mappings
+        const interests = new Set();
+
+        // Map tags using provided mappings
+        for (const tag of tags) {
+          const mappedInterest = tagMappings[tag.toLowerCase()];
+          if (mappedInterest) {
+            interests.add(mappedInterest);
+          }
+        }
+
+        // Directly add categories (assume they align with interest IDs)
+        for (const category of categories) {
+          interests.add(category.toLowerCase());
+        }
+
+        // Skip posts with no mapped interests
+        if (interests.size === 0) {
+          skippedCount++;
+          continue;
+        }
+
+        // Update post with interests and migration metadata
+        batch.update(doc.ref, {
+          interests: Array.from(interests),                                // Set interest IDs
+          migratedAt: admin.firestore.FieldValue.serverTimestamp(),       // Track migration time
+          migrationStatus: 'completed'                                     // Mark as migrated
+        });
+
+        migratedCount++;
+      } catch (error) {
+        // Log individual post errors but continue processing
+        errors.push({
+          postId: doc.id,
+          error: error.message
+        });
+      }
+    }
+
+    // Commit all updates atomically
+    if (snapshot.docs.length > 0) {
+      await batch.commit();
+    }
+
+    res.json({
+      success: true,
+      message: `Migration batch complete: ${migratedCount} migrated, ${skippedCount} skipped`,
+      migrated: migratedCount,
+      skipped: skippedCount,
+      errors: errors,
+      totalProcessed: snapshot.docs.length
+    });
+  } catch (error) {
+    console.error('Error migrating interests:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   GET /api/admin/posts/migration-stats
+// @desc    Get migration statistics and progress
+// @access  Private (super_admin+)
+// @returns {object} stats - Total, migrated, pending counts and percentage
+//
+// Provides dashboard with:
+//   - Total posts in collection
+//   - Posts already migrated (migrationStatus = "completed")
+//   - Posts pending migration (interests = null)
+//   - Overall migration percentage
+router.get('/posts/migration-stats', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+
+    // Get counts using aggregation queries
+    const totalSnapshot = await db.collection('posts').count().get();
+    const migratedSnapshot = await db.collection('posts')
+      .where('migrationStatus', '==', 'completed')
+      .count()
+      .get();
+    const pendingSnapshot = await db.collection('posts')
+      .where('interests', '==', null)
+      .count()
+      .get();
+
+    const total = totalSnapshot.data().count;
+    const migrated = migratedSnapshot.data().count;
+    const pending = pendingSnapshot.data().count;
+    const percentage = total > 0 ? Math.round((migrated / total) * 100) : 0;
+
+    res.json({
+      success: true,
+      stats: {
+        total,
+        migrated,
+        pending,
+        percentage
+      }
+    });
+  } catch (error) {
+    console.error('Error getting migration stats:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   GET /api/admin/posts/migration-preview
+// @desc    Preview how many posts would be migrated with given mappings
+// @access  Private (super_admin+)
+// @query   {string} tagMappings - JSON-encoded tag mappings
+// @returns {object} preview - Sample posts and migration statistics
+//
+// Useful for testing mappings before running full migration
+router.get('/posts/migration-preview', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const tagMappings = req.query.tagMappings ? JSON.parse(req.query.tagMappings) : {};
+
+    // Get sample of unmigrated posts
+    const snapshot = await db.collection('posts')
+      .where('interests', '==', null)
+      .limit(10)
+      .get();
+
+    const preview = [];
+    let wouldMigrateCount = 0;
+
+    for (const doc of snapshot.docs) {
+      const post = doc.data();
+      const tags = post.tags || [];
+      const categories = post.categories || [];
+
+      // Simulate mapping
+      const interests = new Set();
+
+      for (const tag of tags) {
+        const mappedInterest = tagMappings[tag.toLowerCase()];
+        if (mappedInterest) {
+          interests.add(mappedInterest);
+        }
+      }
+
+      for (const category of categories) {
+        interests.add(category.toLowerCase());
+      }
+
+      if (interests.size > 0) {
+        wouldMigrateCount++;
+      }
+
+      preview.push({
+        postId: doc.id,
+        originalTags: tags,
+        originalCategories: categories,
+        mappedInterests: Array.from(interests),
+        willMigrate: interests.size > 0
+      });
+    }
+
+    res.json({
+      success: true,
+      preview,
+      sampleSize: snapshot.docs.length,
+      wouldMigrate: wouldMigrateCount
+    });
+  } catch (error) {
+    console.error('Error previewing migration:', error);
     res.status(500).json({ message: error.message });
   }
 });

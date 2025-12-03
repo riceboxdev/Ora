@@ -156,38 +156,43 @@ struct HomeFeedView: View {
     
     private var postsFeedView: some View {
         ScrollView {
-            LazyVStack(spacing: ViewConstants.Layout.defaultSpacing) {
-                UploadQueueCard(queueService: queueService)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                
-                // Show trending topics section if we have topics, or if we're loading (to show loading state)
-                if !viewModel.trendingTopics.isEmpty || viewModel.isLoadingTrendingTopics {
-                    HomeTrendingTopicsSection(
-                        trendingTopics: viewModel.trendingTopics,
-                        isLoadingTrendingTopics: viewModel.isLoadingTrendingTopics,
-                        selectedTrendingTopic: viewModel.selectedTrendingTopic,
-                        onTopicSelected: { topic in
-                            await viewModel.filterByTrendingTopic(topic)
-                            // Optimized sensory feedback - only trigger when actually changing
-                            if selectedTopicId != topic?.id {
-                                selectedTopicId = topic?.id
-                            }
-                        }
+            LazyVStack(spacing: ViewConstants.Layout.defaultSpacing, pinnedViews: .sectionHeaders) {
+                Section {
+                    
+                    UploadQueueCard(queueService: queueService)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    
+                    
+                    
+                    PostGrid(
+                        posts: $viewModel.posts,
+                        onItemAppear: nil, // Disable item-based pagination
+                        adsEnabled: true, // Enable ads on home feed
+                        followedUserIds: viewModel.followedUserIds,
+                        followedTopicNames: viewModel.followedTopicNames
                     )
-                    .sensoryFeedback(.selection, trigger: selectedTopicId)
+                    
+                    
+                    // Reusable Pagination Footer
+                    PaginationFooter(viewModel: viewModel)
+                } header: {
+                    // Show trending topics section if we have topics, or if we're loading (to show loading state)
+                    if !viewModel.trendingTopics.isEmpty || viewModel.isLoadingTrendingTopics {
+                        HomeTrendingTopicsSection(
+                            trendingTopics: viewModel.trendingTopics,
+                            isLoadingTrendingTopics: viewModel.isLoadingTrendingTopics,
+                            selectedTrendingTopic: viewModel.selectedTrendingTopic,
+                            onTopicSelected: { topic in
+                                await viewModel.filterByTrendingTopic(topic)
+                                // Optimized sensory feedback - only trigger when actually changing
+                                if selectedTopicId != topic?.id {
+                                    selectedTopicId = topic?.id
+                                }
+                            }
+                        )
+                        .sensoryFeedback(.selection, trigger: selectedTopicId)
+                    }
                 }
-                
-                PostGrid(
-                    posts: $viewModel.posts,
-                    onItemAppear: nil, // Disable item-based pagination
-                    adsEnabled: true, // Enable ads on home feed
-                    followedUserIds: viewModel.followedUserIds,
-                    followedTopicNames: viewModel.followedTopicNames
-                )
-                
-                
-                // Reusable Pagination Footer
-                PaginationFooter(viewModel: viewModel)
             }
         }
         .scrollIndicators(.hidden)
@@ -197,7 +202,7 @@ struct HomeFeedView: View {
 
 #Preview {
     HomeFeedView()
-        .previewAuthenticated()
+        .previewAuthenticated(email: "nickswoke@outlook.com", password: "password1")
 }
 
 #Preview("Admin User") {
