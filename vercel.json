@@ -9,11 +9,6 @@
       "use": "@vercel/node"
     }
   ],
-  "functions": {
-    "api/**": {
-      "maxDuration": 10
-    }
-  },
   "rewrites": [
     {
       "source": "/api/:path*",
