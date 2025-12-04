@@ -1,81 +1,138 @@
 <template>
-  <header class="bg-background border-b">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between h-16">
-        <div class="flex">
-          <div class="flex-shrink-0 flex items-center">
-            <img src="/logo-black.svg" alt="ORA Logo" class="h-8 w-auto" />
-          </div>
-          <nav class="hidden sm:ml-6 sm:flex sm:space-x-1">
-            <router-link
-              to="/"
-              class="border-transparent text-muted-foreground hover:border-border hover:text-foreground inline-flex items-center px-3 pt-1 border-b-2 text-sm font-medium transition-colors"
-              active-class="border-primary text-foreground"
-            >
-              Dashboard
-            </router-link>
+  <header class="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex h-16 items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <img src="/logo-black.svg" alt="ORA Logo" class="h-8 w-auto" />
+          <Menubar class="hidden md:flex border-none bg-transparent">
+            <MenubarMenu>
+              <router-link
+                to="/"
+                class="inline-flex h-9 items-center justify-center rounded-md px-3 py-1 text-sm font-medium transition-colors hover:text-foreground/80 focus:outline-none focus:bg-accent focus:text-accent-foreground"
+                active-class="text-foreground"
+                exact-active-class="text-foreground"
+              >
+                Dashboard
+              </router-link>
+            </MenubarMenu>
 
-            <div class="relative group">
-              <button class="border-transparent text-muted-foreground hover:border-border hover:text-foreground inline-flex items-center px-3 pt-1 border-b-2 text-sm font-medium group-hover:border-border group-hover:text-foreground transition-colors">
+            <MenubarMenu>
+              <MenubarTrigger class="flex items-center gap-1">
                 Community
-                <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
-              </button>
-              <div class="absolute left-0 mt-0 w-48 bg-popover shadow-lg rounded-md py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 border">
-                <router-link to="/users" class="block px-4 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground">Users</router-link>
-                <router-link to="/announcements" class="block px-4 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground">Announcements</router-link>
-                <router-link to="/notifications" class="block px-4 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground">Notifications</router-link>
-              </div>
-            </div>
+              </MenubarTrigger>
+              <MenubarContent>
+                <MenubarItem as-child>
+                  <router-link to="/users" class="w-full">
+                    <div class="flex flex-col">
+                      <span>Users</span>
+                      <span class="text-xs text-muted-foreground">Manage user accounts and permissions</span>
+                    </div>
+                  </router-link>
+                </MenubarItem>
+                <MenubarItem as-child>
+                  <router-link to="/announcements" class="w-full">
+                    <div class="flex flex-col">
+                      <span>Announcements</span>
+                      <span class="text-xs text-muted-foreground">Create and manage announcements</span>
+                    </div>
+                  </router-link>
+                </MenubarItem>
+                <MenubarItem as-child>
+                  <router-link to="/notifications" class="w-full">
+                    <div class="flex flex-col">
+                      <span>Notifications</span>
+                      <span class="text-xs text-muted-foreground">Send notifications to users</span>
+                    </div>
+                  </router-link>
+                </MenubarItem>
+              </MenubarContent>
+            </MenubarMenu>
 
-            <div class="relative group">
-              <button class="border-transparent text-muted-foreground hover:border-border hover:text-foreground inline-flex items-center px-3 pt-1 border-b-2 text-sm font-medium group-hover:border-border group-hover:text-foreground transition-colors">
+            <MenubarMenu>
+              <MenubarTrigger class="flex items-center gap-1">
                 Content
-                <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
-              </button>
-              <div class="absolute left-0 mt-0 w-48 bg-popover shadow-lg rounded-md py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 border">
-                <router-link to="/moderation" class="block px-4 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground">Moderation</router-link>
-                <router-link to="/content" class="block px-4 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground">Manage Content</router-link>
-                <router-link to="/interests" class="block px-4 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground">Interests</router-link>
-                <router-link to="/posts-migration" class="block px-4 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground">Migrate Posts (Legacy)</router-link>
-                <router-link to="/posts-migration-v2" class="block px-4 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground">Migrate Posts (Enhanced)</router-link>
-              </div>
-            </div>
+              </MenubarTrigger>
+              <MenubarContent>
+                <MenubarItem as-child>
+                  <router-link to="/moderation" class="w-full">
+                    <div class="flex flex-col">
+                      <span>Moderation</span>
+                      <span class="text-xs text-muted-foreground">Review and moderate content</span>
+                    </div>
+                  </router-link>
+                </MenubarItem>
+                <MenubarItem as-child>
+                  <router-link to="/content" class="w-full">
+                    <div class="flex flex-col">
+                      <span>Manage Content</span>
+                      <span class="text-xs text-muted-foreground">Organize and manage content</span>
+                    </div>
+                  </router-link>
+                </MenubarItem>
+                <MenubarItem as-child>
+                  <router-link to="/interests" class="w-full">
+                    <div class="flex flex-col">
+                      <span>Interests</span>
+                      <span class="text-xs text-muted-foreground">Manage user interests and tags</span>
+                    </div>
+                  </router-link>
+                </MenubarItem>
+                <MenubarItem as-child>
+                  <router-link to="/posts-migration" class="w-full">
+                    <div class="flex flex-col">
+                      <span>Migrate Posts (Legacy)</span>
+                      <span class="text-xs text-muted-foreground">Legacy post migration tool</span>
+                    </div>
+                  </router-link>
+                </MenubarItem>
+                <MenubarItem as-child>
+                  <router-link to="/posts-migration-v2" class="w-full">
+                    <div class="flex flex-col">
+                      <span>Migrate Posts (Enhanced)</span>
+                      <span class="text-xs text-muted-foreground">Enhanced post migration tool</span>
+                    </div>
+                  </router-link>
+                </MenubarItem>
+              </MenubarContent>
+            </MenubarMenu>
 
-            <router-link
-              to="/analytics"
-              class="border-transparent text-muted-foreground hover:border-border hover:text-foreground inline-flex items-center px-3 pt-1 border-b-2 text-sm font-medium transition-colors"
-              active-class="border-primary text-foreground"
-            >
-              Analytics
-            </router-link>
+            <MenubarMenu>
+              <router-link
+                to="/analytics"
+                class="inline-flex h-9 items-center justify-center rounded-md px-3 py-1 text-sm font-medium transition-colors hover:text-foreground/80 focus:outline-none focus:bg-accent focus:text-accent-foreground"
+                active-class="text-foreground"
+                exact-active-class="text-foreground"
+              >
+                Analytics
+              </router-link>
+            </MenubarMenu>
 
-            <router-link
-              to="/settings"
-              class="border-transparent text-muted-foreground hover:border-border hover:text-foreground inline-flex items-center px-3 pt-1 border-b-2 text-sm font-medium transition-colors"
-              active-class="border-primary text-foreground"
-            >
-              Settings
-            </router-link>
-          </nav>
+            <MenubarMenu>
+              <router-link
+                to="/settings"
+                class="inline-flex h-9 items-center justify-center rounded-md px-3 py-1 text-sm font-medium transition-colors hover:text-foreground/80 focus:outline-none focus:bg-accent focus:text-accent-foreground"
+                active-class="text-foreground"
+                exact-active-class="text-foreground"
+              >
+                Settings
+              </router-link>
+            </MenubarMenu>
+          </Menubar>
         </div>
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div class="relative ml-3">
-              <div class="flex items-center space-x-4">
-                <span class="text-sm text-foreground">{{ admin?.email }}</span>
-                <Button
-                  @click="handleLogout"
-                  variant="default"
-                >
-                  Logout
-                </Button>
-              </div>
-            </div>
+
+        <div class="flex items-center space-x-4">
+          <div class="hidden md:flex items-center space-x-2">
+            <span class="text-sm text-muted-foreground">{{ admin?.email }}</span>
           </div>
+          <Button @click="handleLogout" variant="default" size="sm">
+            Logout
+          </Button>
         </div>
       </div>
     </div>
@@ -87,6 +144,11 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import Button from '@/components/ui/Button.vue';
+import Menubar from '@/components/ui/Menubar.vue';
+import MenubarMenu from '@/components/ui/MenubarMenu.vue';
+import MenubarTrigger from '@/components/ui/MenubarTrigger.vue';
+import MenubarContent from '@/components/ui/MenubarContent.vue';
+import MenubarItem from '@/components/ui/MenubarItem.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -98,4 +160,3 @@ const handleLogout = async () => {
   router.push('/login');
 };
 </script>
-

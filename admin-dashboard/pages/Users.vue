@@ -1,39 +1,40 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-background">
     <AppHeader />
     
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <div class="px-4 py-6 sm:px-0">
         <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-bold text-gray-900">User Management</h2>
-          <div class="flex items-center space-x-4">
-            <!-- View Toggle -->
-            <div class="flex items-center space-x-2 border border-gray-300 rounded-md p-1">
-              <button
-                @click="viewMode = 'table'"
-                :class="viewMode === 'table' ? 'bg-indigo-600 text-white' : 'text-gray-700'"
-                class="px-3 py-1 rounded text-sm font-medium"
-              >
-                Table
-              </button>
-              <button
-                @click="viewMode = 'cards'"
-                :class="viewMode === 'cards' ? 'bg-indigo-600 text-white' : 'text-gray-700'"
-                class="px-3 py-1 rounded text-sm font-medium"
-              >
-                Cards
-              </button>
+        <Card class="mb-6">
+          <CardContent class="p-6">
+            <div class="flex justify-between items-center">
+              <h2 class="text-2xl font-bold text-foreground">User Management</h2>
+              <div class="flex items-center space-x-4">
+                <!-- View Toggle -->
+                <div class="flex items-center space-x-2 border border-input rounded-md p-1">
+                  <Button
+                    @click="viewMode = 'table'"
+                    :variant="viewMode === 'table' ? 'default' : 'ghost'"
+                    size="sm"
+                  >
+                    Table
+                  </Button>
+                  <Button
+                    @click="viewMode = 'cards'"
+                    :variant="viewMode === 'cards' ? 'default' : 'ghost'"
+                    size="sm"
+                  >
+                    Cards
+                  </Button>
+                </div>
+                <!-- Export Button -->
+                <Button @click="handleExport" variant="outline" size="sm">
+                  Export All
+                </Button>
+              </div>
             </div>
-            <!-- Export Button -->
-            <button
-              @click="handleExport"
-              class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-            >
-              Export All
-            </button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         <!-- Filters -->
         <UserFilters
@@ -43,51 +44,47 @@
         />
 
         <!-- Sorting and Pagination Controls -->
-        <div class="mb-4 flex items-center justify-between">
-          <div class="flex items-center space-x-4">
-            <label class="text-sm font-medium text-gray-700">Sort by:</label>
-            <select
-              v-model="sortBy"
-              @change="fetchUsers"
-              class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="createdAt">Joined Date</option>
-              <option value="email">Email</option>
-              <option value="displayName">Name</option>
-              <option value="followerCount">Followers</option>
-              <option value="postCount">Posts</option>
-            </select>
-            <select
-              v-model="sortOrder"
-              @change="fetchUsers"
-              class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
-            </select>
-          </div>
-          <div class="flex items-center space-x-2">
-            <label class="text-sm font-medium text-gray-700">Items per page:</label>
-            <select
-              v-model="limit"
-              @change="handleLimitChange"
-              class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="25">25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
-        </div>
+        <Card class="mb-4">
+          <CardContent class="p-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-4">
+                <label class="text-sm font-medium text-foreground">Sort by:</label>
+                <Select v-model="sortBy" @update:modelValue="fetchUsers">
+                  <SelectItem value="createdAt">Joined Date</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="displayName">Name</SelectItem>
+                  <SelectItem value="followerCount">Followers</SelectItem>
+                  <SelectItem value="postCount">Posts</SelectItem>
+                </Select>
+                <Select v-model="sortOrder" @update:modelValue="fetchUsers">
+                  <SelectItem value="desc">Descending</SelectItem>
+                  <SelectItem value="asc">Ascending</SelectItem>
+                </Select>
+              </div>
+              <div class="flex items-center space-x-2">
+                <label class="text-sm font-medium text-foreground">Items per page:</label>
+                <Select v-model="limit" @update:modelValue="handleLimitChange">
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <!-- Loading State -->
         <div v-if="loading" class="text-center py-12">
-          <p class="text-gray-500">Loading users...</p>
+          <p class="text-muted-foreground">Loading users...</p>
         </div>
 
         <!-- Empty State -->
         <div v-else-if="users.length === 0" class="text-center py-12">
-          <p class="text-gray-500">No users found.</p>
+          <Card>
+            <CardContent class="p-12">
+              <p class="text-muted-foreground">No users found.</p>
+            </CardContent>
+          </Card>
         </div>
 
         <!-- Users List -->
@@ -122,27 +119,33 @@
           </div>
 
           <!-- Pagination -->
-          <div class="mt-6 flex items-center justify-between">
-            <div class="text-sm text-gray-700">
-              Showing {{ offset + 1 }} to {{ Math.min(offset + limit, total) }} of {{ total }} users
-            </div>
-            <div class="flex items-center space-x-2">
-              <button
-                @click="handlePreviousPage"
-                :disabled="offset === 0 || loading"
-                class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <button
-                @click="handleNextPage"
-                :disabled="offset + limit >= total || loading"
-                class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+          <Card class="mt-6">
+            <CardContent class="p-4">
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-muted-foreground">
+                  Showing {{ offset + 1 }} to {{ Math.min(offset + limit, total) }} of {{ total }} users
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Button
+                    @click="handlePreviousPage"
+                    :disabled="offset === 0 || loading"
+                    variant="outline"
+                    size="sm"
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    @click="handleNextPage"
+                    :disabled="offset + limit >= total || loading"
+                    variant="outline"
+                    size="sm"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </main>
@@ -177,6 +180,11 @@ import UserTable from '../components/UserTable.vue';
 import UserFilters from '../components/UserFilters.vue';
 import BulkActionsBar from '../components/BulkActionsBar.vue';
 import UserDetailModal from '../components/UserDetailModal.vue';
+import Button from '@/components/ui/Button.vue';
+import Card from '@/components/ui/Card.vue';
+import CardContent from '@/components/ui/CardContent.vue';
+import Select from '@/components/ui/Select.vue';
+import SelectItem from '@/components/ui/SelectItem.vue';
 
 const users = ref([]);
 const loading = ref(true);
