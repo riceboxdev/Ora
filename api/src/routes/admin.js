@@ -3061,6 +3061,56 @@ router.delete('/interests/:id', requireRole('super_admin'), async (req, res) => 
 // Utilities for migrating legacy post tags/categories to new interests taxonomy
 // Provides batch processing with progress tracking and tag mapping support
 
+// @route   GET /api/admin/posts/all-tags
+// @desc    Get all unique tags from posts collection
+// @access  Private (super_admin+)
+// @returns {object} Array of unique tags with usage counts
+//
+// Returns all tags found across the posts collection, sorted by frequency.
+// Useful for populating the tag mapping UI with actual tags from the database.
+router.get('/posts/all-tags', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+
+    // Fetch all posts (or a large sample if collection is huge)
+    const postsSnapshot = await db.collection('posts').get();
+
+    // Aggregate all unique tags with counts
+    const tagCounts = {};
+
+    postsSnapshot.forEach(doc => {
+      const post = doc.data();
+      const tags = post.tags || [];
+
+      tags.forEach(tag => {
+        const normalizedTag = tag.toLowerCase();
+        if (tagCounts[normalizedTag]) {
+          tagCounts[normalizedTag]++;
+        } else {
+          tagCounts[normalizedTag] = 1;
+        }
+      });
+    });
+
+    // Convert to array and sort by count (descending)
+    const tagsArray = Object.entries(tagCounts).map(([tag, count]) => ({
+      tag,
+      count
+    }));
+
+    tagsArray.sort((a, b) => b.count - a.count);
+
+    res.json({
+      success: true,
+      tags: tagsArray,
+      totalTags: tagsArray.length
+    });
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // @route   POST /api/admin/posts/migrate-interests
 // @desc    Migrate posts from tags/categories to interests taxonomy
 // @access  Private (super_admin+)
