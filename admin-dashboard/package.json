@@ -22,6 +22,7 @@
     "nuxt": "^4.2.1",
     "pinia": "^2.1.7",
     "radix-vue": "^1.9.17",
+    "shadcn-vue": "^2.4.1",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
     "vue": "^3.4.15",
