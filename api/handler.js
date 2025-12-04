@@ -8,6 +8,7 @@ const connectDB = (await import('./src/config/database.js')).default;
 const authRoutes = (await import('./src/routes/auth.js')).default;
 const adminRoutes = (await import('./src/routes/admin.js')).default;
 const reportsRoutes = (await import('./src/routes/reports.js')).default;
+const migrationRoutes = (await import('./src/routes/migrationRoutes.js')).default;
 
 const app = express();
 
@@ -69,6 +70,7 @@ app.use(async (req, res, next) => {
 app.use('/api/admin/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/migrations', migrationRoutes);
 
 app.get('/api/health', async (req, res) => {
   const result = {
