@@ -137,7 +137,8 @@ class MigrationService {
       return { valid: false, errors, warnings };
     }
 
-    const validInterests = ['fashion', 'beauty', 'food', 'fitness', 'home', 'travel', 'photography', 'entertainment', 'technology', 'pets'];
+    // Get valid interests from database
+    const validInterests = await this.getValidInterests();
     
     for (const [tag, interest] of Object.entries(config.tagMappings)) {
       if (!validInterests.includes(interest)) {
@@ -627,6 +628,20 @@ class MigrationService {
     }
     
     return { deleted: snapshot.size };
+  }
+
+  /**
+   * Get valid interests from database
+   */
+  async getValidInterests() {
+    try {
+      const interestsSnapshot = await this.db.collection('interests').get();
+      return interestsSnapshot.docs.map(doc => doc.data().name);
+    } catch (error) {
+      console.error('Error fetching valid interests:', error);
+      // Fallback to basic interests if database query fails
+      return ['fashion', 'beauty', 'food', 'fitness', 'home', 'travel', 'photography', 'entertainment', 'technology', 'pets'];
+    }
   }
 }
 
