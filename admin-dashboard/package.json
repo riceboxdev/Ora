@@ -10,13 +10,20 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@iconify/vue": "^5.0.0",
     "@nuxt/ui": "^4.2.1",
     "@nuxtjs/tailwindcss": "^6.14.0",
     "axios": "^1.6.5",
     "chart.js": "^4.4.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "firebase": "^10.7.1",
+    "lucide-vue-next": "^0.555.0",
     "nuxt": "^4.2.1",
     "pinia": "^2.1.7",
+    "radix-vue": "^1.9.17",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
     "vue": "^3.4.15",
     "vue-chartjs": "^5.2.0",
     "vue-router": "^4.2.5"

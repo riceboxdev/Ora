@@ -67,6 +67,12 @@ const routes = [
     name: 'PostsMigration',
     component: () => import('../../pages/PostsMigration.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/posts-migration-v2',
+    name: 'PostsMigrationV2',
+    component: () => import('../../pages/PostsMigrationV2.vue'),
+    meta: { requiresAuth: true }
   }
 ];
 

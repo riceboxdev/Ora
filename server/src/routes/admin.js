@@ -3395,7 +3395,7 @@ router.put('/welcome-images/reorder', requireRole('super_admin', 'moderator'), a
 });
 
 // @route   GET /api/admin/posts/migration-stats
-// @desc    Get statistics about post migration from tags to interests
+// @desc    Get statistics about post migration from tags to interests (DEPRECATED - use /api/migrations/stats)
 // @access  Private (viewer+)
 router.get('/posts/migration-stats', requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
   try {
@@ -3424,6 +3424,8 @@ router.get('/posts/migration-stats', requireRole('super_admin', 'moderator', 'vi
     
     res.json({
       success: true,
+      deprecated: true,
+      message: 'This endpoint is deprecated. Please use /api/migrations/stats for enhanced migration features.',
       stats: {
         total: totalPosts,
         migrated: migratedCount,
@@ -3441,7 +3443,7 @@ router.get('/posts/migration-stats', requireRole('super_admin', 'moderator', 'vi
 });
 
 // @route   GET /api/admin/posts/migration-preview
-// @desc    Preview what posts would be migrated with given tag mappings
+// @desc    Preview what posts would be migrated with given tag mappings (DEPRECATED - use /api/migrations/dry-run)
 // @access  Private (viewer+)
 router.get('/posts/migration-preview', requireRole('super_admin', 'moderator', 'viewer'), async (req, res) => {
   try {
@@ -3507,6 +3509,8 @@ router.get('/posts/migration-preview', requireRole('super_admin', 'moderator', '
     
     res.json({
       success: true,
+      deprecated: true,
+      message: 'This endpoint is deprecated. Please use /api/migrations/dry-run for enhanced migration features.',
       sampleSize,
       wouldMigrate,
       preview
@@ -3521,7 +3525,7 @@ router.get('/posts/migration-preview', requireRole('super_admin', 'moderator', '
 });
 
 // @route   POST /api/admin/posts/migrate-interests
-// @desc    Migrate posts from tags/categories to interests taxonomy
+// @desc    Migrate posts from tags/categories to interests taxonomy (DEPRECATED - use /api/migrations/create and /api/migrations/:id/start)
 // @access  Private (moderator+)
 router.post('/posts/migrate-interests', requireRole('super_admin', 'moderator'), async (req, res) => {
   try {
@@ -3630,6 +3634,8 @@ router.post('/posts/migrate-interests', requireRole('super_admin', 'moderator'),
     
     res.json({
       success: true,
+      deprecated: true,
+      deprecationMessage: 'This endpoint is deprecated. Please use /api/migrations/create and /api/migrations/:id/start for enhanced migration features with better progress tracking and error handling.',
       message: `Migration completed. ${migrated} posts migrated, ${skipped} skipped.`,
       migrated,
       skipped,

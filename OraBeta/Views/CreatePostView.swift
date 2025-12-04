@@ -337,26 +337,18 @@ struct CreatePostView: View {
     
     @ViewBuilder
     private var emptyStatePhotoPicker: some View {
+        let size: CGFloat = 50
         PhotosPicker(
             selection: $photoPickerItems,
             maxSelectionCount: 10,
             matching: .images
         ) {
-            VStack(alignment: .center) {
-                Image(systemName: "photo.on.rectangle")
-                    .font(.title2)
-                VStack(alignment: .center, spacing: 4) {
-                    Text("Select Photos")
-                        .font(.headline)
-                    Text("Up to 10 images")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding()
-            .frame(maxWidth: .infinity)
-            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 20))
+            Image("plus.solid")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size, height: size)
         }
+        .buttonStyle(.plain)
     }
     
     @ViewBuilder
@@ -468,7 +460,8 @@ struct CreatePostView: View {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             
             // Add auth token if available
-            if let token = try? await authViewModel.getIDToken() {
+            if let user = authViewModel.currentUser,
+               let token = try? await user.getIDToken() {
                 request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             }
             
@@ -483,10 +476,10 @@ struct CreatePostView: View {
             // Parse interests response
             // Expected format: { "interests": [{ "id": "...", "displayName": "..." }], "count": N }
             let decoder = JSONDecoder()
-            let response = try decoder.decode(InterestsResponse.self, from: data)
+            let interestsResponse = try decoder.decode(InterestsResponse.self, from: data)
             
             // Filter to only root interests (parentId == null)
-            let rootInterests = response.interests.filter { $0.parentId == nil }
+            let rootInterests = interestsResponse.interests.filter { $0.parentId == nil }
             
             // Convert to view model (just keep id and displayName)
             availableInterests = rootInterests.map { interest in

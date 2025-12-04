@@ -40,7 +40,8 @@
                 <router-link to="/moderation" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">Moderation</router-link>
                 <router-link to="/content" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">Manage Content</router-link>
                 <router-link to="/interests" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">Interests</router-link>
-                <router-link to="/posts-migration" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">Migrate Posts</router-link>
+                <router-link to="/posts-migration" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">Migrate Posts (Legacy)</router-link>
+                <router-link to="/posts-migration-v2" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">Migrate Posts (Enhanced)</router-link>
               </div>
             </div>
 

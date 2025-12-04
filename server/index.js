@@ -9,6 +9,7 @@ dotenv.config();
 const connectDB = (await import('./src/config/database.js')).default;
 const authRoutes = (await import('./src/routes/auth.js')).default;
 const adminRoutes = (await import('./src/routes/admin.js')).default;
+const migrationRoutes = (await import('./src/routes/migrationRoutes.js')).default;
 const reportsRoutes = (await import('./src/routes/reports.js')).default;
 
 const app = express();
@@ -83,6 +84,7 @@ app.use(async (req, res, next) => {
 // The path Express receives is the full path including /api
 app.use('/api/admin/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/migrations', migrationRoutes);
 app.use('/api/reports', reportsRoutes);
 
 // Health check
