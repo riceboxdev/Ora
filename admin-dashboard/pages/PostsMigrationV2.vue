@@ -480,10 +480,21 @@ const migrationConfig = ref({
   updateAll: false
 });
 
-const availableInterests = ref([
-  'fashion', 'beauty', 'food', 'fitness', 'home',
-  'travel', 'photography', 'entertainment', 'technology', 'pets'
-]);
+const availableInterests = ref([]);
+
+// Fetch available interests from API
+async function fetchAvailableInterests() {
+  try {
+    const response = await api.get('/api/admin/interests');
+    if (response.data.success) {
+      // Extract interest names from the response
+      availableInterests.value = response.data.interests.map(interest => interest.name || interest);
+    }
+  } catch (error) {
+    console.error('Error fetching interests:', error);
+    showAlert('error', 'Failed to load interests', error.message);
+  }
+}
 
 // UI state
 const newTagInput = ref('');
@@ -516,6 +527,7 @@ const alertClasses = computed(() => {
 
 // Lifecycle hooks
 onMounted(() => {
+  fetchAvailableInterests();
   refreshAllData();
   startAutoRefresh();
 });
