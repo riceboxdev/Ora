@@ -903,6 +903,113 @@ router.get('/posts', requireRole('super_admin', 'moderator', 'viewer'), async (r
   }
 });
 
+// @route   GET /api/admin/posts/migration-stats
+// @desc    Get migration statistics and progress
+// @access  Private (super_admin+)
+// @returns {object} stats - Total, migrated, pending counts and percentage
+//
+// Provides dashboard with:
+//   - Total posts in collection
+//   - Posts already migrated (migrationStatus = "completed")
+//   - Posts pending migration (interests = null)
+//   - Overall migration percentage
+router.get('/posts/migration-stats', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+
+    const totalSnapshot = await db.collection('posts').get();
+    const migratedSnapshot = await db.collection('posts')
+      .where('migrationStatus', '==', 'completed')
+      .get();
+    const pendingSnapshot = await db.collection('posts')
+      .where('interests', '==', null)
+      .get();
+
+    const total = totalSnapshot.size;
+    const migrated = migratedSnapshot.size;
+    const pending = pendingSnapshot.size;
+    const percentage = total > 0 ? Math.round((migrated / total) * 100) : 0;
+
+    res.json({
+      success: true,
+      stats: {
+        total,
+        migrated,
+        pending,
+        percentage
+      }
+    });
+  } catch (error) {
+    console.error('Error getting migration stats:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   GET /api/admin/posts/migration-preview
+// @desc    Preview how many posts would be migrated with given mappings
+// @access  Private (super_admin+)
+// @query   {string} tagMappings - JSON-encoded tag mappings
+// @returns {object} preview - Sample posts and migration statistics
+//
+// Useful for testing mappings before running full migration
+router.get('/posts/migration-preview', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const tagMappings = req.query.tagMappings ? JSON.parse(req.query.tagMappings) : {};
+
+    // Get sample of unmigrated posts
+    const snapshot = await db.collection('posts')
+      .where('interests', '==', null)
+      .limit(10)
+      .get();
+
+    const preview = [];
+    let wouldMigrateCount = 0;
+
+    for (const doc of snapshot.docs) {
+      const post = doc.data();
+      const tags = post.tags || [];
+      const categories = post.categories || [];
+
+      // Simulate mapping
+      const interests = new Set();
+
+      for (const tag of tags) {
+        const mappedInterest = tagMappings[tag.toLowerCase()];
+        if (mappedInterest) {
+          interests.add(mappedInterest);
+        }
+      }
+
+      for (const category of categories) {
+        interests.add(category.toLowerCase());
+      }
+
+      if (interests.size > 0) {
+        wouldMigrateCount++;
+      }
+
+      preview.push({
+        postId: doc.id,
+        originalTags: tags,
+        originalCategories: categories,
+        mappedInterests: Array.from(interests),
+        willMigrate: interests.size > 0
+      });
+    }
+
+    res.json({
+      success: true,
+      preview,
+      sampleSize: snapshot.docs.length,
+      wouldMigrate: wouldMigrateCount
+    });
+  } catch (error) {
+    console.error('Error previewing migration:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // @route   GET /api/admin/posts/:id
 // @desc    Get detailed post view
 // @access  Private (viewer+)
@@ -3063,113 +3170,6 @@ router.post('/posts/migrate-interests', requireRole('super_admin'), async (req, 
     });
   } catch (error) {
     console.error('Error migrating interests:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// @route   GET /api/admin/posts/migration-stats
-// @desc    Get migration statistics and progress
-// @access  Private (super_admin+)
-// @returns {object} stats - Total, migrated, pending counts and percentage
-//
-// Provides dashboard with:
-//   - Total posts in collection
-//   - Posts already migrated (migrationStatus = "completed")
-//   - Posts pending migration (interests = null)
-//   - Overall migration percentage
-router.get('/posts/migration-stats', requireRole('super_admin'), async (req, res) => {
-  try {
-    const db = admin.firestore();
-
-    const totalSnapshot = await db.collection('posts').get();
-    const migratedSnapshot = await db.collection('posts')
-      .where('migrationStatus', '==', 'completed')
-      .get();
-    const pendingSnapshot = await db.collection('posts')
-      .where('interests', '==', null)
-      .get();
-
-    const total = totalSnapshot.size;
-    const migrated = migratedSnapshot.size;
-    const pending = pendingSnapshot.size;
-    const percentage = total > 0 ? Math.round((migrated / total) * 100) : 0;
-
-    res.json({
-      success: true,
-      stats: {
-        total,
-        migrated,
-        pending,
-        percentage
-      }
-    });
-  } catch (error) {
-    console.error('Error getting migration stats:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// @route   GET /api/admin/posts/migration-preview
-// @desc    Preview how many posts would be migrated with given mappings
-// @access  Private (super_admin+)
-// @query   {string} tagMappings - JSON-encoded tag mappings
-// @returns {object} preview - Sample posts and migration statistics
-//
-// Useful for testing mappings before running full migration
-router.get('/posts/migration-preview', requireRole('super_admin'), async (req, res) => {
-  try {
-    const db = admin.firestore();
-    const tagMappings = req.query.tagMappings ? JSON.parse(req.query.tagMappings) : {};
-
-    // Get sample of unmigrated posts
-    const snapshot = await db.collection('posts')
-      .where('interests', '==', null)
-      .limit(10)
-      .get();
-
-    const preview = [];
-    let wouldMigrateCount = 0;
-
-    for (const doc of snapshot.docs) {
-      const post = doc.data();
-      const tags = post.tags || [];
-      const categories = post.categories || [];
-
-      // Simulate mapping
-      const interests = new Set();
-
-      for (const tag of tags) {
-        const mappedInterest = tagMappings[tag.toLowerCase()];
-        if (mappedInterest) {
-          interests.add(mappedInterest);
-        }
-      }
-
-      for (const category of categories) {
-        interests.add(category.toLowerCase());
-      }
-
-      if (interests.size > 0) {
-        wouldMigrateCount++;
-      }
-
-      preview.push({
-        postId: doc.id,
-        originalTags: tags,
-        originalCategories: categories,
-        mappedInterests: Array.from(interests),
-        willMigrate: interests.size > 0
-      });
-    }
-
-    res.json({
-      success: true,
-      preview,
-      sampleSize: snapshot.docs.length,
-      wouldMigrate: wouldMigrateCount
-    });
-  } catch (error) {
-    console.error('Error previewing migration:', error);
     res.status(500).json({ message: error.message });
   }
 });
