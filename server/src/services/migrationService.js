@@ -2,8 +2,11 @@ import admin from 'firebase-admin';
 
 class MigrationService {
   constructor() {
-    this.db = admin.firestore();
     this.activeMigrations = new Map();
+  }
+
+  get db() {
+    return admin.firestore();
   }
 
   /**

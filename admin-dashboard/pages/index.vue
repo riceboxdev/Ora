@@ -141,7 +141,7 @@ async function fetchDashboardData() {
 };
 
 onMounted(() => {
-  fetchAnalytics();
+  fetchDashboardData();
 });
 </script>
 

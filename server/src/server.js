@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
+import migrationRoutes from './routes/migrationRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -78,6 +79,7 @@ app.use(async (req, res, next) => {
 // Routes
 app.use('/api/admin/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/migrations', migrationRoutes);
 
 // Health check
 app.get('/api/health', async (req, res) => {
