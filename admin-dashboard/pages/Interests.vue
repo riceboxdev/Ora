@@ -286,7 +286,7 @@ async function loadInterests() {
     loading.value = true;
     error.value = null;
     const response = await getInterests();
-    interests.value = response.interests;
+    interests.value = response;
   } catch (err) {
     error.value = 'Failed to load interests';
     console.error('Error loading interests:', err);
