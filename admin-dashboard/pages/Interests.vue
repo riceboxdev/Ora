@@ -64,15 +64,14 @@
             <!-- Tree View with Recursive Components -->
             <!-- InterestItem is recursive and displays children via @add-child emitter -->
             <!-- Each interest can be edited, deleted, or have children added -->
-            <div v-else class="divide-y">
+            <div v-else class="bg-white rounded-lg border border-gray-200 overflow-hidden divide-y divide-gray-100">
               <InterestItem
                 v-for="interest in interests"
                 :key="interest.id"
                 :interest="interest"
-                :allInterests="interests"
-                @edit="editInterest"
-                @delete="deleteInterestItem"
-                @add-child="showCreateChildModal(interest)"
+                @edit="handleEdit"
+                @delete="handleDelete"
+                @add-child="handleCreateChild"
               />
             </div>
           </div>
@@ -240,7 +239,7 @@ import InterestItem from '../components/InterestItem.vue';
 import { useInterestService } from '../composables/interestService';
 
 // Destructure API methods from composable
-const { getInterests, createInterest, updateInterest, deleteInterest, seedInterests: seedFromAPI } = useInterestService();
+const { getInterests, createInterest, updateInterest, deleteInterest, seedInterests: seedFromAPI, getInterestTree } = useInterestService();
 
 // Root interests state - loaded on mount
 const interests = ref([]);
@@ -285,7 +284,7 @@ async function loadInterests() {
   try {
     loading.value = true;
     error.value = null;
-    const response = await getInterests();
+    const response = await getInterestTree();
     interests.value = response;
   } catch (err) {
     error.value = 'Failed to load interests';
@@ -350,7 +349,7 @@ async function submitCreateInterest() {
  * Opens edit modal with current interest data
  * Converts keywords array to comma-separated string for form display
  */
-function editInterest(interest) {
+function handleEdit(interest) {
   editingInterest.value = { ...interest };  // Shallow copy to avoid direct mutations
   editingKeywordsInput.value = (interest.keywords || []).join(', ');  // Format for display
   showEditModal.value = true;
@@ -400,7 +399,7 @@ async function submitEditInterest() {
  * Soft delete via API (sets isActive = false)
  * Requires user confirmation to prevent accidental deletion
  */
-async function deleteInterestItem(id) {
+async function handleDelete(id) {
   // Show confirmation dialog
   if (!confirm('Are you sure you want to delete this interest? This action cannot be undone.')) {
     return;
@@ -426,7 +425,7 @@ async function deleteInterestItem(id) {
  * Pre-selects parent interest for creating sub-interests
  * Called via @add-child event from InterestItem component
  */
-function showCreateChildModal(parentInterest) {
+function handleCreateChild(parentInterest) {
   form.value.parentId = parentInterest.id;  // Set parent for sub-interest creation
   showCreateModal.value = true;
 }
