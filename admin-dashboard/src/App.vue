@@ -3,5 +3,13 @@
 </template>
 
 <script setup>
-// Root component - router-view handles all routing
+import { onMounted } from 'vue';
+import { useTheme } from '../composables/useTheme.js';
+
+const { loadAndApplyTheme } = useTheme();
+
+// Load and apply saved theme on app mount
+onMounted(async () => {
+  await loadAndApplyTheme();
+});
 </script>

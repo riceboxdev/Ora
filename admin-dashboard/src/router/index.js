@@ -57,6 +57,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/theme-customizer',
+    name: 'ThemeCustomizer',
+    component: () => import('../../pages/ThemeCustomizer.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/interests',
     name: 'Interests',
     component: () => import('../../pages/Interests.vue'),
@@ -85,12 +91,12 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   try {
     const authStore = useAuthStore();
-    
+
     // Initialize auth from localStorage on first load
     if (!authStore.admin && localStorage.getItem('admin')) {
       authStore.initializeFromStorage();
     }
-    
+
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
       next('/login');
     } else if (to.path === '/login' && authStore.isAuthenticated) {
