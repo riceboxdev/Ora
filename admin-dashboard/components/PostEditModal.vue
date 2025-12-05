@@ -57,7 +57,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Moderation Status
               </label>
-              <Select v-model="formData.moderationStatus">
+              <SelectRoot v-model="formData.moderationStatus">
                 <SelectTrigger class="w-full">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
@@ -67,7 +67,7 @@
                   <SelectItem value="rejected">Rejected</SelectItem>
                   <SelectItem value="flagged">Flagged</SelectItem>
                 </SelectContent>
-              </Select>
+              </SelectRoot>
             </div>
 
             <div v-if="post" class="mt-4 p-3 bg-gray-50 rounded-md">
@@ -108,7 +108,7 @@
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import InterestSelector from './InterestSelector.vue';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'reka-ui';
+import { SelectRoot, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'reka-ui';
 
 
 const props = defineProps({

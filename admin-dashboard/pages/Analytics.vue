@@ -6,7 +6,7 @@
       <div class="px-4 py-6 sm:px-0">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-2xl font-bold text-gray-900">Analytics</h2>
-          <Select v-model="period" @update:modelValue="fetchAnalytics">
+          <SelectRoot v-model="period" @update:modelValue="fetchAnalytics">
             <SelectTrigger class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
               <SelectValue placeholder="Select period" />
             </SelectTrigger>
@@ -16,7 +16,7 @@
               <SelectItem value="90d">Last 90 days</SelectItem>
               <SelectItem value="all">All time</SelectItem>
             </SelectContent>
-          </Select>
+          </SelectRoot>
         </div>
         
         <div v-if="loading" class="text-center py-12">
@@ -143,7 +143,7 @@
 import { ref, onMounted } from 'vue';
 import api from '../services/api';
 import AppHeader from '../components/AppHeader.vue';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'reka-ui';
+import { SelectRoot, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'reka-ui';
 
 const analytics = ref(null);
 const loading = ref(true);

@@ -17,7 +17,7 @@
         <label class="block text-xs font-medium text-gray-700 mb-1">
           Status
         </label>
-        <Select v-model="filters.status" @update:modelValue="$emit('update:filters', filters)">
+        <SelectRoot v-model="filters.status" @update:modelValue="$emit('update:filters', filters)">
           <SelectTrigger class="w-full">
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
@@ -28,7 +28,7 @@
             <SelectItem value="rejected">Rejected</SelectItem>
             <SelectItem value="flagged">Flagged</SelectItem>
           </SelectContent>
-        </Select>
+        </SelectRoot>
       </div>
 
       <!-- Sort By -->
@@ -36,7 +36,7 @@
         <label class="block text-xs font-medium text-gray-700 mb-1">
           Sort By
         </label>
-        <Select v-model="filters.sortBy" @update:modelValue="$emit('update:filters', filters)">
+        <SelectRoot v-model="filters.sortBy" @update:modelValue="$emit('update:filters', filters)">
           <SelectTrigger class="w-full">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
@@ -46,7 +46,7 @@
             <SelectItem value="commentCount">Comments</SelectItem>
             <SelectItem value="viewCount">Views</SelectItem>
           </SelectContent>
-        </Select>
+        </SelectRoot>
       </div>
 
       <!-- Sort Order -->
@@ -54,7 +54,7 @@
         <label class="block text-xs font-medium text-gray-700 mb-1">
           Order
         </label>
-        <Select v-model="filters.sortOrder" @update:modelValue="$emit('update:filters', filters)">
+        <SelectRoot v-model="filters.sortOrder" @update:modelValue="$emit('update:filters', filters)">
           <SelectTrigger class="w-full">
             <SelectValue placeholder="Order" />
           </SelectTrigger>
@@ -62,7 +62,7 @@
             <SelectItem value="desc">Descending</SelectItem>
             <SelectItem value="asc">Ascending</SelectItem>
           </SelectContent>
-        </Select>
+        </SelectRoot>
       </div>
 
       <!-- Date Range -->
@@ -70,7 +70,7 @@
         <label class="block text-xs font-medium text-gray-700 mb-1">
           Date Range
         </label>
-        <Select v-model="dateRangePreset" @update:modelValue="handleDateRangeChange">
+        <SelectRoot v-model="dateRangePreset" @update:modelValue="handleDateRangeChange">
           <SelectTrigger class="w-full">
             <SelectValue placeholder="Date range" />
           </SelectTrigger>
@@ -81,7 +81,7 @@
             <SelectItem value="month">Last 30 Days</SelectItem>
             <SelectItem value="custom">Custom Range</SelectItem>
           </SelectContent>
-        </Select>
+        </SelectRoot>
       </div>
     </div>
 
@@ -147,7 +147,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'reka-ui';
+import { SelectRoot, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'reka-ui';
 
 const props = defineProps({
   modelValue: {

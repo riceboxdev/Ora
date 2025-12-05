@@ -9,7 +9,7 @@
       <form @submit.prevent="handleSubmit" class="composer-form">
         <div class="form-group">
           <label>Type</label>
-          <Select v-model="form.type">
+          <SelectRoot v-model="form.type">
             <SelectTrigger class="w-full">
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
@@ -19,7 +19,7 @@
               <SelectItem value="feature_update">Feature Update</SelectItem>
               <SelectItem value="event">Event</SelectItem>
             </SelectContent>
-          </Select>
+          </SelectRoot>
         </div>
 
         <div class="form-group">
@@ -97,7 +97,7 @@
 import { ref } from 'vue';
 import { notificationService } from '../services/notificationService';
 import AudienceSelector from './AudienceSelector.vue';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'reka-ui';
+import { SelectRoot, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'reka-ui';
 
 export default {
   name: 'NotificationComposer',
