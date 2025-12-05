@@ -79,6 +79,72 @@
               </div>
             </CardContent>
           </Card>
+
+          <!-- Theme Customization -->
+          <Card>
+            <CardHeader>
+              <div class="flex items-center justify-between">
+                <div>
+                  <CardTitle>Theme Customization</CardTitle>
+                  <p class="text-sm text-muted-foreground mt-1">Customize the appearance of the admin dashboard</p>
+                </div>
+                <router-link to="/theme-customizer">
+                  <Button size="sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                    </svg>
+                    Customize Theme
+                  </Button>
+                </router-link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div class="space-y-4">
+                <p class="text-sm text-muted-foreground">
+                  Access the theme customizer to personalize colors, presets, dark mode, and more. Your theme preferences are saved automatically and persist across sessions.
+                </p>
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="p-3 border rounded-lg">
+                    <div class="flex items-center gap-2 mb-1">
+                      <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                      </svg>
+                      <span class="text-sm font-medium">6 Presets</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">Pre-designed themes</p>
+                  </div>
+                  <div class="p-3 border rounded-lg">
+                    <div class="flex items-center gap-2 mb-1">
+                      <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <span class="text-sm font-medium">Live Preview</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">See changes instantly</p>
+                  </div>
+                  <div class="p-3 border rounded-lg">
+                    <div class="flex items-center gap-2 mb-1">
+                      <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                      </svg>
+                      <span class="text-sm font-medium">Dark Mode</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">Toggle appearance</p>
+                  </div>
+                  <div class="p-3 border rounded-lg">
+                    <div class="flex items-center gap-2 mb-1">
+                      <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      <span class="text-sm font-medium">Import/Export</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">Share themes as JSON</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </main>

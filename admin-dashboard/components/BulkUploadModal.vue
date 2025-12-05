@@ -5,27 +5,29 @@
     @click.self="$emit('close')"
   >
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-      <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="$emit('close')"></div>
+      <div class="fixed inset-0 transition-opacity bg-black/50" @click="$emit('close')"></div>
 
-      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
-        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-medium text-gray-900">Bulk Upload Posts</h3>
-            <button
+      <Card class="inline-block align-bottom text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <CardTitle>Bulk Upload Posts</CardTitle>
+            <Button
               @click="handleClose"
-              class="text-gray-400 hover:text-gray-500"
               :disabled="uploading"
+              variant="ghost"
+              size="sm"
             >
-              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </button>
+            </Button>
           </div>
-
+        </CardHeader>
+        <CardContent>
           <div class="space-y-6">
             <!-- Step 1: File Upload -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label class="block text-sm font-medium text-foreground mb-2">
                 Select Images
               </label>
               <div
@@ -34,7 +36,7 @@
                 @dragenter.prevent
                 :class="[
                   'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
-                  isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-gray-400'
+                  isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
                 ]"
                 @click="triggerFileInput"
               >
@@ -46,21 +48,23 @@
                   @change="handleFileSelect"
                   class="hidden"
                 />
-                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                <svg class="mx-auto h-12 w-12 text-muted-foreground" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                   <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
-                <p class="mt-2 text-sm text-gray-600">
-                  <span class="font-semibold text-indigo-600">Click to upload</span> or drag and drop
+                <p class="mt-2 text-sm text-muted-foreground">
+                  <span class="font-semibold text-primary">Click to upload</span> or drag and drop
                 </p>
-                <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF, WEBP, HEIC up to 50MB each</p>
+                <p class="text-xs text-muted-foreground mt-1">PNG, JPG, GIF, WEBP, HEIC up to 50MB each</p>
               </div>
-              <button
+              <Button
                 v-if="selectedFiles.length > 0"
                 @click="clearFiles"
-                class="mt-2 text-sm text-red-600 hover:text-red-700"
+                variant="ghost"
+                size="sm"
+                class="mt-2 text-destructive hover:text-destructive"
               >
                 Clear all ({{ selectedFiles.length }} files)
-              </button>
+              </Button>
             </div>
 
             <!-- Image Preview Grid -->
@@ -73,30 +77,32 @@
                 <img
                   :src="file.preview"
                   :alt="file.name"
-                  class="w-full h-32 object-cover rounded-lg border border-gray-200"
+                  class="w-full h-32 object-cover rounded-lg border border-border"
                 />
-                <button
+                <Button
                   @click="removeFile(index)"
-                  class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                   :disabled="uploading"
+                  size="sm"
+                  variant="destructive"
+                  class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
                 >
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                </button>
-                <div class="mt-1 text-xs text-gray-500 truncate">{{ file.name }}</div>
+                </Button>
+                <div class="mt-1 text-xs text-muted-foreground truncate">{{ file.name }}</div>
               </div>
             </div>
 
             <!-- Step 2: User Selection -->
             <div v-if="selectedFiles.length > 0">
-              <label for="userId" class="block text-sm font-medium text-gray-700 mb-1">
-                User <span class="text-red-500">*</span>
+              <label for="userId" class="block text-sm font-medium text-foreground mb-1">
+                User <span class="text-destructive">*</span>
               </label>
               <select
                 id="userId"
                 v-model="selectedUserId"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                class="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 :disabled="uploading || loadingUsers"
                 required
               >
@@ -105,158 +111,148 @@
                   {{ user.displayName || user.email || user.id }}
                 </option>
               </select>
-              <p v-if="loadingUsers" class="mt-1 text-xs text-gray-500">Loading users...</p>
+              <p v-if="loadingUsers" class="mt-1 text-xs text-muted-foreground">Loading users...</p>
             </div>
 
             <!-- Step 3: Default Metadata -->
-            <div v-if="selectedFiles.length > 0" class="border-t pt-4">
-              <h4 class="text-sm font-medium text-gray-700 mb-3">Default Metadata (applies to all images)</h4>
+            <div v-if="selectedFiles.length > 0" class="border-t border-border pt-4">
+              <h4 class="text-sm font-medium text-foreground mb-3">Default Metadata (applies to all images)</h4>
               
               <div class="space-y-4">
                 <div>
-                  <label for="defaultCaption" class="block text-sm font-medium text-gray-700 mb-1">
+                  <label for="defaultCaption" class="block text-sm font-medium text-foreground mb-1">
                     Caption
                   </label>
                   <textarea
                     id="defaultCaption"
                     v-model="defaultMetadata.caption"
                     rows="3"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    class="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     placeholder="Enter default caption..."
                     :disabled="uploading"
                   ></textarea>
                 </div>
 
+                <!-- Interests Autocomplete -->
                 <div>
-                  <label for="defaultTags" class="block text-sm font-medium text-gray-700 mb-1">
-                    Tags (comma-separated)
+                  <label for="defaultInterests" class="block text-sm font-medium text-foreground mb-1">
+                    Interests
                   </label>
-                  <input
-                    id="defaultTags"
-                    v-model="defaultTagsInput"
-                    type="text"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="tag1, tag2, tag3"
-                    :disabled="uploading"
-                  />
-                  <p class="mt-1 text-xs text-gray-500">Separate tags with commas</p>
-                </div>
+                  <div class="space-y-2">
+                    <!-- Interest Search Input -->
+                    <div class="relative">
+                      <Input
+                        v-model="interestSearchQuery"
+                        type="text"
+                        placeholder="Search interests..."
+                        @input="handleInterestSearch"
+                        @focus="showInterestDropdown = true"
+                        :disabled="uploading || loadingInterests"
+                      />
+                      
+                      <!-- Dropdown -->
+                      <div
+                        v-if="showInterestDropdown && filteredInterests.length > 0"
+                        class="absolute z-10 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-y-auto"
+                      >
+                        <button
+                          v-for="interest in filteredInterests"
+                          :key="interest.id"
+                          @click="addInterest(interest)"
+                          type="button"
+                          class="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground text-sm transition-colors"
+                        >
+                          <div class="font-medium">{{ interest.displayName }}</div>
+                          <div v-if="interest.path" class="text-xs text-muted-foreground">{{ interest.path }}</div>
+                        </button>
+                      </div>
+                    </div>
 
-                <div>
-                  <label for="defaultCategories" class="block text-sm font-medium text-gray-700 mb-1">
-                    Categories (comma-separated)
-                  </label>
-                  <input
-                    id="defaultCategories"
-                    v-model="defaultCategoriesInput"
-                    type="text"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="category1, category2"
-                    :disabled="uploading"
-                  />
-                  <p class="mt-1 text-xs text-gray-500">Separate categories with commas</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Step 4: Per-Image Overrides -->
-            <div v-if="selectedFiles.length > 0 && selectedFiles.length <= 10" class="border-t pt-4">
-              <h4 class="text-sm font-medium text-gray-700 mb-3">Individual Image Overrides (optional)</h4>
-              <div class="space-y-4 max-h-96 overflow-y-auto">
-                <div
-                  v-for="(file, index) in selectedFiles"
-                  :key="index"
-                  class="border border-gray-200 rounded-lg p-3"
-                >
-                  <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm font-medium text-gray-700">{{ file.name }}</span>
-                    <button
-                      @click="toggleImageOverride(index)"
-                      class="text-xs text-indigo-600 hover:text-indigo-700"
-                    >
-                      {{ imageOverrides[index] ? 'Hide' : 'Override' }}
-                    </button>
-                  </div>
-                  <div v-if="imageOverrides[index]" class="space-y-2 mt-2">
-                    <input
-                      v-model="imageOverrides[index].caption"
-                      type="text"
-                      class="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                      placeholder="Override caption..."
-                      :disabled="uploading"
-                    />
-                    <input
-                      v-model="imageOverrides[index].tags"
-                      type="text"
-                      class="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                      placeholder="Override tags (comma-separated)..."
-                      :disabled="uploading"
-                    />
-                    <input
-                      v-model="imageOverrides[index].categories"
-                      type="text"
-                      class="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                      placeholder="Override categories (comma-separated)..."
-                      :disabled="uploading"
-                    />
+                    <!-- Selected Interests -->
+                    <div v-if="selectedInterests.length > 0" class="flex flex-wrap gap-2">
+                      <Badge
+                        v-for="interest in selectedInterests"
+                        :key="interest.id"
+                        variant="secondary"
+                        class="pl-2 pr-1"
+                      >
+                        {{ interest.displayName }}
+                        <Button
+                          @click="removeInterest(interest.id)"
+                          :disabled="uploading"
+                          variant="ghost"
+                          size="sm"
+                          class="ml-1 h-4 w-4 p-0 hover:bg-destructive/20"
+                        >
+                          <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </Button>
+                      </Badge>
+                    </div>
+                    
+                    <p v-if="loadingInterests" class="text-xs text-muted-foreground">Loading interests...</p>
+                    <p v-else class="text-xs text-muted-foreground">Type to search and select interests from the taxonomy</p>
                   </div>
                 </div>
               </div>
-              <p v-if="selectedFiles.length > 10" class="text-xs text-gray-500 mt-2">
-                Individual overrides are only available for 10 or fewer images
-              </p>
             </div>
 
             <!-- Upload Progress -->
-            <div v-if="uploading" class="border-t pt-4">
+            <div v-if="uploading" class="border-t border-border pt-4">
               <div class="mb-2 flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">Upload Progress</span>
-                <span class="text-sm text-gray-500">{{ uploadProgress.current }} / {{ uploadProgress.total }}</span>
+                <span class="text-sm font-medium text-foreground">Upload Progress</span>
+                <span class="text-sm text-muted-foreground">{{ uploadProgress.current }} / {{ uploadProgress.total }}</span>
               </div>
-              <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="w-full bg-secondary rounded-full h-2">
                 <div
-                  class="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                  class="bg-primary h-2 rounded-full transition-all duration-300"
                   :style="{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }"
                 ></div>
               </div>
-              <p v-if="uploadProgress.currentFile" class="mt-2 text-xs text-gray-500">
+              <p v-if="uploadProgress.currentFile" class="mt-2 text-xs text-muted-foreground">
                 Uploading: {{ uploadProgress.currentFile }}
               </p>
             </div>
 
             <!-- Error Display -->
-            <div v-if="error" class="p-3 bg-red-50 border border-red-200 rounded-md">
-              <p class="text-sm text-red-600">{{ error }}</p>
+            <div v-if="error" class="p-3 bg-destructive/10 border border-destructive rounded-md">
+              <p class="text-sm text-destructive">{{ error }}</p>
             </div>
           </div>
-        </div>
+        </CardContent>
 
-        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-          <button
-            type="button"
+        <div class="bg-muted/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
+          <Button
             @click="handleUpload"
             :disabled="uploading || selectedFiles.length === 0 || !selectedUserId"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {{ uploading ? `Uploading... (${uploadProgress.current}/${uploadProgress.total})` : `Upload ${selectedFiles.length} Post${selectedFiles.length !== 1 ? 's' : ''}` }}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
             @click="handleClose"
             :disabled="uploading"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="outline"
           >
             Cancel
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import api from '../services/api';
+import { useInterestService } from '../composables/interestService';
+import Button from '@/components/ui/Button.vue';
+import Input from '@/components/ui/Input.vue';
+import Card from '@/components/ui/Card.vue';
+import CardHeader from '@/components/ui/CardHeader.vue';
+import CardTitle from '@/components/ui/CardTitle.vue';
+import CardContent from '@/components/ui/CardContent.vue';
+import Badge from '@/components/ui/Badge.vue';
 
 const props = defineProps({
   isOpen: {
@@ -267,6 +263,8 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'uploaded']);
 
+const { getInterests, getInterestTree } = useInterestService();
+
 const fileInput = ref(null);
 const selectedFiles = ref([]);
 const isDragging = ref(false);
@@ -275,12 +273,16 @@ const loadingUsers = ref(false);
 const selectedUserId = ref('');
 const defaultMetadata = ref({
   caption: '',
-  tags: [],
-  categories: []
+  interests: []
 });
-const defaultTagsInput = ref('');
-const defaultCategoriesInput = ref('');
-const imageOverrides = ref({});
+
+// Interests state
+const allInterests = ref([]);
+const loadingInterests = ref(false);
+const selectedInterests = ref([]);
+const interestSearchQuery = ref('');
+const showInterestDropdown = ref(false);
+
 const uploading = ref(false);
 const uploadProgress = ref({
   current: 0,
@@ -289,11 +291,39 @@ const uploadProgress = ref({
 });
 const error = ref(null);
 
-// Load users when modal opens
+// Filtered interests based on search query
+const filteredInterests = computed(() => {
+  if (!interestSearchQuery.value) {
+    return allInterests.value.slice(0, 10); // Show top 10 by default
+  }
+  
+  const query = interestSearchQuery.value.toLowerCase();
+  return allInterests.value
+    .filter(interest => {
+      // Search in display name, keywords, and synonyms
+      const searchText = [
+        interest.displayName,
+        ...(interest.keywords || []),
+        ...(interest.synonyms || [])
+      ].join(' ').toLowerCase();
+      
+      return searchText.includes(query);
+    })
+    .slice(0, 20); // Limit results
+});
+
+// Load users and interests when modal opens
 watch(() => props.isOpen, async (isOpen) => {
   if (isOpen) {
-    await fetchUsers();
+    await Promise.all([fetchUsers(), fetchInterests()]);
     resetForm();
+  }
+});
+
+// Close dropdown when clicking outside
+watch(interestSearchQuery, () => {
+  if (!interestSearchQuery.value) {
+    showInterestDropdown.value = false;
   }
 });
 
@@ -312,13 +342,74 @@ const fetchUsers = async () => {
   }
 };
 
+const fetchInterests = async () => {
+  try {
+    loadingInterests.value = true;
+    // Get all interests (not just root)
+    const interests = await getInterests();
+    
+    // Flatten the tree to get all interests
+    const flattenInterests = (interests, parentPath = '') => {
+      return interests.flatMap(interest => {
+        const path = parentPath ? `${parentPath} > ${interest.displayName}` : interest.displayName;
+        const flattened = [{
+          ...interest,
+          path
+        }];
+        
+        if (interest.children && interest.children.length > 0) {
+          flattened.push(...flattenInterests(interest.children, path));
+        }
+        
+        return flattened;
+      });
+    };
+    
+    // Try to get the full tree for better context
+    try {
+      const tree = await getInterestTree();
+      allInterests.value = flattenInterests(tree);
+    } catch {
+      // Fallback to simple list
+      allInterests.value = interests.map(i => ({
+        ...i,
+        path: i.displayName
+      }));
+    }
+  } catch (err) {
+    console.error('Error fetching interests:', err);
+    error.value = 'Failed to load interests';
+  } finally {
+    loadingInterests.value = false;
+  }
+};
+
+const handleInterestSearch = () => {
+  showInterestDropdown.value = true;
+};
+
+const addInterest = (interest) => {
+  // Don't add if already selected
+  if (!selectedInterests.value.find(i => i.id === interest.id)) {
+    selectedInterests.value.push(interest);
+  }
+  
+  // Clear search and hide dropdown
+  interestSearchQuery.value = '';
+  showInterestDropdown.value = false;
+};
+
+const removeInterest = (interestId) => {
+  selectedInterests.value = selectedInterests.value.filter(i => i.id !== interestId);
+};
+
 const resetForm = () => {
   selectedFiles.value = [];
   selectedUserId.value = '';
-  defaultMetadata.value = { caption: '', tags: [], categories: [] };
-  defaultTagsInput.value = '';
-  defaultCategoriesInput.value = '';
-  imageOverrides.value = {};
+  defaultMetadata.value = { caption: '', interests: [] };
+  selectedInterests.value = [];
+  interestSearchQuery.value = '';
+  showInterestDropdown.value = false;
   error.value = null;
   uploadProgress.value = { current: 0, total: 0, currentFile: '' };
 };
@@ -371,21 +462,6 @@ const removeFile = (index) => {
   if (selectedFiles.value[index]) {
     URL.revokeObjectURL(selectedFiles.value[index].preview);
     selectedFiles.value.splice(index, 1);
-    // Clean up override if exists
-    if (imageOverrides.value[index]) {
-      delete imageOverrides.value[index];
-    }
-    // Reindex overrides
-    const newOverrides = {};
-    Object.keys(imageOverrides.value).forEach(key => {
-      const keyNum = parseInt(key);
-      if (keyNum < index) {
-        newOverrides[keyNum] = imageOverrides.value[key];
-      } else if (keyNum > index) {
-        newOverrides[keyNum - 1] = imageOverrides.value[key];
-      }
-    });
-    imageOverrides.value = newOverrides;
   }
 };
 
@@ -394,24 +470,6 @@ const clearFiles = () => {
     URL.revokeObjectURL(file.preview);
   });
   selectedFiles.value = [];
-  imageOverrides.value = {};
-};
-
-const toggleImageOverride = (index) => {
-  if (!imageOverrides.value[index]) {
-    imageOverrides.value[index] = {
-      caption: '',
-      tags: '',
-      categories: ''
-    };
-  } else {
-    delete imageOverrides.value[index];
-  }
-};
-
-const parseCommaSeparated = (str) => {
-  if (!str) return [];
-  return str.split(',').map(s => s.trim()).filter(s => s);
 };
 
 const handleUpload = async () => {
@@ -429,13 +487,10 @@ const handleUpload = async () => {
   };
 
   const uploadedImages = [];
-  const uploadedImageUrls = []; // Track for rollback
+  const uploadedImageUrls = [];
   let postsCreated = false;
 
   try {
-    const defaultTags = parseCommaSeparated(defaultTagsInput.value);
-    const defaultCategories = parseCommaSeparated(defaultCategoriesInput.value);
-
     // Step 1: Upload all images
     for (let i = 0; i < selectedFiles.value.length; i++) {
       const fileData = selectedFiles.value[i];
@@ -452,9 +507,8 @@ const handleUpload = async () => {
           formData.append('imageHeight', fileData.height.toString());
         }
 
-        // Don't set Content-Type header - let axios set it automatically with boundary
         const uploadResponse = await api.post('/api/admin/posts/upload-image', formData, {
-          timeout: 60000, // 60 second timeout for large files
+          timeout: 60000,
           maxContentLength: Infinity,
           maxBodyLength: Infinity
         });
@@ -470,10 +524,8 @@ const handleUpload = async () => {
         uploadedImageUrls.push(uploadResponse.data.imageUrl);
       } catch (uploadErr) {
         console.error(`Failed to upload ${fileData.name}:`, uploadErr);
-        // If we have some images uploaded, we need to rollback
         if (uploadedImages.length > 0) {
           error.value = `Failed to upload ${fileData.name}. ${uploadedImages.length} image(s) were uploaded but will not be used.`;
-          // Note: We can't delete Cloudflare images, but we won't create posts for them
           throw new Error(`Upload failed at ${fileData.name}. Partial upload detected.`);
         } else {
           throw uploadErr;
@@ -481,11 +533,10 @@ const handleUpload = async () => {
       }
     }
 
-    // Step 2: Create posts
+    // Step 2: Create posts with interests
     uploadProgress.value.current = selectedFiles.value.length;
     const posts = uploadedImages.map((img, idx) => {
       const fileIndex = img.index;
-      const override = imageOverrides.value[fileIndex] || {};
       
       return {
         userId: selectedUserId.value,
@@ -493,9 +544,9 @@ const handleUpload = async () => {
         thumbnailUrl: img.thumbnailUrl,
         imageWidth: img.imageWidth || selectedFiles.value[fileIndex].width,
         imageHeight: img.imageHeight || selectedFiles.value[fileIndex].height,
-        caption: override.caption || defaultMetadata.value.caption || null,
-        tags: override.tags ? parseCommaSeparated(override.tags) : defaultTags,
-        categories: override.categories ? parseCommaSeparated(override.categories) : defaultCategories
+        caption: defaultMetadata.value.caption || null,
+        // Use interest IDs instead of tags/categories
+        interestIds: selectedInterests.value.map(i => i.id)
       };
     });
 
@@ -514,7 +565,6 @@ const handleUpload = async () => {
       handleClose();
     } catch (createErr) {
       console.error('Failed to create posts:', createErr);
-      // Rollback handled by backend, but we should inform user
       const rollbackInfo = createErr.response?.data?.rollbackAttempted 
         ? ' The backend attempted to rollback any created posts.' 
         : '';
@@ -524,14 +574,12 @@ const handleUpload = async () => {
   } catch (err) {
     console.error('Upload error:', err);
     
-    // If we uploaded images but didn't create posts, inform user
     if (uploadedImages.length > 0 && !postsCreated) {
-      error.value = `Upload failed: ${err.response?.data?.message || err.message || 'Unknown error'}. ${uploadedImages.length} image(s) were uploaded to Cloudflare but no posts were created. The images are stored but not linked to any posts.`;
+      error.value = `Upload failed: ${err.response?.data?.message || err.message || 'Unknown error'}. ${uploadedImages.length} image(s) were uploaded to Cloudflare but no posts were created.`;
     } else {
       error.value = err.response?.data?.message || err.message || 'Failed to upload images';
     }
     
-    // Show detailed error if available
     if (err.response?.data?.debug) {
       console.error('Upload debug info:', err.response.data.debug);
     }
@@ -553,4 +601,3 @@ onUnmounted(() => {
   clearFiles();
 });
 </script>
-
