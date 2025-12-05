@@ -22,6 +22,15 @@
           </div>
 
           <form @submit.prevent="handleSubmit" class="space-y-4">
+            <!-- Media Preview -->
+            <div v-if="post && (post.imageUrl || post.thumbnailUrl)" class="flex justify-center mb-4 bg-gray-100 rounded-lg p-2">
+              <img 
+                :src="post.imageUrl || post.thumbnailUrl" 
+                alt="Post Preview" 
+                class="max-h-64 object-contain rounded"
+              />
+            </div>
+
             <div>
               <label for="caption" class="block text-sm font-medium text-gray-700 mb-1">
                 Caption

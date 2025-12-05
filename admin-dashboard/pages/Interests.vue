@@ -22,7 +22,7 @@
             <!-- Create New Interest Button -->
             <!-- Opens modal for creating root-level interests -->
             <button
-              @click="showCreateModal = true"
+              @click="openCreateModal(null)"
               :disabled="loading"
               class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
@@ -82,76 +82,13 @@
     <!-- Create Interest Modal -->
     <!-- Modal overlay for creating new interests -->
     <!-- Can be used for both root interests and sub-interests (parent pre-selected via @add-child) -->
-    <div v-if="showCreateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Create New Interest</h3>
-        
-        <!-- Create Interest Form -->
-        <!-- Collects: name, displayName, description, keywords -->
-        <!-- Parent is pre-selected if "Add Child" action used, otherwise creates root interest -->
-        <form @submit.prevent="submitCreateInterest" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Name (ID)</label>
-            <input
-              v-model="form.name"
-              type="text"
-              placeholder="fashion-basics"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
-            />
-            <p class="text-xs text-gray-500 mt-1">Lowercase with hyphens</p>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-            <input
-              v-model="form.displayName"
-              type="text"
-              placeholder="Fashion Basics"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
-            <textarea
-              v-model="form.description"
-              rows="3"
-              placeholder="Brief description of this interest..."
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            ></textarea>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Keywords (comma-separated)</label>
-            <input
-              v-model="form.keywordsInput"
-              type="text"
-              placeholder="fashion, style, clothing"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-
-          <div class="flex gap-3 pt-4">
-            <button
-              type="button"
-              @click="showCreateModal = false"
-              class="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              :disabled="creatingInterest"
-              class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {{ creatingInterest ? 'Creating...' : 'Create' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <!-- Create Interest Modal -->
+    <InterestCreateModal
+      :is-open="showCreateModal"
+      :parent-id="createParentId"
+      @close="showCreateModal = false"
+      @created="handleInterestCreated"
+    />
 
     <!-- Edit Interest Modal -->
     <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -236,15 +173,16 @@
 import { ref, onMounted } from 'vue';
 import AppHeader from '../components/AppHeader.vue';
 import InterestItem from '../components/InterestItem.vue';
+import InterestCreateModal from '../components/InterestCreateModal.vue';
 import { useInterestService } from '../composables/interestService';
 
 // Destructure API methods from composable
-const { getInterests, createInterest, updateInterest, deleteInterest, seedInterests: seedFromAPI, getInterestTree } = useInterestService();
+const { getInterestTree, updateInterest, deleteInterest, seedInterests: seedFromAPI } = useInterestService();
 
 // Root interests state - loaded on mount
 const interests = ref([]);
 // Loading state for initial data fetch
-const loading = ref(false);
+const loading = ref(true);
 // Error message display
 const error = ref(null);
 // Success message with auto-dismiss
@@ -252,14 +190,7 @@ const successMessage = ref(null);
 
 // Create modal state and form data
 const showCreateModal = ref(false);
-const creatingInterest = ref(false);
-const form = ref({
-  name: '',                 // Internal identifier (converted to hyphenated ID)
-  displayName: '',          // User-facing display name
-  description: '',          // Optional description
-  keywordsInput: '',        // Comma-separated keywords (parsed to array)
-  parentId: null            // Parent interest (null for root)
-});
+const createParentId = ref(null);
 
 // Edit modal state and form data
 const showEditModal = ref(false);
@@ -281,8 +212,8 @@ onMounted(async () => {
  * Recursive components handle loading children
  */
 async function loadInterests() {
+  loading.value = true;
   try {
-    loading.value = true;
     error.value = null;
     const response = await getInterestTree();
     interests.value = response;
@@ -294,54 +225,18 @@ async function loadInterests() {
   }
 }
 
-/**
- * Create Interest Form Submission
- * Validates and sends form data to API
- * Handles both root and sub-interest creation (parent set via @add-child)
- */
-async function submitCreateInterest() {
-  try {
-    creatingInterest.value = true;
-    error.value = null;
+function openCreateModal(parentId) {
+  createParentId.value = parentId;
+  showCreateModal.value = true;
+}
 
-    // Parse comma-separated keywords into array, trim whitespace, filter empty strings
-    const keywords = form.value.keywordsInput
-      .split(',')
-      .map(k => k.trim())
-      .filter(k => k);
-
-    // Send to API (backend calculates level and path based on parent)
-    await createInterest({
-      name: form.value.name,
-      displayName: form.value.displayName,
-      description: form.value.description || null,
-      keywords,
-      parentId: form.value.parentId  // null for root, or parent ID for sub-interest
-    });
-
-    // Show success and close modal
-    successMessage.value = 'Interest created successfully!';
-    showCreateModal.value = false;
-    
-    // Reset form for next creation
-    form.value = {
-      name: '',
-      displayName: '',
-      description: '',
-      keywordsInput: '',
-      parentId: null
-    };
-
-    // Reload interests to reflect new addition
-    await loadInterests();
-    // Auto-dismiss success message
-    setTimeout(() => { successMessage.value = null; }, 3000);
-  } catch (err) {
-    error.value = err.response?.data?.message || err.message || 'Failed to create interest';
-    console.error('Error creating interest:', err);
-  } finally {
-    creatingInterest.value = false;
-  }
+function handleInterestCreated(interest) {
+  successMessage.value = `Interest "${interest.displayName}" created successfully!`;
+  showCreateModal.value = false;
+  loadInterests();
+  setTimeout(() => {
+    successMessage.value = null;
+  }, 3000);
 }
 
 /**
@@ -426,8 +321,7 @@ async function handleDelete(id) {
  * Called via @add-child event from InterestItem component
  */
 function handleCreateChild(parentInterest) {
-  form.value.parentId = parentInterest.id;  // Set parent for sub-interest creation
-  showCreateModal.value = true;
+  openCreateModal(parentInterest.id);
 }
 
 /**
