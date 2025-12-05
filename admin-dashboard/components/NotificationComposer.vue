@@ -9,12 +9,17 @@
       <form @submit.prevent="handleSubmit" class="composer-form">
         <div class="form-group">
           <label>Type</label>
-          <select v-model="form.type" required>
-            <option value="announcement">Announcement</option>
-            <option value="promo">Promo</option>
-            <option value="feature_update">Feature Update</option>
-            <option value="event">Event</option>
-          </select>
+          <Select v-model="form.type">
+            <SelectTrigger class="w-full">
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="announcement">Announcement</SelectItem>
+              <SelectItem value="promo">Promo</SelectItem>
+              <SelectItem value="feature_update">Feature Update</SelectItem>
+              <SelectItem value="event">Event</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div class="form-group">
@@ -92,6 +97,7 @@
 import { ref } from 'vue';
 import { notificationService } from '../services/notificationService';
 import AudienceSelector from './AudienceSelector.vue';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'reka-ui';
 
 export default {
   name: 'NotificationComposer',

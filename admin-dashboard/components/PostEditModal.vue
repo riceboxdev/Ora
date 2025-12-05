@@ -54,19 +54,20 @@
             </div>
 
             <div v-if="canModerate">
-              <label for="moderationStatus" class="block text-sm font-medium text-gray-700 mb-1">
+              <label class="block text-sm font-medium text-gray-700 mb-1">
                 Moderation Status
               </label>
-              <select
-                id="moderationStatus"
-                v-model="formData.moderationStatus"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-                <option value="flagged">Flagged</option>
-              </select>
+              <Select v-model="formData.moderationStatus">
+                <SelectTrigger class="w-full">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="flagged">Flagged</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div v-if="post" class="mt-4 p-3 bg-gray-50 rounded-md">
@@ -84,7 +85,7 @@
           <button
             type="button"
             @click="handleSubmit"
-            :disabled="saving"
+            :disabled="saving || !hasChanges"
             class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {{ saving ? 'Saving...' : 'Save Changes' }}
@@ -107,6 +108,7 @@
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import InterestSelector from './InterestSelector.vue';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'reka-ui';
 
 
 const props = defineProps({
@@ -130,6 +132,16 @@ const formData = ref({
   moderationStatus: 'pending'
 });
 
+const originalFormData = ref({
+  caption: '',
+  interestIds: [],
+  moderationStatus: 'pending'
+});
+
+const hasChanges = computed(() => {
+  return JSON.stringify(formData.value) !== JSON.stringify(originalFormData.value);
+});
+
 const saving = ref(false);
 const error = ref(null);
 
@@ -140,22 +152,26 @@ const canModerate = computed(() => {
 
 watch(() => props.post, (newPost) => {
   if (newPost) {
-    formData.value = {
+    const newFormData = {
       caption: newPost.caption || '',
       interestIds: newPost.interestIds || [],
       moderationStatus: newPost.moderationStatus || 'pending'
     };
+    formData.value = { ...newFormData };
+    originalFormData.value = { ...newFormData };
     error.value = null;
   }
 }, { immediate: true });
 
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen && props.post) {
-    formData.value = {
+    const newFormData = {
       caption: props.post.caption || '',
       interestIds: props.post.interestIds || [],
       moderationStatus: props.post.moderationStatus || 'pending'
     };
+    formData.value = { ...newFormData };
+    originalFormData.value = { ...newFormData };
     error.value = null;
   }
 });

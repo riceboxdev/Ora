@@ -454,11 +454,18 @@ const handleEditFromDetails = (postId) => {
 
 const handleSaveEdit = async (postId, updateData) => {
   try {
-    await api.put(`/api/admin/posts/${postId}`, updateData);
-    alert('Post updated successfully');
+    const response = await api.put(`/api/admin/posts/${postId}`, updateData);
+    
+    // Update the post locally to avoid page refresh
+    const postIndex = posts.value.findIndex(p => p.id === postId);
+    if (postIndex !== -1) {
+      posts.value[postIndex] = { ...posts.value[postIndex], ...response.data.post };
+    }
+    
+    // Show success message without alert
+    console.log('Post updated successfully');
     editModalOpen.value = false;
     postToEdit.value = null;
-    await fetchPosts();
   } catch (error) {
     console.error('Error updating post:', error);
     alert('Failed to update post');
