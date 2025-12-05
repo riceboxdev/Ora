@@ -25,6 +25,12 @@ struct Config {
     static let algoliaAPIKey = "9c69216b2b64fde9412c44ff1a01c672" // API Key for Algolia Search and Recommend
     static let algoliaIndexName = "posts" // Your Algolia index name for posts
     
+    // Admin API Configuration
+    /// Base URL for the Admin API backend
+    /// Production: Uses Render backend (may experience 30-60s cold start on free tier)
+    /// Note: If you need local development, change this to "http://localhost:3000"
+    static let adminAPIBaseURL = "https://ora-admin-api.onrender.com"
+    
     // Logging Configuration
     /// App-wide log level. Set to nil to use defaults (full in debug, minimal in release)
     /// To change log level, modify this value:

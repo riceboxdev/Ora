@@ -7,9 +7,11 @@
 
 import SwiftUI
 import PhotosUI
+import Toasts
 
 struct EditProfileView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.presentToast) var presentToast
     var profileService: ProfileService
     @State var profile: UserProfile
     
@@ -282,6 +284,17 @@ struct EditProfileView: View {
         do {
             try await profileService.saveUserProfile(updatedProfile)
             print("✅ EditProfileView: Profile saved successfully!")
+            
+            // Show success toast
+            let toast = ToastValue(
+                icon: Image(systemName: "checkmark.circle.fill"),
+                message: "Profile Updated!"
+            )
+            presentToast(toast)
+            
+            // Delay dismiss to show toast
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+            
             print("   Dismissing view...")
             dismiss()
         } catch {

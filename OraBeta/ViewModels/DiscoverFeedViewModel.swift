@@ -22,19 +22,19 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
     @Published var isSearching: Bool = false
     @Published var suggestedUsers: [UserProfile] = []
     @Published var isLoadingSuggestedUsers: Bool = false
-    @Published var trendingTopics: [TrendingTopic] = []
-    @Published var featuredTopics: [TrendingTopic] = []
-    @Published var topicPreviews: [String: [Post]] = [:]
+    @Published var trendingInterests: [TrendingInterest] = []
+    @Published var featuredInterests: [TrendingInterest] = []
+    @Published var interestPreviews: [String: [Post]] = [:]
     @Published var recommendedUsers: [UserProfile] = []
     @Published var isLoadingRecommendedUsers: Bool = false
-    @Published var isLoadingTrendingTopics: Bool = false
-    @Published var selectedTrendingTopic: TrendingTopic?
+    @Published var isLoadingTrendingInterests: Bool = false
+    @Published var selectedTrendingInterest: TrendingInterest?
     @Published var selectedTimeWindow: String = "7d"
     
     // MARK: - Private Properties
     private let container: DIContainer
     private let feedService: FeedServiceProtocol
-    private let trendService: TrendService
+    private let interestTaxonomyService: InterestTaxonomyService
     private let userDiscoveryService: UserDiscoveryService
     let profileService: ProfileServiceProtocol
     private var currentUserId: String?
@@ -57,7 +57,7 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
         self.container = diContainer
         self.profileService = diContainer.profileService
         self.feedService = diContainer.feedService
-        self.trendService = diContainer.trendService
+        self.interestTaxonomyService = InterestTaxonomyService.shared
         self.userDiscoveryService = diContainer.userDiscoveryService
     }
     
@@ -82,17 +82,17 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
         print("✅ DiscoverFeedViewModel: User authenticated, loading data...")
         currentUserId = userId
         
-        // Load posts, suggested users, and trending topics in parallel
+        // Load posts, suggested users, and trending interests in parallel
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.loadPosts() }
             group.addTask { await self.loadSuggestedUsers() }
-            group.addTask { await self.loadGlobalTrendingTopics() }
+            group.addTask { await self.loadTrendingInterests() }
         }
         
-        // After trending topics have loaded and featured topics are selected,
+        // After trending interests have loaded and featured interests are selected,
         // load preview posts for the hero cards so their images can render.
-        if !featuredTopics.isEmpty {
-            await loadTopicPreviews()
+        if !featuredInterests.isEmpty {
+            await loadInterestPreviews()
         }
         
         hasLoadedInitialData = true
@@ -227,13 +227,6 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
         // Set debounce time to prevent duplicate calls
         lastLoadMoreTime = Date()
         
-        // Check if we're filtering by trending topic
-        if let topic = selectedTrendingTopic {
-            // Load more posts for trending topic
-            await loadMorePostsForTopic(topic)
-            return
-        }
-        
         // Regular discover feed pagination
         guard let lastDoc = lastDocument else {
             print("⚠️ DiscoverFeedViewModel: Cannot load more - no lastDocument")
@@ -302,70 +295,6 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
         isLoadingMore = false
     }
     
-    /// Load more posts for a trending topic (pagination)
-    private var topicLastLoadedPostIds: Set<String> = []
-    private var topicPageOffset: Int = 0
-    
-    private func loadMorePostsForTopic(_ topic: TrendingTopic) async {
-        print("🔄 DiscoverFeedViewModel: Loading more posts for topic \(topic.name)")
-        
-        isLoadingMore = true
-        
-        do {
-            // Calculate offset based on current post count
-            let currentCount = posts.count
-            let limit = pageSize
-            let offset = currentCount
-            
-            // Fetch more posts for this topic
-            // Note: The Firebase function doesn't support pagination directly,
-            // so we'll fetch a larger batch and filter out already loaded posts
-            let postsData = try await trendService.getPostsByTopic(
-                topicId: topic.id,
-                topicType: topic.type,
-                limit: limit + offset, // Fetch enough to account for offset
-                timeWindow: topic.timeWindow
-            )
-            
-            // Convert post dictionaries to Post objects
-            var convertedPosts: [Post] = []
-            for postData in postsData {
-                if let post = await Post.from(firestoreData: postData, documentId: postData["id"] as? String ?? "", profiles: [:]) {
-                    convertedPosts.append(post)
-                }
-            }
-            
-            // Filter out posts we've already loaded
-            let existingPostIds = Set(posts.map { $0.id })
-            let newPosts = convertedPosts.filter { !existingPostIds.contains($0.id) }
-            
-            if newPosts.isEmpty {
-                // No new posts found
-                hasMore = false
-                print("⚠️ DiscoverFeedViewModel: No more posts for topic \(topic.name)")
-            } else {
-                // Append new posts
-                let newPostIds = newPosts.map { $0.id }
-                let updatedPosts = self.posts + newPosts
-                let updatedOrder = self.initialPostOrder + newPostIds
-                
-                self.posts = updatedPosts
-                self.initialPostOrder = updatedOrder
-                
-                // If we got fewer new posts than requested, there are no more
-                hasMore = newPosts.count >= pageSize
-                
-                print("✅ DiscoverFeedViewModel: Loaded \(newPosts.count) more posts for topic \(topic.name)")
-                print("   Total posts: \(posts.count)")
-                print("   Has more: \(hasMore)")
-            }
-        } catch {
-            print("❌ DiscoverFeedViewModel: Error loading more posts for topic: \(error.localizedDescription)")
-            hasMore = false
-        }
-        
-        isLoadingMore = false
-    }
     
     /// Set ranking strategy and reload feed
     func setRankingStrategy(_ strategy: RankingStrategy) {
@@ -423,64 +352,67 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
         isLoadingRecommendedUsers = false
     }
     
-    /// Load topic previews for featured topics
-    func loadTopicPreviews() async {
-        guard !featuredTopics.isEmpty else { return }
+    /// Load interest previews for featured interests
+    func loadInterestPreviews() async {
+        guard !featuredInterests.isEmpty else { return }
         
-        let topicPreviewService = TopicPreviewService()
-        let remotePreviews = await topicPreviewService.getTopicPreviews(topics: featuredTopics, limitPerTopic: 3)
+        let interestPreviewService = InterestPreviewService()
+        let remotePreviews = await interestPreviewService.getInterestPreviews(
+            interests: featuredInterests,
+            limitPerInterest: 3
+        )
         
-        // Fallback: if Algolia is not configured or returns no results for a topic,
+        // Fallback: if no remote results for an interest,
         // synthesize previews from the posts already loaded in the discover feed.
         var combinedPreviews: [String: [Post]] = [:]
         
-        for topic in featuredTopics {
-            let remote = remotePreviews[topic.id] ?? []
+        for interest in featuredInterests {
+            let remote = remotePreviews[interest.id] ?? []
             if !remote.isEmpty {
-                combinedPreviews[topic.id] = Array(remote.prefix(3))
+                combinedPreviews[interest.id] = Array(remote.prefix(3))
             } else {
-                let local = getLocalPreviewPosts(for: topic, limit: 3)
+                let local = getLocalPreviewPosts(for: interest, limit: 3)
                 if !local.isEmpty {
-                    combinedPreviews[topic.id] = local
+                    combinedPreviews[interest.id] = local
                 }
             }
         }
         
-        topicPreviews = combinedPreviews
+        interestPreviews = combinedPreviews
     }
     
-    /// Build preview posts for a topic from the already loaded discover posts.
-    /// This is used when Algolia previews are unavailable.
-    private func getLocalPreviewPosts(for topic: TrendingTopic, limit: Int) -> [Post] {
+    /// Build preview posts for an interest from the already loaded discover posts.
+    /// This is used when remote previews are unavailable.
+    private func getLocalPreviewPosts(for interest: TrendingInterest, limit: Int) -> [Post] {
         guard !posts.isEmpty else { return [] }
         
-        let name = topic.name.lowercased()
+        let interestId = interest.id.lowercased()
         
         let matchingPosts: [Post] = posts.filter { post in
-            // Match on interest IDs instead of tags/categories
+            // Match on interest IDs
             let interests = (post.interestIds ?? []).map { $0.lowercased() }
-            return interests.contains(name)
+            return interests.contains(interestId)
         }
         
         return Array(matchingPosts.prefix(limit))
     }
     
-    /// Load global trending topics for discover feed
-    func loadGlobalTrendingTopics(timeWindow: String? = nil) async {
-        guard let userId = currentUserId ?? Auth.auth().currentUser?.uid else {
-            print("⚠️ DiscoverFeedViewModel: Cannot load trending topics - no user ID")
+    /// Load trending interests for discover feed
+    func loadTrendingInterests(timeWindow: String? = nil) async {
+        guard currentUserId ?? Auth.auth().currentUser?.uid != nil else {
+            print("⚠️ DiscoverFeedViewModel: Cannot load trending interests - no user ID")
             return
         }
         
         let window = timeWindow ?? selectedTimeWindow
         
-        print("📈 DiscoverFeedViewModel: Loading global trending topics (timeWindow: \(window))")
+        print("📈 DiscoverFeedViewModel: Loading trending interests (timeWindow: \(window))")
         
-        isLoadingTrendingTopics = true
+        isLoadingTrendingInterests = true
         
         do {
             // Convert string to enum
-            let timeWindowEnum: TrendingTopic.TimeWindow
+            let timeWindowEnum: TrendingInterest.TimeWindow
             switch window {
             case "24h":
                 timeWindowEnum = .hours24
@@ -489,98 +421,37 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
             case "30d":
                 timeWindowEnum = .days30
             default:
-                timeWindowEnum = .hours24
+                timeWindowEnum = .days7
             }
             
-            let topics = try await trendService.getGlobalTrends(
+            let interests = try await interestTaxonomyService.getTrendingInterests(
                 timeWindow: timeWindowEnum,
                 limit: 15
             )
             
-            trendingTopics = topics
-            print("✅ DiscoverFeedViewModel: Loaded \(topics.count) global trending topics")
+            trendingInterests = interests
+            print("✅ DiscoverFeedViewModel: Loaded \(interests.count) trending interests")
             
-            // Select featured topics (top 3 by trend score)
-            selectFeaturedTopics()
+            // Select featured interests (top 3 by trend score)
+            selectFeaturedInterests()
         } catch {
-            print("⚠️ DiscoverFeedViewModel: Failed to load trending topics: \(error.localizedDescription)")
-            trendingTopics = []
+            print("⚠️ DiscoverFeedViewModel: Failed to load trending interests: \(error.localizedDescription)")
+            trendingInterests = []
         }
         
-        isLoadingTrendingTopics = false
+        isLoadingTrendingInterests = false
     }
     
-    /// Select featured topics from trending topics (top 3 by trend score)
-    func selectFeaturedTopics() {
-        featuredTopics = Array(trendingTopics.sorted { $0.trendScore > $1.trendScore }.prefix(3))
-        print("✅ DiscoverFeedViewModel: Selected \(featuredTopics.count) featured topics")
+    /// Select featured interests from trending interests (top 3 by trend score)
+    func selectFeaturedInterests() {
+        featuredInterests = Array(trendingInterests.sorted { $0.trendScore > $1.trendScore }.prefix(3))
+        print("✅ DiscoverFeedViewModel: Selected \(featuredInterests.count) featured interests")
     }
     
-    /// Filter feed by selected trending topic
-    func filterByTrendingTopic(_ topic: TrendingTopic?) async {
-        selectedTrendingTopic = topic
-        
-        guard let topic = topic else {
-            // Reset to normal feed
-            topicLastLoadedPostIds.removeAll()
-            topicPageOffset = 0
-            await loadPosts()
-            return
-        }
-        
-        // Load posts for this topic
-        isLoading = true
-        errorMessage = nil
-        
-        // Reset pagination when filtering
-        lastDocument = nil
-        topicLastLoadedPostIds.removeAll()
-        topicPageOffset = 0
-        hasMore = true
-        
-        do {
-            let postsData = try await trendService.getPostsByTopic(
-                topicId: topic.id,
-                topicType: topic.type,
-                limit: pageSize,
-                timeWindow: topic.timeWindow
-            )
-            
-            // Convert post dictionaries to Post objects
-            var convertedPosts: [Post] = []
-            for postData in postsData {
-                if let post = await Post.from(firestoreData: postData, documentId: postData["id"] as? String ?? "", profiles: [:]) {
-                    convertedPosts.append(post)
-                }
-            }
-            
-            self.posts = convertedPosts
-            self.initialPostOrder = convertedPosts.map { $0.id }
-            self.topicLastLoadedPostIds = Set(convertedPosts.map { $0.id })
-            
-            // If we got fewer posts than requested, there are no more
-            hasMore = convertedPosts.count >= pageSize
-            
-            print("✅ DiscoverFeedViewModel: Loaded \(convertedPosts.count) posts for topic \(topic.name)")
-            print("   Has more: \(hasMore)")
-        } catch {
-            errorMessage = "Failed to load posts for topic: \(error.localizedDescription)"
-            print("❌ DiscoverFeedViewModel: Failed to load posts by topic: \(error.localizedDescription)")
-            hasMore = false
-        }
-        
-        isLoading = false
-    }
-    
-    /// Change time window and reload trending topics
+    /// Change time window and reload trending interests
     func changeTimeWindow(_ timeWindow: String) async {
         selectedTimeWindow = timeWindow
-        await loadGlobalTrendingTopics(timeWindow: timeWindow)
-        
-        // If a topic is selected, reload posts with new time window
-        if let topic = selectedTrendingTopic {
-            await filterByTrendingTopic(topic)
-        }
+        await loadTrendingInterests(timeWindow: timeWindow)
     }
     
     /// Perform search (placeholder for future implementation)

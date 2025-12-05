@@ -269,8 +269,8 @@ class AdminDashboardViewModel: ObservableObject {
             
             let firebaseToken = try await user.getIDToken()
             
-            // Initialize SDK client
-            let config = AdminConfig()
+            // Initialize SDK client with environment-specific base URL
+            let config = AdminConfig(baseURL: Config.adminAPIBaseURL)
             let adminClient = AdminClient(config: config)
             
             // Login with SDK

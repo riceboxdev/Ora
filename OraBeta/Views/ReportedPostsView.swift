@@ -76,7 +76,7 @@ struct ReportedPostsView: View {
         
         do {
             let firebaseToken = try await currentUser.getIDToken()
-            let config = AdminConfig()
+            let config = AdminConfig(baseURL: Config.adminAPIBaseURL)
             let client = AdminClient(config: config)
             
             let response = try await client.getMyReports(firebaseToken: firebaseToken)

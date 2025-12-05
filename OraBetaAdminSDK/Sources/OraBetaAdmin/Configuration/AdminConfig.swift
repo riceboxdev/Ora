@@ -15,7 +15,8 @@ public struct AdminConfig {
     public let cacheEnabled: Bool
     
     /// Default base URL for the admin API
-    public static let defaultBaseURL = "https://dashboard.ora.riceboxai.com"
+    /// Note: On Render free tier, the backend may be asleep and take 30-60s to wake up on first request
+    public static let defaultBaseURL = "https://ora-admin-api.onrender.com"
     
     /// Default token expiry duration (24 hours)
     public static let defaultTokenExpiry: TimeInterval = 24 * 60 * 60

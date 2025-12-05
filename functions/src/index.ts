@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import * as functions from "firebase-functions/v1";
+import * as functions from "firebase-functions";
 import * as https from "https";
 import * as crypto from "crypto";
 // Note: Stream import is kept for potential future use
@@ -32,7 +32,7 @@ function generateServerToken(resource: string = "*", action: string = "*", feedI
 
   const encodedHeader = Buffer.from(JSON.stringify(header)).toString("base64url");
   const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  
+
   const signature = crypto
     .createHmac("sha256", streamApiSecret)
     .update(`${encodedHeader}.${encodedPayload}`)
@@ -52,20 +52,20 @@ async function streamApiRequest(
   return new Promise((resolve, reject) => {
     // For Activity Feeds v2, use /api/v2/ endpoints
     const basePath = "/api/v2";
-    const fullPath = endpoint.startsWith("/") 
-      ? `${basePath}${endpoint}` 
+    const fullPath = endpoint.startsWith("/")
+      ? `${basePath}${endpoint}`
       : `${basePath}/${endpoint}`;
-    
+
     // Generate JWT token for server-side auth (full access)
     const token = generateServerToken("*", "*", "*");
-    
+
     const requestBody = body ? JSON.stringify(body) : undefined;
-    
+
     // Build query string - for GET requests, params can be in body or query string
     // For Stream API, GET requests use query params, POST/PUT use body
     const queryString = new URLSearchParams();
     queryString.append("api_key", streamApiKey);
-    
+
     // If it's a GET request and body is provided, treat body as query params
     if (method === "GET" && body && typeof body === "object") {
       for (const [key, value] of Object.entries(body)) {
@@ -74,7 +74,7 @@ async function streamApiRequest(
         }
       }
     }
-    
+
     const options = {
       hostname: "feeds.stream-io-api.com",
       path: `${fullPath}?${queryString.toString()}`,
@@ -112,7 +112,7 @@ async function streamApiRequest(
             const error = JSON.parse(data);
             // Log full error object for debugging
             functions.logger.error(`Stream API Error Details:`, JSON.stringify(error, null, 2));
-            
+
             // Stream API error structure can vary:
             // - { StatusCode: 404, code: 16, message: "...", details: [] }
             // - { detail: "...", code: 6 }
@@ -120,7 +120,7 @@ async function streamApiRequest(
             const errorCode = error.code || error.Code;
             const errorMsg = error.detail || error.message || error.Message || error.error || `HTTP ${res.statusCode}`;
             const errorCodeStr = errorCode ? ` (code: ${errorCode})` : '';
-            
+
             // Normalize error object
             const normalizedError = {
               code: errorCode,
@@ -130,7 +130,7 @@ async function streamApiRequest(
               details: error.details || error.Details || [],
               more_info: error.more_info || error.moreInfo
             };
-            
+
             // Create error object with full details for better debugging
             const enhancedError = new Error(`${errorMsg}${errorCodeStr}`);
             (enhancedError as any).statusCode = res.statusCode;
@@ -151,7 +151,7 @@ async function streamApiRequest(
       functions.logger.error(`Stream API Request Error: ${err}`);
       reject(err);
     });
-    
+
     if (requestBody) {
       req.write(requestBody);
     }
@@ -190,9 +190,9 @@ function assertAuthenticated(context: functions.https.CallableContext) {
 export const ensureStreamUser = functions.https.onCall(async (data: any, context) => {
   assertAuthenticated(context);
   const authenticatedUserId = context.auth!.uid;
-  
+
   const { userId } = data || {};
-  
+
   // Verify the user is creating their own Stream user
   if (userId && userId !== authenticatedUserId) {
     throw new functions.https.HttpsError(
@@ -200,12 +200,12 @@ export const ensureStreamUser = functions.https.onCall(async (data: any, context
       "Users can only create their own Stream user"
     );
   }
-  
+
   const targetUserId = userId || authenticatedUserId;
-  
+
   try {
     functions.logger.log(`Ensuring Stream user exists for ${targetUserId}`);
-    
+
     // First, verify if the feed exists
     const feedEndpoint = `/feeds/user/${targetUserId}/`;
     try {
@@ -214,21 +214,21 @@ export const ensureStreamUser = functions.https.onCall(async (data: any, context
       return { success: true, message: "User feed already exists" };
     } catch (getError: any) {
       const getErrorMessage = getError?.message || String(getError);
-      
+
       // If we get a 404, the feed/user doesn't exist
       // The Firebase Extension creates Stream users, but feeds are created when you first post to them
       // If the feed group "user" doesn't exist in Stream Dashboard, you'll get a 404 or error code 6
       // Stream error code 6 = Feed Config Error (Missing or misconfigured feed)
       // Stream error code 16 = Does Not Exist Error (Resource not found)
-      if (getErrorMessage.includes("404") || 
-          getErrorMessage.includes("Not Found") || 
-          getErrorMessage.includes("code: 6") || 
-          getErrorMessage.includes("code:6") ||
-          getErrorMessage.includes("code: 16") ||
-          getErrorMessage.includes("code:16")) {
+      if (getErrorMessage.includes("404") ||
+        getErrorMessage.includes("Not Found") ||
+        getErrorMessage.includes("code: 6") ||
+        getErrorMessage.includes("code:6") ||
+        getErrorMessage.includes("code: 16") ||
+        getErrorMessage.includes("code:16")) {
         functions.logger.log(`❌ Feed doesn't exist for ${targetUserId}`);
         functions.logger.warn(`The Firebase Extension creates Stream users, but the feed group "user" must exist in Stream Dashboard`);
-        
+
         // Return a failed-precondition error with helpful message
         throw new functions.https.HttpsError(
           "failed-precondition",
@@ -247,10 +247,10 @@ export const ensureStreamUser = functions.https.onCall(async (data: any, context
     if (e instanceof functions.https.HttpsError) {
       throw e;
     }
-    
+
     functions.logger.error(`Failed to ensure Stream user exists for ${targetUserId}:`, e);
     const errorMessage = e?.message || String(e);
-    
+
     // If it's a failed-precondition error, preserve it
     if (errorMessage.includes("failed-precondition") || errorMessage.includes("feed group")) {
       throw new functions.https.HttpsError(
@@ -258,7 +258,7 @@ export const ensureStreamUser = functions.https.onCall(async (data: any, context
         errorMessage
       );
     }
-    
+
     throw new functions.https.HttpsError(
       "internal",
       `Failed to ensure Stream user exists: ${errorMessage}`
@@ -282,7 +282,7 @@ export const ensureStreamUser = functions.https.onCall(async (data: any, context
 export const createPost = functions.https.onCall(async (data: any, context) => {
   assertAuthenticated(context);
   const userId = context.auth!.uid;
-  
+
   const {
     imageUrl,
     thumbnailUrl,
@@ -290,22 +290,23 @@ export const createPost = functions.https.onCall(async (data: any, context) => {
     imageHeight,
     caption,
     tags = [],
-    categories = []
+    categories = [],
+    interestIds = []  // New interest system
   } = data || {};
-  
+
   if (!imageUrl) {
     throw new functions.https.HttpsError(
       "invalid-argument",
       "imageUrl is required"
     );
   }
-  
+
   try {
     functions.logger.log(`Creating post for user ${userId}`);
-    
+
     // Generate post ID
     const postId = `post_${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
+
     // Create post data
     const postData: any = {
       activityId: postId, // Keep activityId for backwards compatibility
@@ -315,29 +316,31 @@ export const createPost = functions.https.onCall(async (data: any, context) => {
       caption: caption || null,
       tags: tags || [],
       categories: categories || [],
+      interestIds: interestIds || [],  // New interest system
       likeCount: 0,
       commentCount: 0,
       viewCount: 0,
       shareCount: 0,
       saveCount: 0,
+      isDeleted: false,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
-    
+
     if (imageWidth) {
       postData.imageWidth = imageWidth;
     }
-    
+
     if (imageHeight) {
       postData.imageHeight = imageHeight;
     }
-    
+
     // Save post to Firestore
     await admin.firestore().collection("posts").doc(postId).set(postData);
     functions.logger.log(`✅ Created post in Firestore with ID: ${postId}`);
     functions.logger.log(`   Image URL: ${imageUrl}`);
     functions.logger.log(`   Thumbnail URL: ${postData.thumbnailUrl}`);
-    
+
     // Update tag collection (non-blocking)
     if (tags && Array.isArray(tags) && tags.length > 0) {
       try {
@@ -347,7 +350,18 @@ export const createPost = functions.https.onCall(async (data: any, context) => {
         // Don't fail the post creation if tag update fails
       }
     }
-    
+
+    // Update interest counts (non-blocking)
+    if (interestIds && Array.isArray(interestIds) && interestIds.length > 0) {
+      try {
+        await updateInterestCounts(interestIds, 1);
+        functions.logger.log(`✅ Updated interest counts for ${interestIds.length} interest(s)`);
+      } catch (error: any) {
+        functions.logger.error(`Failed to update interest counts: ${error.message}`);
+        // Don't fail the post creation if interest update fails
+      }
+    }
+
     return {
       success: true,
       postId: postId,
@@ -356,11 +370,11 @@ export const createPost = functions.https.onCall(async (data: any, context) => {
     };
   } catch (error: any) {
     functions.logger.error(`Failed to create post: ${error.message}`, error);
-    
+
     if (error instanceof functions.https.HttpsError) {
       throw error;
     }
-    
+
     throw new functions.https.HttpsError(
       "internal",
       `Failed to create post: ${error.message}`
@@ -374,32 +388,33 @@ export const createPost = functions.https.onCall(async (data: any, context) => {
 export const editPost = functions.https.onCall(async (data: any, context) => {
   assertAuthenticated(context);
   const userId = context.auth!.uid;
-  
+
   const {
     activityId,
     caption,
     tags,
-    categories
+    categories,
+    interestIds  // New interest system
   } = data || {};
-  
+
   if (!activityId) {
     throw new functions.https.HttpsError(
       "invalid-argument",
       "activityId is required"
     );
   }
-  
+
   try {
     // Verify post ownership
     const postDoc = await admin.firestore().collection("posts").doc(activityId).get();
-    
+
     if (!postDoc.exists) {
       throw new functions.https.HttpsError(
         "not-found",
         "Post not found"
       );
     }
-    
+
     const postData = postDoc.data();
     if (postData?.userId !== userId) {
       throw new functions.https.HttpsError(
@@ -407,29 +422,33 @@ export const editPost = functions.https.onCall(async (data: any, context) => {
         "Only post owner can edit posts"
       );
     }
-    
+
     // Update post in Firestore
     const updateData: any = {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       edited: true
     };
-    
+
     if (caption !== undefined) {
       updateData.caption = caption;
     }
-    
+
     if (tags !== undefined) {
       updateData.tags = tags;
     }
-    
+
     if (categories !== undefined) {
       updateData.categories = categories;
     }
-    
+
+    if (interestIds !== undefined) {
+      updateData.interestIds = interestIds;
+    }
+
     await admin.firestore().collection("posts").doc(activityId).update(updateData);
-    
+
     functions.logger.log(`✅ Updated post ${activityId} in Firestore`);
-    
+
     // Update tag collection if tags were changed (non-blocking)
     if (tags !== undefined && Array.isArray(tags)) {
       try {
@@ -439,18 +458,42 @@ export const editPost = functions.https.onCall(async (data: any, context) => {
         // Don't fail the post update if tag update fails
       }
     }
-    
+
+    // Update interest counts if interests were changed (non-blocking)
+    if (interestIds !== undefined && Array.isArray(interestIds)) {
+      try {
+        const oldInterestIds = postData?.interestIds || [];
+
+        // Find removed interests (decrement)
+        const removedInterests = oldInterestIds.filter((id: string) => !interestIds.includes(id));
+        if (removedInterests.length > 0) {
+          await updateInterestCounts(removedInterests, -1);
+          functions.logger.log(`✅ Decremented counts for ${removedInterests.length} removed interest(s)`);
+        }
+
+        // Find added interests (increment)
+        const addedInterests = interestIds.filter((id: string) => !oldInterestIds.includes(id));
+        if (addedInterests.length > 0) {
+          await updateInterestCounts(addedInterests, 1);
+          functions.logger.log(`✅ Incremented counts for ${addedInterests.length} added interest(s)`);
+        }
+      } catch (error: any) {
+        functions.logger.error(`Failed to update interest counts: ${error.message}`);
+        // Don't fail the post update if interest update fails
+      }
+    }
+
     return {
       success: true,
       message: "Post updated successfully"
     };
   } catch (error: any) {
     functions.logger.error(`Failed to edit post: ${error.message}`, error);
-    
+
     if (error instanceof functions.https.HttpsError) {
       throw error;
     }
-    
+
     throw new functions.https.HttpsError(
       "internal",
       `Failed to edit post: ${error.message}`
@@ -465,27 +508,27 @@ export const editPost = functions.https.onCall(async (data: any, context) => {
 export const deletePost = functions.https.onCall(async (data: any, context) => {
   assertAuthenticated(context);
   const userId = context.auth!.uid;
-  
+
   const { postId } = data || {};
-  
+
   if (!postId) {
     throw new functions.https.HttpsError(
       "invalid-argument",
       "postId is required"
     );
   }
-  
+
   try {
     // Verify post ownership
     const postDoc = await admin.firestore().collection("posts").doc(postId).get();
-    
+
     if (!postDoc.exists) {
       throw new functions.https.HttpsError(
         "not-found",
         "Post not found"
       );
     }
-    
+
     const postData = postDoc.data();
     if (postData?.userId !== userId) {
       throw new functions.https.HttpsError(
@@ -493,22 +536,36 @@ export const deletePost = functions.https.onCall(async (data: any, context) => {
         "Only post owner can delete posts"
       );
     }
-    
+
+    // Get post's interests before deletion
+    const postInterestIds = postData?.interestIds || [];
+
     // Delete post from Firestore
     await admin.firestore().collection("posts").doc(postId).delete();
     functions.logger.log(`✅ Deleted post ${postId} from Firestore`);
-    
+
+    // Decrement interest counts (non-blocking)
+    if (postInterestIds.length > 0) {
+      try {
+        await updateInterestCounts(postInterestIds, -1);
+        functions.logger.log(`✅ Decremented counts for ${postInterestIds.length} interest(s)`);
+      } catch (error: any) {
+        functions.logger.error(`Failed to update interest counts: ${error.message}`);
+        // Don't fail the deletion if interest update fails
+      }
+    }
+
     return {
       success: true,
       message: "Post deleted successfully"
     };
   } catch (error: any) {
     functions.logger.error(`Failed to delete post: ${error.message}`, error);
-    
+
     if (error instanceof functions.https.HttpsError) {
       throw error;
     }
-    
+
     throw new functions.https.HttpsError(
       "internal",
       `Failed to delete post: ${error.message}`
@@ -529,237 +586,237 @@ async function performTrendAnalysis(
   personalized: boolean,
   userId: string
 ): Promise<any> {
-    // Calculate time range
-    const now = Date.now();
-    let startTime: number;
-    let previousStartTime: number;
-    
-    switch (timeWindow) {
-      case "24h":
-        startTime = now - 24 * 60 * 60 * 1000;
-        previousStartTime = startTime - 24 * 60 * 60 * 1000;
-        break;
-      case "7d":
-        startTime = now - 7 * 24 * 60 * 60 * 1000;
-        previousStartTime = startTime - 7 * 24 * 60 * 60 * 1000;
-        break;
-      case "30d":
-        startTime = now - 30 * 24 * 60 * 60 * 1000;
-        previousStartTime = startTime - 30 * 24 * 60 * 60 * 1000;
-        break;
-      default:
-        startTime = now - 24 * 60 * 60 * 1000;
-        previousStartTime = startTime - 24 * 60 * 60 * 1000;
-    }
-    
-    // Query posts in current time window
-    const postsSnapshot = await admin.firestore()
-      .collection("posts")
-      .where("createdAt", ">=", admin.firestore.Timestamp.fromMillis(startTime))
-      .where("createdAt", "<=", admin.firestore.Timestamp.fromMillis(now))
-      .get();
-    
-    // Query posts in previous time window for comparison
-    const previousPostsSnapshot = await admin.firestore()
-      .collection("posts")
-      .where("createdAt", ">=", admin.firestore.Timestamp.fromMillis(previousStartTime))
-      .where("createdAt", "<", admin.firestore.Timestamp.fromMillis(startTime))
-      .get();
-    
-    // Aggregate topics (tags and categories only - semantic labels excluded)
-    const topicMap: Map<string, any> = new Map();
-    const previousTopicMap: Map<string, any> = new Map();
-    
-    // Process current period posts
-    postsSnapshot.forEach((doc) => {
-      const post = doc.data();
-      const engagementScore = (post.likeCount || 0) * 2 + 
-                             (post.commentCount || 0) * 3 + 
-                             (post.saveCount || 0) * 4 + 
-                             (post.shareCount || 0) * 2 + 
-                             (post.viewCount || 0) * 0.1;
-      
-      // Skip semantic labels - not used for trending topics
-      // Semantic labels are only used for image analysis and search, not trending
-      
-      // Process tags
-      if (post.tags && Array.isArray(post.tags)) {
-        post.tags.forEach((tag: string) => {
-          const normalizedTag = tag.toLowerCase().trim();
-          if (!topicMap.has(`tag:${normalizedTag}`)) {
-            topicMap.set(`tag:${normalizedTag}`, {
-              id: normalizedTag,
-              type: "tag",
-              name: tag,
-              postCount: 0,
-              engagementScore: 0,
-              uniqueEngagers: new Set<string>(),
-              posts: []
-            });
-          }
-          const topic = topicMap.get(`tag:${normalizedTag}`);
-          topic.postCount++;
-          topic.engagementScore += engagementScore;
-          topic.uniqueEngagers.add(post.userId);
-          topic.posts.push(doc.id);
-        });
-      }
-      
-      // Process categories
-      if (post.categories && Array.isArray(post.categories)) {
-        post.categories.forEach((category: string) => {
-          const normalizedCategory = category.toLowerCase().trim();
-          if (!topicMap.has(`category:${normalizedCategory}`)) {
-            topicMap.set(`category:${normalizedCategory}`, {
-              id: normalizedCategory,
-              type: "category",
-              name: category,
-              postCount: 0,
-              engagementScore: 0,
-              uniqueEngagers: new Set<string>(),
-              posts: []
-            });
-          }
-          const topic = topicMap.get(`category:${normalizedCategory}`);
-          topic.postCount++;
-          topic.engagementScore += engagementScore;
-          topic.uniqueEngagers.add(post.userId);
-          topic.posts.push(doc.id);
-        });
-      }
-    });
-    
-    // Process previous period for comparison
-    previousPostsSnapshot.forEach((doc) => {
-      const post = doc.data();
-      const engagementScore = (post.likeCount || 0) * 2 + 
-                             (post.commentCount || 0) * 3 + 
-                             (post.saveCount || 0) * 4 + 
-                             (post.shareCount || 0) * 2 + 
-                             (post.viewCount || 0) * 0.1;
-      
-      const processTopic = (key: string, type: string, name: string) => {
-        if (!previousTopicMap.has(key)) {
-          previousTopicMap.set(key, {
+  // Calculate time range
+  const now = Date.now();
+  let startTime: number;
+  let previousStartTime: number;
+
+  switch (timeWindow) {
+    case "24h":
+      startTime = now - 24 * 60 * 60 * 1000;
+      previousStartTime = startTime - 24 * 60 * 60 * 1000;
+      break;
+    case "7d":
+      startTime = now - 7 * 24 * 60 * 60 * 1000;
+      previousStartTime = startTime - 7 * 24 * 60 * 60 * 1000;
+      break;
+    case "30d":
+      startTime = now - 30 * 24 * 60 * 60 * 1000;
+      previousStartTime = startTime - 30 * 24 * 60 * 60 * 1000;
+      break;
+    default:
+      startTime = now - 24 * 60 * 60 * 1000;
+      previousStartTime = startTime - 24 * 60 * 60 * 1000;
+  }
+
+  // Query posts in current time window
+  const postsSnapshot = await admin.firestore()
+    .collection("posts")
+    .where("createdAt", ">=", admin.firestore.Timestamp.fromMillis(startTime))
+    .where("createdAt", "<=", admin.firestore.Timestamp.fromMillis(now))
+    .get();
+
+  // Query posts in previous time window for comparison
+  const previousPostsSnapshot = await admin.firestore()
+    .collection("posts")
+    .where("createdAt", ">=", admin.firestore.Timestamp.fromMillis(previousStartTime))
+    .where("createdAt", "<", admin.firestore.Timestamp.fromMillis(startTime))
+    .get();
+
+  // Aggregate topics (tags and categories only - semantic labels excluded)
+  const topicMap: Map<string, any> = new Map();
+  const previousTopicMap: Map<string, any> = new Map();
+
+  // Process current period posts
+  postsSnapshot.forEach((doc) => {
+    const post = doc.data();
+    const engagementScore = (post.likeCount || 0) * 2 +
+      (post.commentCount || 0) * 3 +
+      (post.saveCount || 0) * 4 +
+      (post.shareCount || 0) * 2 +
+      (post.viewCount || 0) * 0.1;
+
+    // Skip semantic labels - not used for trending topics
+    // Semantic labels are only used for image analysis and search, not trending
+
+    // Process tags
+    if (post.tags && Array.isArray(post.tags)) {
+      post.tags.forEach((tag: string) => {
+        const normalizedTag = tag.toLowerCase().trim();
+        if (!topicMap.has(`tag:${normalizedTag}`)) {
+          topicMap.set(`tag:${normalizedTag}`, {
+            id: normalizedTag,
+            type: "tag",
+            name: tag,
             postCount: 0,
             engagementScore: 0,
-            uniqueEngagers: new Set<string>()
+            uniqueEngagers: new Set<string>(),
+            posts: []
           });
         }
-        const topic = previousTopicMap.get(key);
+        const topic = topicMap.get(`tag:${normalizedTag}`);
         topic.postCount++;
         topic.engagementScore += engagementScore;
         topic.uniqueEngagers.add(post.userId);
-      };
-      
-      // Skip semantic labels - not used for trending topics
-      // Only process tags and categories for trending
-      
-      if (post.tags && Array.isArray(post.tags)) {
-        post.tags.forEach((tag: string) => {
-          processTopic(`tag:${tag.toLowerCase().trim()}`, "tag", tag);
-        });
-      }
-      if (post.categories && Array.isArray(post.categories)) {
-        post.categories.forEach((category: string) => {
-          processTopic(`category:${category.toLowerCase().trim()}`, "category", category);
-        });
-      }
-    });
-    
-    // Calculate trend scores
-    const trendingTopics: any[] = [];
-    const totalUsers = new Set<string>();
-    postsSnapshot.forEach((doc) => {
-      totalUsers.add(doc.data().userId);
-    });
-    const totalUserCount = totalUsers.size || 1;
-    
-    topicMap.forEach((topic, key) => {
-      if (topic.postCount < minPostThreshold) {
-        functions.logger.debug(`Skipping topic "${topic.name}" (${topic.type}): only ${topic.postCount} posts, need ${minPostThreshold}`);
-        return; // Skip topics with too few posts
-      }
-      
-      const previous = previousTopicMap.get(key) || {
-        postCount: 0,
-        engagementScore: 0,
-        uniqueEngagers: new Set<string>()
-      };
-      
-      // Calculate scores
-      const engagementScore = topic.engagementScore / topic.postCount; // Average per post
-      const userEngagementScore = topic.uniqueEngagers.size / totalUserCount;
-      const previousEngagement = previous.engagementScore || 0.1; // Avoid division by zero
-      const velocityScore = (topic.engagementScore - previousEngagement) / previousEngagement;
-      const volumeScore = topic.postCount / postsSnapshot.size;
-      
-      // Calculate trend score
-      const trendScore = (
-        Math.min(engagementScore / 100, 1) * 0.35 + // Normalize engagement
-        userEngagementScore * 0.25 +
-        Math.min(Math.max(velocityScore, -1), 1) * 0.25 + // Clamp velocity
-        volumeScore * 0.15
-      );
-      
-      // Get top posts (by engagement)
-      const topPosts = topic.posts.slice(0, 10);
-      
-      trendingTopics.push({
-        id: topic.id,
-        type: topic.type,
-        name: topic.name,
-        postCount: topic.postCount,
-        engagementScore: engagementScore,
-        userEngagementScore: userEngagementScore,
-        growthRate: previous.postCount > 0 
-          ? ((topic.postCount - previous.postCount) / previous.postCount) * 100 
-          : 100,
-        trendScore: Math.max(0, Math.min(1, trendScore)), // Clamp to 0-1
-        timeWindow: timeWindow,
-        topPosts: topPosts,
-        metadata: {
-          uniqueEngagers: topic.uniqueEngagers.size,
-          engagementVelocity: velocityScore
-        }
+        topic.posts.push(doc.id);
       });
-    });
-    
-    // Sort by trend score
-    trendingTopics.sort((a, b) => b.trendScore - a.trendScore);
-    
-    // If personalized, weight by user preferences
-    if (personalized) {
-      // Get user preferences
-      const userDoc = await admin.firestore().collection("users").doc(userId).get();
-      const userData = userDoc.data();
-      // Skip preferredLabels - semantic labels are not used for trending topics
-      const preferredTags = userData?.preferredTags || [];
-      const preferredCategories = userData?.preferredCategories || [];
-      
-      // Apply preference weights (only for tags and categories)
-      trendingTopics.forEach((topic) => {
-        let preferenceWeight = 1.0;
-        // Skip label type - semantic labels are not included in trending topics
-        if (topic.type === "tag" && preferredTags.includes(topic.id)) {
-          preferenceWeight = 1.5;
-        } else if (topic.type === "category" && preferredCategories.includes(topic.id)) {
-          preferenceWeight = 1.5;
-        }
-        topic.trendScore *= preferenceWeight;
-        topic.personalized = true;
-      });
-      
-      // Re-sort after applying weights
-      trendingTopics.sort((a, b) => b.trendScore - a.trendScore);
     }
-    
-    return {
-      success: true,
-      topics: trendingTopics,
-      timeWindow: timeWindow,
-      personalized: personalized
+
+    // Process categories
+    if (post.categories && Array.isArray(post.categories)) {
+      post.categories.forEach((category: string) => {
+        const normalizedCategory = category.toLowerCase().trim();
+        if (!topicMap.has(`category:${normalizedCategory}`)) {
+          topicMap.set(`category:${normalizedCategory}`, {
+            id: normalizedCategory,
+            type: "category",
+            name: category,
+            postCount: 0,
+            engagementScore: 0,
+            uniqueEngagers: new Set<string>(),
+            posts: []
+          });
+        }
+        const topic = topicMap.get(`category:${normalizedCategory}`);
+        topic.postCount++;
+        topic.engagementScore += engagementScore;
+        topic.uniqueEngagers.add(post.userId);
+        topic.posts.push(doc.id);
+      });
+    }
+  });
+
+  // Process previous period for comparison
+  previousPostsSnapshot.forEach((doc) => {
+    const post = doc.data();
+    const engagementScore = (post.likeCount || 0) * 2 +
+      (post.commentCount || 0) * 3 +
+      (post.saveCount || 0) * 4 +
+      (post.shareCount || 0) * 2 +
+      (post.viewCount || 0) * 0.1;
+
+    const processTopic = (key: string, type: string, name: string) => {
+      if (!previousTopicMap.has(key)) {
+        previousTopicMap.set(key, {
+          postCount: 0,
+          engagementScore: 0,
+          uniqueEngagers: new Set<string>()
+        });
+      }
+      const topic = previousTopicMap.get(key);
+      topic.postCount++;
+      topic.engagementScore += engagementScore;
+      topic.uniqueEngagers.add(post.userId);
     };
+
+    // Skip semantic labels - not used for trending topics
+    // Only process tags and categories for trending
+
+    if (post.tags && Array.isArray(post.tags)) {
+      post.tags.forEach((tag: string) => {
+        processTopic(`tag:${tag.toLowerCase().trim()}`, "tag", tag);
+      });
+    }
+    if (post.categories && Array.isArray(post.categories)) {
+      post.categories.forEach((category: string) => {
+        processTopic(`category:${category.toLowerCase().trim()}`, "category", category);
+      });
+    }
+  });
+
+  // Calculate trend scores
+  const trendingTopics: any[] = [];
+  const totalUsers = new Set<string>();
+  postsSnapshot.forEach((doc) => {
+    totalUsers.add(doc.data().userId);
+  });
+  const totalUserCount = totalUsers.size || 1;
+
+  topicMap.forEach((topic, key) => {
+    if (topic.postCount < minPostThreshold) {
+      functions.logger.debug(`Skipping topic "${topic.name}" (${topic.type}): only ${topic.postCount} posts, need ${minPostThreshold}`);
+      return; // Skip topics with too few posts
+    }
+
+    const previous = previousTopicMap.get(key) || {
+      postCount: 0,
+      engagementScore: 0,
+      uniqueEngagers: new Set<string>()
+    };
+
+    // Calculate scores
+    const engagementScore = topic.engagementScore / topic.postCount; // Average per post
+    const userEngagementScore = topic.uniqueEngagers.size / totalUserCount;
+    const previousEngagement = previous.engagementScore || 0.1; // Avoid division by zero
+    const velocityScore = (topic.engagementScore - previousEngagement) / previousEngagement;
+    const volumeScore = topic.postCount / postsSnapshot.size;
+
+    // Calculate trend score
+    const trendScore = (
+      Math.min(engagementScore / 100, 1) * 0.35 + // Normalize engagement
+      userEngagementScore * 0.25 +
+      Math.min(Math.max(velocityScore, -1), 1) * 0.25 + // Clamp velocity
+      volumeScore * 0.15
+    );
+
+    // Get top posts (by engagement)
+    const topPosts = topic.posts.slice(0, 10);
+
+    trendingTopics.push({
+      id: topic.id,
+      type: topic.type,
+      name: topic.name,
+      postCount: topic.postCount,
+      engagementScore: engagementScore,
+      userEngagementScore: userEngagementScore,
+      growthRate: previous.postCount > 0
+        ? ((topic.postCount - previous.postCount) / previous.postCount) * 100
+        : 100,
+      trendScore: Math.max(0, Math.min(1, trendScore)), // Clamp to 0-1
+      timeWindow: timeWindow,
+      topPosts: topPosts,
+      metadata: {
+        uniqueEngagers: topic.uniqueEngagers.size,
+        engagementVelocity: velocityScore
+      }
+    });
+  });
+
+  // Sort by trend score
+  trendingTopics.sort((a, b) => b.trendScore - a.trendScore);
+
+  // If personalized, weight by user preferences
+  if (personalized) {
+    // Get user preferences
+    const userDoc = await admin.firestore().collection("users").doc(userId).get();
+    const userData = userDoc.data();
+    // Skip preferredLabels - semantic labels are not used for trending topics
+    const preferredTags = userData?.preferredTags || [];
+    const preferredCategories = userData?.preferredCategories || [];
+
+    // Apply preference weights (only for tags and categories)
+    trendingTopics.forEach((topic) => {
+      let preferenceWeight = 1.0;
+      // Skip label type - semantic labels are not included in trending topics
+      if (topic.type === "tag" && preferredTags.includes(topic.id)) {
+        preferenceWeight = 1.5;
+      } else if (topic.type === "category" && preferredCategories.includes(topic.id)) {
+        preferenceWeight = 1.5;
+      }
+      topic.trendScore *= preferenceWeight;
+      topic.personalized = true;
+    });
+
+    // Re-sort after applying weights
+    trendingTopics.sort((a, b) => b.trendScore - a.trendScore);
+  }
+
+  return {
+    success: true,
+    topics: trendingTopics,
+    timeWindow: timeWindow,
+    personalized: personalized
+  };
 }
 
 
@@ -769,26 +826,26 @@ async function performTrendAnalysis(
 export const getTrendingTopics = functions.https.onCall(async (data: any, context) => {
   assertAuthenticated(context);
   const userId = context.auth!.uid;
-  
+
   const {
     timeWindow = "24h",
     limit = 20,
     personalized = false
   } = data || {};
-  
+
   try {
     // Try to get cached trends first
     // For personalized trends, cache per-user; for global, cache shared
     const scope = personalized ? "personalized" : "global";
-    const cacheKey = personalized 
-      ? `${scope}_${userId}_${timeWindow}` 
+    const cacheKey = personalized
+      ? `${scope}_${userId}_${timeWindow}`
       : `${scope}_${timeWindow}`;
-    
+
     const cachedDoc = await admin.firestore()
       .collection("trending_topics")
       .doc(cacheKey)
       .get();
-    
+
     if (cachedDoc.exists) {
       const cached = cachedDoc.data();
       const age = Date.now() - cached!.lastUpdated.toMillis();
@@ -800,14 +857,14 @@ export const getTrendingTopics = functions.https.onCall(async (data: any, contex
         const filteredTopics = allTopics.filter((topic: any) => {
           return topic.type === "tag" || topic.type === "category";
         });
-        
+
         // Log diagnostic information
         functions.logger.log(`Cache hit (${scope}): ${allTopics.length} total topics, ${filteredTopics.length} after filtering (removed ${allTopics.length - filteredTopics.length} semantic label topics)`);
-        
+
         if (filteredTopics.length === 0 && allTopics.length > 0) {
           functions.logger.warn(`All cached topics were filtered out (they were semantic labels). Cache age: ${Math.round(age / 1000 / 60)} minutes. Consider clearing cache.`);
         }
-        
+
         return {
           success: true,
           topics: filteredTopics.slice(0, limit),
@@ -815,10 +872,10 @@ export const getTrendingTopics = functions.https.onCall(async (data: any, contex
         };
       }
     }
-    
+
     // Otherwise, run analysis using helper function
     const result = await performTrendAnalysis(timeWindow, 3, personalized, userId);
-    
+
     // Log diagnostic information
     functions.logger.log(`Trend analysis results (${scope}): ${result.topics.length} topics found`);
     if (result.topics.length === 0) {
@@ -827,7 +884,7 @@ export const getTrendingTopics = functions.https.onCall(async (data: any, contex
         2. Topics don't meet minimum threshold (3 posts)
         3. Posts only have semantic labels (not tags/categories)`);
     }
-    
+
     // Cache the results (per-user for personalized, shared for global)
     try {
       await admin.firestore()
@@ -845,7 +902,7 @@ export const getTrendingTopics = functions.https.onCall(async (data: any, contex
       functions.logger.warn(`Failed to cache trends: ${cacheError.message}`);
       // Continue even if caching fails
     }
-    
+
     return {
       success: true,
       topics: result.topics.slice(0, limit),
@@ -867,13 +924,13 @@ export const getTrendingTopics = functions.https.onCall(async (data: any, contex
  */
 export const clearTrendingTopicsCache = functions.https.onCall(async (data: any, context) => {
   assertAuthenticated(context);
-  
+
   try {
     // Get all cached trending topics documents
     const cacheSnapshot = await admin.firestore()
       .collection("trending_topics")
       .get();
-    
+
     if (cacheSnapshot.empty) {
       return {
         success: true,
@@ -881,16 +938,16 @@ export const clearTrendingTopicsCache = functions.https.onCall(async (data: any,
         deletedCount: 0
       };
     }
-    
+
     // Delete all cached documents
     const batch = admin.firestore().batch();
     cacheSnapshot.docs.forEach((doc) => {
       batch.delete(doc.ref);
     });
     await batch.commit();
-    
+
     functions.logger.log(`✅ Cleared ${cacheSnapshot.size} cached trending topics documents`);
-    
+
     return {
       success: true,
       message: `Cleared ${cacheSnapshot.size} cached trending topics`,
@@ -910,21 +967,21 @@ export const clearTrendingTopicsCache = functions.https.onCall(async (data: any,
  */
 export const getPostsByTopic = functions.https.onCall(async (data: any, context) => {
   assertAuthenticated(context);
-  
+
   const {
     topicId,
     topicType, // "label" | "tag" | "category"
     limit = 20,
     timeWindow = "7d"
   } = data || {};
-  
+
   if (!topicId || !topicType) {
     throw new functions.https.HttpsError(
       "invalid-argument",
       "topicId and topicType are required"
     );
   }
-  
+
   try {
     // Calculate time range
     const now = Date.now();
@@ -942,10 +999,10 @@ export const getPostsByTopic = functions.https.onCall(async (data: any, context)
       default:
         startTime = now - 7 * 24 * 60 * 60 * 1000;
     }
-    
+
     const normalizedTopicId = topicId.toLowerCase().trim();
     const fieldName = topicType === "tag" ? "tags" : "categories";
-    
+
     // Query posts with this topic
     const postsSnapshot = await admin.firestore()
       .collection("posts")
@@ -954,12 +1011,12 @@ export const getPostsByTopic = functions.https.onCall(async (data: any, context)
       .orderBy("createdAt", "desc")
       .limit(limit)
       .get();
-    
+
     const posts = postsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data()
     }));
-    
+
     return {
       success: true,
       posts: posts,
@@ -980,10 +1037,10 @@ export const getPostsByTopic = functions.https.onCall(async (data: any, context)
 export const aggregateTopics = functions.pubsub.schedule("every 1 hours").onRun(async (context) => {
   try {
     functions.logger.log("Starting topic aggregation");
-    
+
     const timeWindows = ["24h", "7d", "30d"];
     const scopes = ["global", "personalized"];
-    
+
     // Note: For personalized, we'd need to run for each user or use a representative sample
     // For now, we'll just cache global trends
     for (const timeWindow of timeWindows) {
@@ -992,7 +1049,7 @@ export const aggregateTopics = functions.pubsub.schedule("every 1 hours").onRun(
           // Skip personalized for now - would need user-specific processing
           continue;
         }
-        
+
         try {
           // Run analysis using helper function (not via HTTP call)
           const result = await performTrendAnalysis(
@@ -1001,7 +1058,7 @@ export const aggregateTopics = functions.pubsub.schedule("every 1 hours").onRun(
             scope === "personalized",
             "system"
           );
-          
+
           // Cache results
           await admin.firestore()
             .collection("trending_topics")
@@ -1012,14 +1069,14 @@ export const aggregateTopics = functions.pubsub.schedule("every 1 hours").onRun(
               scope: scope,
               lastUpdated: admin.firestore.FieldValue.serverTimestamp()
             });
-          
+
           functions.logger.log(`✅ Cached ${scope} trends for ${timeWindow}`);
         } catch (error: any) {
           functions.logger.error(`Failed to aggregate ${scope} trends for ${timeWindow}: ${error.message}`);
         }
       }
     }
-    
+
     functions.logger.log("✅ Topic aggregation complete");
   } catch (error: any) {
     functions.logger.error(`Topic aggregation failed: ${error.message}`, error);
@@ -1036,17 +1093,17 @@ export const aggregateTopics = functions.pubsub.schedule("every 1 hours").onRun(
 export const getTagSuggestions = functions.https.onCall(async (data: any, context) => {
   assertAuthenticated(context);
   const userId = context.auth!.uid;
-  
+
   const {
     query = "",
     limit = 20
   } = data || {};
-  
+
   try {
     const normalizedQuery = query.toLowerCase().trim();
     const suggestions: any[] = [];
     const suggestionMap = new Map<string, any>();
-    
+
     // 1. User's previous tags (if user has history)
     if (userId) {
       const userPostsSnapshot = await admin.firestore()
@@ -1054,7 +1111,7 @@ export const getTagSuggestions = functions.https.onCall(async (data: any, contex
         .where("userId", "==", userId)
         .limit(100)
         .get();
-      
+
       const userTagCounts = new Map<string, number>();
       userPostsSnapshot.forEach((doc) => {
         const post = doc.data();
@@ -1067,7 +1124,7 @@ export const getTagSuggestions = functions.https.onCall(async (data: any, contex
           });
         }
       });
-      
+
       // Add user's tags
       Array.from(userTagCounts.entries())
         .sort((a, b) => b[1] - a[1])
@@ -1086,7 +1143,7 @@ export const getTagSuggestions = functions.https.onCall(async (data: any, contex
           }
         });
     }
-    
+
     // 3. Popular tags (global fallback) - always include global suggestions
     // First try the tags collection (aggregated tag stats)
     try {
@@ -1095,7 +1152,7 @@ export const getTagSuggestions = functions.https.onCall(async (data: any, contex
         .orderBy("usageCount", "desc")
         .limit(100)
         .get();
-      
+
       if (!tagsSnapshot.empty) {
         tagsSnapshot.forEach((doc) => {
           const tagData = doc.data();
@@ -1116,7 +1173,7 @@ export const getTagSuggestions = functions.https.onCall(async (data: any, contex
       // Tags collection might not exist yet, fall through to querying posts directly
       functions.logger.warn(`Tags collection not available, falling back to posts query: ${error.message}`);
     }
-    
+
     // Fallback: Get popular tags by querying all posts if tags collection is empty
     if (suggestionMap.size < 10 || suggestionMap.size === 0) {
       try {
@@ -1125,7 +1182,7 @@ export const getTagSuggestions = functions.https.onCall(async (data: any, contex
           .where("tags", "!=", null) // Only posts with tags
           .limit(500) // Sample a larger set for better global distribution
           .get();
-        
+
         const globalTagCounts = new Map<string, number>();
         allPostsSnapshot.forEach((doc) => {
           const post = doc.data();
@@ -1138,7 +1195,7 @@ export const getTagSuggestions = functions.https.onCall(async (data: any, contex
             });
           }
         });
-        
+
         // Add global popular tags
         Array.from(globalTagCounts.entries())
           .sort((a, b) => b[1] - a[1])
@@ -1163,7 +1220,7 @@ export const getTagSuggestions = functions.https.onCall(async (data: any, contex
         functions.logger.warn(`Failed to get global popular tags from posts: ${error.message}`);
       }
     }
-    
+
     // Convert to array and sort by score
     suggestions.push(...Array.from(suggestionMap.values()));
     suggestions.sort((a, b) => {
@@ -1173,7 +1230,7 @@ export const getTagSuggestions = functions.https.onCall(async (data: any, contex
       if (sourceDiff !== 0) return sourceDiff;
       return b.score - a.score;
     });
-    
+
     return {
       success: true,
       suggestions: suggestions.slice(0, limit)
@@ -1192,28 +1249,28 @@ export const getTagSuggestions = functions.https.onCall(async (data: any, contex
  */
 export const validatePostTags = functions.https.onCall(async (data: any, context) => {
   const { tags } = data || {};
-  
+
   if (!tags || !Array.isArray(tags)) {
     return {
       valid: false,
       error: "Tags must be an array"
     };
   }
-  
+
   if (tags.length === 0) {
     return {
       valid: false,
       error: "At least 1 tag is required"
     };
   }
-  
+
   if (tags.length > 5) {
     return {
       valid: false,
       error: "Maximum 5 tags allowed"
     };
   }
-  
+
   // Validate tag format
   for (const tag of tags) {
     if (typeof tag !== "string" || tag.trim().length === 0) {
@@ -1229,7 +1286,7 @@ export const validatePostTags = functions.https.onCall(async (data: any, context
       };
     }
   }
-  
+
   return {
     valid: true
   };
@@ -1243,16 +1300,16 @@ async function updateTagCollection(tags: string[]) {
   if (!tags || !Array.isArray(tags)) {
     return;
   }
-  
+
   const batch = admin.firestore().batch();
-  
+
   for (const tag of tags) {
     const normalizedTag = tag.toLowerCase().trim();
     if (normalizedTag.length === 0) continue;
-    
+
     const tagRef = admin.firestore().collection("tags").doc(normalizedTag);
     const tagDoc = await tagRef.get();
-    
+
     if (tagDoc.exists) {
       // Update existing tag
       batch.update(tagRef, {
@@ -1273,11 +1330,48 @@ async function updateTagCollection(tags: string[]) {
       });
     }
   }
-  
+
   await batch.commit();
 }
 
+/**
+ * Update interest collection when post is created/edited/deleted
+ * Increments or decrements postCount for each interest
+ * @param interestIds - Array of interest IDs to update
+ * @param increment - 1 to increment, -1 to decrement
+ */
+async function updateInterestCounts(interestIds: string[], increment: number = 1) {
+  if (!interestIds || !Array.isArray(interestIds) || interestIds.length === 0) {
+    return;
+  }
+
+  const batch = admin.firestore().batch();
+
+  for (const interestId of interestIds) {
+    const normalizedInterestId = interestId.toLowerCase().trim();
+    if (normalizedInterestId.length === 0) continue;
+
+    const interestRef = admin.firestore().collection("interests").doc(normalizedInterestId);
+
+    const updateData: any = {
+      postCount: admin.firestore.FieldValue.increment(increment),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    // Only update lastPostAt when incrementing (new post added)
+    if (increment > 0) {
+      updateData.lastPostAt = admin.firestore.FieldValue.serverTimestamp();
+    }
+
+    batch.update(interestRef, updateData);
+  }
+
+  await batch.commit();
+  functions.logger.log(`Updated ${interestIds.length} interest(s) postCount by ${increment}`);
+}
+
 // =========================
+
 // Cloudflare Images Upload
 // =========================
 
@@ -1289,10 +1383,10 @@ async function updateTagCollection(tags: string[]) {
  */
 export const uploadToCloudflare = functions.https.onCall(async (data: any, context) => {
   assertAuthenticated(context);
-  
+
   const { userId } = data || {};
   const authenticatedUserId = context.auth!.uid;
-  
+
   // Verify the user is requesting their own upload token
   if (userId && userId !== authenticatedUserId) {
     throw new functions.https.HttpsError(
@@ -1300,19 +1394,19 @@ export const uploadToCloudflare = functions.https.onCall(async (data: any, conte
       "Users can only request upload tokens for themselves"
     );
   }
-  
+
   try {
     // Get Cloudflare credentials from environment variables
     // For v1 functions, use functions.config()
     // For v2 functions, use process.env (secrets are automatically injected)
-    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID 
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
       || functions.config().cloudflare?.account_id
       || "9f5f4bb22646ea1c62d1019e99026a66";
-    
-    const apiToken = process.env.CLOUDFLARE_API_TOKEN 
+
+    const apiToken = process.env.CLOUDFLARE_API_TOKEN
       || functions.config().cloudflare?.api_token
       || "11HhvRaGba4Xc9hye24x5MOqEy90SMrh";
-    
+
     if (!accountId || !apiToken) {
       functions.logger.error("Cloudflare credentials not configured");
       throw new functions.https.HttpsError(
@@ -1320,33 +1414,33 @@ export const uploadToCloudflare = functions.https.onCall(async (data: any, conte
         "Cloudflare credentials not configured. Please set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN environment variables."
       );
     }
-    
+
     // Log token info (without exposing the full token)
     functions.logger.log(`Cloudflare token configured - length: ${apiToken.length}, prefix: ${apiToken.substring(0, 10)}...`);
-    
+
     // Validate token format (Cloudflare API tokens are typically 40 characters)
     // But they can vary, so we just check it's not empty
     if (apiToken.length < 10) {
       functions.logger.warn("Cloudflare API token seems too short - may be invalid");
     }
-    
+
     // Build the upload URL
     // Format: https://api.cloudflare.com/client/v4/accounts/{account_id}/images/v1
     const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1`;
-    
+
     functions.logger.log(`Generated Cloudflare upload info for user ${authenticatedUserId}`);
-    
+
     return {
       uploadUrl: uploadUrl,
       apiToken: apiToken
     };
   } catch (error: any) {
     functions.logger.error(`Failed to get Cloudflare upload info: ${error.message}`, error);
-    
+
     if (error instanceof functions.https.HttpsError) {
       throw error;
     }
-    
+
     throw new functions.https.HttpsError(
       "internal",
       `Failed to get upload info: ${error.message}`
@@ -1365,15 +1459,15 @@ export const uploadToCloudflare = functions.https.onCall(async (data: any, conte
  */
 export const updatePostImageUrls = functions.https.onCall(async (data: any, context) => {
   assertAuthenticated(context);
-  
+
   const { postId, imageUrl, thumbnailUrl, originalCloudinaryUrl, originalCloudinaryThumbnailUrl } = data || {};
-  
+
   functions.logger.log(`updatePostImageUrls called with postId: ${postId}`);
   functions.logger.log(`  imageUrl: ${imageUrl}`);
   functions.logger.log(`  thumbnailUrl: ${thumbnailUrl}`);
   functions.logger.log(`  originalCloudinaryUrl: ${originalCloudinaryUrl}`);
   functions.logger.log(`  authenticatedUserId: ${context.auth!.uid}`);
-  
+
   if (!postId || !imageUrl) {
     functions.logger.error(`Missing required parameters: postId=${postId}, imageUrl=${imageUrl}`);
     throw new functions.https.HttpsError(
@@ -1381,13 +1475,13 @@ export const updatePostImageUrls = functions.https.onCall(async (data: any, cont
       "postId and imageUrl are required"
     );
   }
-  
+
   try {
     const postRef = admin.firestore().collection("posts").doc(postId);
     functions.logger.log(`Fetching post document: ${postId}`);
-    
+
     const postDoc = await postRef.get();
-    
+
     if (!postDoc.exists) {
       functions.logger.error(`Post ${postId} not found in Firestore`);
       // Try to find similar post IDs for debugging
@@ -1404,19 +1498,19 @@ export const updatePostImageUrls = functions.https.onCall(async (data: any, cont
       } catch (debugError: any) {
         functions.logger.warn(`Could not fetch similar posts for debugging: ${debugError.message}`);
       }
-      
+
       throw new functions.https.HttpsError(
         "not-found",
         `Post ${postId} not found`
       );
     }
-    
+
     const postData = postDoc.data()!;
     const postUserId = postData.userId;
     const authenticatedUserId = context.auth!.uid;
-    
+
     functions.logger.log(`Post found. Owner: ${postUserId}, Authenticated: ${authenticatedUserId}`);
-    
+
     // Verify the user owns the post or is an admin
     if (postUserId !== authenticatedUserId) {
       functions.logger.error(`Permission denied: User ${authenticatedUserId} does not own post ${postId} (owner: ${postUserId})`);
@@ -1426,7 +1520,7 @@ export const updatePostImageUrls = functions.https.onCall(async (data: any, cont
         "You can only update your own posts"
       );
     }
-    
+
     // Update the post
     const updateData: any = {
       imageUrl: imageUrl,
@@ -1436,18 +1530,18 @@ export const updatePostImageUrls = functions.https.onCall(async (data: any, cont
       originalCloudinaryUrl: originalCloudinaryUrl,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
-    
+
     if (originalCloudinaryThumbnailUrl !== undefined) {
       updateData.originalCloudinaryThumbnailUrl = originalCloudinaryThumbnailUrl;
     }
-    
+
     functions.logger.log(`Updating post ${postId} with new URLs`);
     await postRef.update(updateData);
-    
+
     functions.logger.log(`✅ Updated post ${postId} with Cloudflare URLs`);
     functions.logger.log(`  New imageUrl: ${imageUrl}`);
     functions.logger.log(`  New thumbnailUrl: ${updateData.thumbnailUrl}`);
-    
+
     return {
       success: true,
       postId: postId,
@@ -1456,11 +1550,11 @@ export const updatePostImageUrls = functions.https.onCall(async (data: any, cont
     };
   } catch (error: any) {
     functions.logger.error(`Failed to update post image URLs for ${postId}: ${error.message}`, error);
-    
+
     if (error instanceof functions.https.HttpsError) {
       throw error;
     }
-    
+
     throw new functions.https.HttpsError(
       "internal",
       `Failed to update post image URLs: ${error.message}`

@@ -53,7 +53,7 @@ struct PostDetailView: View {
                 engagementStatsSection
                 EngagementRow(viewModel: viewModel)
                 captionSection
-                tagsSection
+//                tagsSection
                 latestCommentSection
                 relatedUsersSection
                 recommendedPostsSection
@@ -214,8 +214,7 @@ struct PostDetailView: View {
             }
         }
         .frame(height: 50)
-        .background(.regularMaterial, in: .rect(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 2))
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
         .padding(.horizontal)
         .padding(.bottom, 30)
     }
@@ -350,11 +349,14 @@ struct PostDetailView: View {
                     }
                 }
             } label: {
-                Image(systemName: "ellipsis")
-                    .font(.title3)
+                Image("ellipsis.solid")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 30, height: 30)
             }
             .disabled(isDeleting)
         }
+        .sharedBackgroundVisibility(.hidden)
     }
     
     // MARK: - Setup Methods
@@ -664,14 +666,12 @@ struct EngagementRow: View {
                 Text("Save")
                     .font(.creatoDisplaySubheadline(.medium))
             }
+            .padding(.horizontal, 20)
+            .frame(height: rowHeight)
             .foregroundStyle(.black)
-            .padding(.leading, 16)
-            .padding(.trailing, 12)
-            .frame(height: 50)
-            .background(.ora, in: .rect(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 2))
         }
         .buttonStyle(.plain)
+        .glassEffect(.regular.tint(.ora).interactive(), in: .rect(cornerRadius: 20))
     }
 }
 
@@ -690,6 +690,7 @@ struct SaveToBoardSheet: View {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding()
+                        .transition(.opacity)
                 } else if viewModel.boards.isEmpty {
                     // Empty state with create board option
                     VStack(spacing: 16) {
@@ -713,6 +714,7 @@ struct SaveToBoardSheet: View {
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity)
                 } else {
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 12) {
@@ -721,7 +723,7 @@ struct SaveToBoardSheet: View {
                                 navigationPath.append("create")
                             }) {
                                 HStack(spacing: 8) {
-                                    Image(systemName: "plus.circle.fill")
+                                    Image(systemName: "plus")
                                         .font(.title3)
                                     Text("Create Board")
                                         .font(.creatoDisplaySubheadline(.medium))
@@ -730,20 +732,24 @@ struct SaveToBoardSheet: View {
                                 .foregroundStyle(.accent)
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
-                                .background(.regularMaterial, in: .rect(cornerRadius: 16))
-                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 2))
+                                .background(.ultraThinMaterial, in: .rect(cornerRadius: 16))
+//                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 2))
                             }
                             .buttonStyle(.plain)
                             
                             // Board list
                             ForEach(viewModel.boards) { board in
                                 boardRow(board: board)
+                                    .transition(.blurReplace.animation(.smooth))
                             }
                         }
                         .padding()
                     }
+                    .transition(.opacity.animation(.smooth(duration: 0.3)))
                 }
             }
+            .animation(.smooth, value: viewModel.boards)
+            .animation(.smooth, value: viewModel.isLoadingBoards)
             .navigationTitle("Save to Board")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -831,9 +837,9 @@ struct SaveToBoardSheet: View {
                 }
             }
             .padding(.trailing)
-            .background(.regularMaterial)
+            .background(.ultraThinMaterial)
             .clipShape(.rect(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 2))
+//            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 2))
         }
         .buttonStyle(.plain)
         .disabled(viewModel.isSavingToBoard)
@@ -888,10 +894,10 @@ struct RecommendedPostsSection: View {
     NavigationView {
         PostDetailView(
             post: Post(
-                activityId: "8408ea70-be85-11f0-8080-800050ac5f9f",
+                activityId: "post_Mk8exraODdURomlPqFzbifQwmU02_1764962598118_5crwa5m",
                 userId: "ChXrUkIGqsS1TMVi6avPKAhIlxn1",
                 username: "Nick",
-                imageUrl: "https://res.cloudinary.com/ddlpzt0qn/image/upload/v1762550962/users/ChXrUkIGqsS1TMVi6avPKAhIlxn1/thumbnails/ekc8zxcxkg51rqb21hcb.jpg",
+                imageUrl: "https://imagedelivery.net/-U9fBlv98S0Bl-wUpX9XJw/e919f41d-9562-4722-1808-9d02edee0a00/public",
                 caption: "Test caption",
                 interestIds: ["flowers", "nature", "photography"]
             )

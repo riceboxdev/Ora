@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 import FirebaseCore
 import Kingfisher
+import Toasts
 
 @main
 struct OraBetaApp: App {
@@ -155,6 +156,8 @@ struct OraBetaApp: App {
                 // Force route refresh when navigation is requested
                 routeRefreshTrigger += 1
             }
+            .installToast(position: .top)
         }
     }
 }
+

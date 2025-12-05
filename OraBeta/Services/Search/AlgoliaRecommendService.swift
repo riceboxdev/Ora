@@ -351,23 +351,28 @@ class AlgoliaRecommendService {
         // Build a search query based on post attributes
         var searchTerms: [String] = []
         
-        // Add tags if available
-        if let tags = postData["tags"] as? [String] {
-            searchTerms.append(contentsOf: tags.prefix(3)) // Use top 3 tags
+        // Add interestIds if available (new taxonomy system)
+        if let interestIds = postData["interestIds"] as? [String] {
+            searchTerms.append(contentsOf: interestIds.prefix(3)) // Use top 3 interests
         }
         
-        // Add categories if available
-        if let categories = postData["categories"] as? [String] {
+        // Fallback: Add tags if available (legacy)
+        if searchTerms.isEmpty, let tags = postData["tags"] as? [String] {
+            searchTerms.append(contentsOf: tags.prefix(3))
+        }
+        
+        // Fallback: Add categories if available (legacy)
+        if searchTerms.isEmpty, let categories = postData["categories"] as? [String] {
             searchTerms.append(contentsOf: categories)
         }
         
         // If we have search terms, use them; otherwise return empty
         guard !searchTerms.isEmpty else {
-            Logger.warning("Post has no searchable attributes for similarity search", service: "AlgoliaRecommendService")
+            Logger.warning("Post has no searchable attributes (tags, categories, or interestIds) for similarity search", service: "AlgoliaRecommendService")
             return []
         }
         
-        // Use the first tag/category as the search query
+        // Use the first interest/tag/category as the search query
         let searchQuery = searchTerms.first ?? ""
         
         Logger.debug("Searching for similar posts with query: \(searchQuery)", service: "AlgoliaRecommendService")

@@ -164,6 +164,36 @@ class InterestTaxonomyService {
             .sorted { $0.name < $1.name }
     }
     
+    /// Get trending interests based on growth metrics and engagement
+    /// Returns interests wrapped in TrendingInterest with calculated trend scores
+    func getTrendingInterests(
+        timeWindow: TrendingInterest.TimeWindow = .days7,
+        limit: Int = 15,
+        minPostCount: Int = 0  // Changed from 1 to 0 to show new interests
+    ) async throws -> [TrendingInterest] {
+        let allInterests = try await getAllInterests()
+        
+        // Filter active interests with minimum post count
+        let eligibleInterests = allInterests.filter { interest in
+            interest.isActive && interest.postCount >= minPostCount
+        }
+        
+        print("📊 InterestTaxonomyService: Found \(allInterests.count) total interests")
+        print("📊 InterestTaxonomyService: \(eligibleInterests.count) eligible for trending (minPostCount: \(minPostCount))")
+        
+        // Convert to TrendingInterest and calculate scores
+        let trendingInterests = eligibleInterests.map { interest in
+            TrendingInterest(interest: interest, timeWindow: timeWindow)
+        }
+        
+        // Sort by trend score (descending)
+        let sorted = trendingInterests.sorted { $0.trendScore > $1.trendScore }
+        
+        // Return top N
+        return Array(sorted.prefix(limit))
+    }
+
+    
     // MARK: - Write Operations (Admin)
     
     /// Create a new interest

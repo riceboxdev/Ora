@@ -11,6 +11,7 @@ import Combine
 import FirebaseFirestore
 import FirebaseAuth
 import UIKit
+import UserNotifications
 
 // Make sure FirebaseFirestore is available - check if we need FirestoreSwift
 // If the module isn't found, we may need to add it to the project dependencies
@@ -249,6 +250,10 @@ class NotificationManager: ObservableObject {
             
             // Update local state
             unreadCount = 0
+            
+            // Clear iOS badge count
+            await UIApplication.shared.applicationIconBadgeNumber = 0
+            try await UNUserNotificationCenter.current().setBadgeCount(0)
         } catch {
             Logger.error("Error marking all notifications as read: \(error.localizedDescription)", service: "NotificationManager")
         }

@@ -91,7 +91,7 @@ struct ReportPostSheet: View {
         
         do {
             let firebaseToken = try await currentUser.getIDToken()
-            let config = AdminConfig()
+            let config = AdminConfig(baseURL: Config.adminAPIBaseURL)
             let client = AdminClient(config: config)
             
             try await client.reportPost(

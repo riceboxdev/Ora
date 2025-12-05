@@ -10,6 +10,8 @@ import FirebaseAuth
 import MasonryStack
 import Kingfisher
 import Foundation
+import Combine
+import Toasts
 
 // MARK: - Stretchy Header Configuration
 
@@ -22,16 +24,21 @@ private enum StretchyHeaderConfig {
 
 struct DiscoverFeedView: View {
     @Environment(\.safeAreaInsets) var safeArea
-    @EnvironmentObject var authViewModel: AuthViewModel
-    @StateObject private var viewModel: DiscoverFeedViewModel
+    @EnvironmentObject var container: DIContainer
+    @StateObject var viewModel: DiscoverFeedViewModel
+    
     @State private var navigationPath = NavigationPath()
-    @State private var selectedTopic: TrendingTopic?
+    @State private var showProfile = false
+    @State private var profileUserId: String?
+    @State private var showRefreshToast = false
+    @Environment(\.presentToast) var presentToast
+    @State private var selectedInterest: TrendingInterest?
     
     // MARK: - Initialization
     
     init() {
         // Create ViewModel with DIContainer services
-        _viewModel = StateObject(wrappedValue: DiscoverFeedViewModel())
+        _viewModel = StateObject(wrappedValue: DiscoverFeedViewModel(container: DIContainer.shared))
     }
     
     // MARK: - Body
@@ -39,8 +46,8 @@ struct DiscoverFeedView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             contentView
-                .navigationDestination(for: TrendingTopic.self) { topic in
-                    TopicFeedView(topic: topic)
+                .navigationDestination(for: TrendingInterest.self) { interest in
+                    InterestFeedView(interest: interest)
                 }
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
@@ -89,15 +96,19 @@ struct DiscoverFeedView: View {
         PullEffectScrollView(
             actionTopPadding: safeArea.top,
             leadingAction: .init(symbol: "", action: {  }),
-            centerAction: .init(symbol: "refresh.icon", action: {  }),
+            centerAction: .init(symbol: "refresh.icon", action: {
+                Task {
+                    await handleRefresh()
+                }
+            }),
             trailingAction: .init(symbol: "", action: {  })
         ) {
             LazyVStack(spacing: 0) {
                 // Stretchy Hero Carousel
-                if !viewModel.featuredTopics.isEmpty {
+                if !viewModel.featuredInterests.isEmpty {
                     StretchyHeroCarousel(
-                        topics: viewModel.featuredTopics,
-                        topicPreviews: viewModel.topicPreviews,
+                        interests: viewModel.featuredInterests,
+                        interestPreviews: viewModel.interestPreviews,
                         navigationPath: $navigationPath
                     )
                 }
@@ -116,12 +127,12 @@ struct DiscoverFeedView: View {
                     .transition(.opacity)
                 }
                 
-                // Regular trending topics section (excluding featured ones)
-                if viewModel.isLoadingTrendingTopics && viewModel.trendingTopics.isEmpty {
-                    TrendingTopicsSectionPlaceholder()
+                // Regular trending interests section (excluding featured ones)
+                if viewModel.isLoadingTrendingInterests && viewModel.trendingInterests.isEmpty {
+                    TrendingInterestsSectionPlaceholder()
                         .transition(.opacity)
-                } else if !viewModel.trendingTopics.isEmpty {
-                    TrendingTopicsSection(
+                } else if !viewModel.trendingInterests.isEmpty {
+                    TrendingInterestsSection(
                         viewModel: viewModel,
                         navigationPath: $navigationPath
                     )
@@ -138,8 +149,8 @@ struct DiscoverFeedView: View {
                 PaginationFooter(viewModel: viewModel)
             }
             .ignoresSafeArea()
-            .animation(.smooth, value: viewModel.featuredTopics.count)
-            .animation(.easeInOut(duration: 0.3), value: viewModel.isLoadingTrendingTopics)
+            .animation(.smooth, value: viewModel.featuredInterests.count)
+            .animation(.easeInOut(duration: 0.3), value: viewModel.isLoadingTrendingInterests)
             .animation(.easeInOut(duration: 0.3), value: viewModel.recommendedUsers.count)
             .animation(.easeInOut(duration: 0.3), value: viewModel.isLoadingRecommendedUsers)
         }
@@ -150,15 +161,21 @@ struct DiscoverFeedView: View {
     // MARK: - Helper Methods
     
     private func handleRefresh() async {
+        let toast = ToastValue(
+            icon: Image(systemName: "arrow.triangle.2.circlepath"),
+            message: "Refreshing..."
+        )
+        presentToast(toast)
+        
         await viewModel.loadPosts()
         await viewModel.loadSuggestedUsers()
         await viewModel.loadRecommendedUsers()
-        await viewModel.loadGlobalTrendingTopics()
+        await viewModel.loadTrendingInterests()
         
-        // Reload previews and reselect featured topics after topics are loaded
-        if !viewModel.trendingTopics.isEmpty {
-            await viewModel.loadTopicPreviews()
-            viewModel.selectFeaturedTopics()
+        // Reload previews and reselect featured interests after interests are loaded
+        if !viewModel.trendingInterests.isEmpty {
+            await viewModel.loadInterestPreviews()
+            viewModel.selectFeaturedInterests()
         }
     }
 }
@@ -168,8 +185,8 @@ struct DiscoverFeedView: View {
 /// A clean, standardized stretchy header carousel implementation.
 /// The header stretches when the user pulls down, and snaps back when released.
 struct StretchyHeroCarousel: View {
-    let topics: [TrendingTopic]
-    let topicPreviews: [String: [Post]]
+    let interests: [TrendingInterest]
+    let interestPreviews: [String: [Post]]
     @Binding var navigationPath: NavigationPath
     
     private let baseHeight: CGFloat = StretchyHeaderConfig.baseHeight
@@ -182,14 +199,14 @@ struct StretchyHeroCarousel: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 0) {
-                    ForEach(topics) { topic in
+                    ForEach(interests) { interest in
                         HeroCard(
-                            topic: topic,
-                            previewPosts: topicPreviews[topic.id] ?? [],
+                            interest: interest,
+                            previewPosts: interestPreviews[interest.id] ?? [],
                             baseHeight: baseHeight,
                             stretch: stretch
                         ) {
-                            navigationPath.append(topic)
+                            navigationPath.append(interest)
                         }
                         .containerRelativeFrame(.horizontal)
                         .clipped()
@@ -211,7 +228,7 @@ struct StretchyHeroCarousel: View {
 /// Individual card in the stretchy carousel.
 /// Receives stretch amount from parent and applies it to the image.
 private struct HeroCard: View {
-    let topic: TrendingTopic
+    let interest: TrendingInterest
     let previewPosts: [Post]
     let baseHeight: CGFloat
     let stretch: CGFloat
@@ -223,7 +240,7 @@ private struct HeroCard: View {
     @State private var isLoading = false
     @State private var isCheckingFollowStatus = true
     
-    private let topicFollowService = TopicFollowService.shared
+    private let interestFollowService = InterestFollowService.shared
     
     // Limit to first 3-4 images for slideshow
     private var slideshowPosts: [Post] {
@@ -261,12 +278,12 @@ private struct HeroCard: View {
                     
                     Spacer()
                     
-                    // Topic info and preview thumbnails at bottom
+                    // Interest info and preview thumbnails at bottom
                     HStack(alignment: .bottom) {
-                        // Topic info
+                        // Interest info
                         VStack(alignment: .leading, spacing: 4) {
                             HStack(alignment: .top) {
-                                Text(topic.name)
+                                Text(interest.name)
                                     .font(.creatoDisplayHeadline())
                                     .fontWeight(.bold)
                                     .foregroundStyle(.white)
@@ -275,12 +292,12 @@ private struct HeroCard: View {
                                 
                                 Spacer(minLength: 8)
                                 
-                                if topic.growthRate > 0 {
-                                    GrowthBadge(rate: topic.growthRate)
+                                if interest.growthRate > 0 {
+                                    GrowthBadge(rate: interest.growthRate)
                                 }
                             }
                             
-                            Text("\(topic.postCount) posts")
+                            Text("\(interest.postCount) posts")
                                 .font(.creatoDisplayCaption(.regular))
                                 .foregroundStyle(.white.opacity(0.9))
                         }
@@ -342,9 +359,8 @@ private struct HeroCard: View {
     private func checkFollowStatus() async {
         isCheckingFollowStatus = true
         do {
-            isFollowing = try await topicFollowService.isFollowingTopic(
-                topicName: topic.name,
-                topicType: topic.type
+            isFollowing = try await interestFollowService.isFollowingInterest(
+                interestId: interest.id
             )
         } catch {
             print("❌ HeroCard: Failed to check follow status: \(error.localizedDescription)")
@@ -359,15 +375,13 @@ private struct HeroCard: View {
         
         do {
             if isFollowing {
-                try await topicFollowService.unfollowTopic(
-                    topicName: topic.name,
-                    topicType: topic.type
+                try await interestFollowService.unfollowInterest(
+                    interestId: interest.id
                 )
                 isFollowing = false
             } else {
-                try await topicFollowService.followTopic(
-                    topicName: topic.name,
-                    topicType: topic.type
+                try await interestFollowService.followInterest(
+                    interestId: interest.id
                 )
                 isFollowing = true
                 
@@ -497,30 +511,30 @@ private struct PreviewThumbnails: View {
     }
 }
 
-// MARK: - TrendingTopicsSection
+// MARK: - TrendingInterestsSection
 
-struct TrendingTopicsSection: View {
+struct TrendingInterestsSection: View {
     @ObservedObject var viewModel: DiscoverFeedViewModel
     @Binding var navigationPath: NavigationPath
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            topicsScrollView
+            interestsScrollView
         }
         .padding(.vertical, 12)
         .background(Color(.systemBackground))
     }
     
-    private var topicsScrollView: some View {
+    private var interestsScrollView: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                // Show all topics except featured ones (they're in the hero section)
-                let featuredTopicIds = Set(viewModel.featuredTopics.map { $0.id })
-                let regularTopics = viewModel.trendingTopics.filter { !featuredTopicIds.contains($0.id) }
+                // Show all interests except featured ones (they're in the hero section)
+                let featuredInterestIds = Set(viewModel.featuredInterests.map { $0.id })
+                let regularInterests = viewModel.trendingInterests.filter { !featuredInterestIds.contains($0.id) }
                 
-                ForEach(regularTopics) { topic in
-                    TrendingTopicButton(
-                        topic: topic,
+                ForEach(regularInterests) { interest in
+                    TrendingInterestButton(
+                        interest: interest,
                         navigationPath: $navigationPath
                     )
                 }
@@ -531,35 +545,35 @@ struct TrendingTopicsSection: View {
 }
 
 
-// MARK: - TrendingTopicButton
+// MARK: - TrendingInterestButton
 
-struct TrendingTopicButton: View {
-    let topic: TrendingTopic
+struct TrendingInterestButton: View {
+    let interest: TrendingInterest
     @Binding var navigationPath: NavigationPath
     
     @State private var isFollowing = false
     @State private var isLoading = false
     @State private var isCheckingFollowStatus = true
     
-    private let topicFollowService = TopicFollowService.shared
+    private let interestFollowService = InterestFollowService.shared
     
     var body: some View {
         HStack(spacing: 8) {
             // Main button for navigation
             Button(action: {
-                navigationPath.append(topic)
+                navigationPath.append(interest)
             }) {
                 HStack(spacing: 4) {
-                    Text(topic.name)
+                    Text(interest.name)
                         .font(.subheadline)
                         .fontWeight(.regular)
                     
-                    if topic.growthRate > 0 {
+                    if interest.growthRate > 0 {
                         Image(systemName: "arrow.up.right")
                             .font(.caption2)
                     }
                     
-                    Text("(\(topic.postCount))")
+                    Text("(\(interest.postCount))")
                         .font(.caption2)
                         .opacity(0.7)
                 }
@@ -598,12 +612,11 @@ struct TrendingTopicButton: View {
     private func checkFollowStatus() async {
         isCheckingFollowStatus = true
         do {
-            isFollowing = try await topicFollowService.isFollowingTopic(
-                topicName: topic.name,
-                topicType: topic.type
+            isFollowing = try await interestFollowService.isFollowingInterest(
+                interestId: interest.id
             )
         } catch {
-            print("❌ TrendingTopicButton: Failed to check follow status: \(error.localizedDescription)")
+            print("❌ TrendingInterestButton: Failed to check follow status: \(error.localizedDescription)")
             isFollowing = false
         }
         isCheckingFollowStatus = false
@@ -615,15 +628,13 @@ struct TrendingTopicButton: View {
         
         do {
             if isFollowing {
-                try await topicFollowService.unfollowTopic(
-                    topicName: topic.name,
-                    topicType: topic.type
+                try await interestFollowService.unfollowInterest(
+                    interestId: interest.id
                 )
                 isFollowing = false
             } else {
-                try await topicFollowService.followTopic(
-                    topicName: topic.name,
-                    topicType: topic.type
+                try await interestFollowService.followInterest(
+                    interestId: interest.id
                 )
                 isFollowing = true
                 
@@ -631,7 +642,7 @@ struct TrendingTopicButton: View {
                 NotificationCenter.default.post(name: Foundation.Notification.Name.feedShouldRefresh, object: nil)
             }
         } catch {
-            print("❌ TrendingTopicButton: Failed to toggle follow: \(error.localizedDescription)")
+            print("❌ TrendingInterestButton: Failed to toggle follow: \(error.localizedDescription)")
         }
     }
 }
@@ -944,12 +955,12 @@ struct SuggestedUserCardPlaceholder: View {
         .clipShape(.rect(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+        .stroke(Color.gray.opacity(0.1), lineWidth: 1)
         )
     }
 }
 
-struct TrendingTopicsSectionPlaceholder: View {
+struct TrendingInterestsSectionPlaceholder: View {
     private let widths: [CGFloat] = [70, 85, 60, 90, 75, 65, 80, 95]
     
     var body: some View {
@@ -957,7 +968,7 @@ struct TrendingTopicsSectionPlaceholder: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(0..<8, id: \.self) { index in
-                        TrendingTopicButtonPlaceholder(width: widths[index % widths.count])
+                        TrendingInterestButtonPlaceholder(width: widths[index % widths.count])
                     }
                 }
                 .padding(.horizontal)
@@ -968,7 +979,7 @@ struct TrendingTopicsSectionPlaceholder: View {
     }
 }
 
-struct TrendingTopicButtonPlaceholder: View {
+struct TrendingInterestButtonPlaceholder: View {
     let width: CGFloat
     
     var body: some View {

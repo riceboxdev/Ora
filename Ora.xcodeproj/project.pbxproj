@@ -19,6 +19,8 @@
 		FE51DB902EC3FE9B00799235 /* ColorKit in Frameworks */ = {isa = PBXBuildFile; productRef = FE51DB8F2EC3FE9B00799235 /* ColorKit */; };
 		FE6C6DD32EC2F4180047D107 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = FE6C6DD22EC2F4180047D107 /* Kingfisher */; };
 		FEB5E64C2EBE9D420016E80D /* MasonryStack in Frameworks */ = {isa = PBXBuildFile; productRef = FEB5E64B2EBE9D420016E80D /* MasonryStack */; };
+		FEC0B95D2EE38FC4000E7DB1 /* Toasts in Frameworks */ = {isa = PBXBuildFile; productRef = FEC0B95C2EE38FC4000E7DB1 /* Toasts */; };
+		FEC0B9602EE3A35E000E7DB1 /* OraBetaAdmin in Frameworks */ = {isa = PBXBuildFile; productRef = FEC0B95F2EE3A35E000E7DB1 /* OraBetaAdmin */; };
 		FEC517BD2EBD2558006FED6A /* FirebaseAuthCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = FEC517BC2EBD2558006FED6A /* FirebaseAuthCombine-Community */; };
 		FEC517BF2EBD2558006FED6A /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = FEC517BE2EBD2558006FED6A /* FirebaseCore */; };
 		FEC517C12EBD2558006FED6A /* FirebaseFirestoreCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = FEC517C02EBD2558006FED6A /* FirebaseFirestoreCombine-Community */; };
@@ -128,6 +130,7 @@
 				FEDFA8A22ED8CF8700A5BEED /* FirebaseFirestore in Frameworks */,
 				FEC517C32EBD2558006FED6A /* FirebaseFunctionsCombine-Community in Frameworks */,
 				FEDFA8B42ED8CF8700A5BEED /* FirebaseStorageCombine-Community in Frameworks */,
+				FEC0B9602EE3A35E000E7DB1 /* OraBetaAdmin in Frameworks */,
 				FEDFA8982ED8CF8700A5BEED /* FirebaseAnalyticsIdentitySupport in Frameworks */,
 				FEDFA8A82ED8CF8700A5BEED /* FirebaseFunctionsCombine-Community in Frameworks */,
 				FEC517C42EBD2558006FED6A /* FirebaseAuth in Frameworks */,
@@ -148,6 +151,7 @@
 				FECCCF8A2EC4EFE20064AB4C /* Personalization in Frameworks */,
 				FEC517C12EBD2558006FED6A /* FirebaseFirestoreCombine-Community in Frameworks */,
 				FEDDDFD62ECBDD5B00C0B4C6 /* MasonryStack in Frameworks */,
+				FEC0B95D2EE38FC4000E7DB1 /* Toasts in Frameworks */,
 				FECCCF902EC4EFE20064AB4C /* Search in Frameworks */,
 				FE06D1C22ED8BB6A007AA9CE /* ImageUtils in Frameworks */,
 				FECCCF8E2EC4EFE20064AB4C /* Recommend in Frameworks */,
@@ -332,9 +336,10 @@
 				FE06D1C02ED8BB6A007AA9CE /* XCLocalSwiftPackageReference "ImageUtils" */,
 				FE06D1C32ED8BB9F007AA9CE /* XCLocalSwiftPackageReference "FeatureFlags" */,
 				FE06D1C62ED8BE84007AA9CE /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
-				FEDFA8B52ED8D64800A5BEED /* XCLocalSwiftPackageReference "OraBetaAdminSDK" */,
 				FE2EFC262EDA637D005DCAEE /* XCRemoteSwiftPackageReference "AdMobUI" */,
 				FE2EFE7B2EDA9785005DCAEE /* XCRemoteSwiftPackageReference "Velvet" */,
+				FEC0B95B2EE38FC4000E7DB1 /* XCRemoteSwiftPackageReference "swiftui-toasts" */,
+				FEC0B95E2EE3A35E000E7DB1 /* XCLocalSwiftPackageReference "OraBetaAdminSDK" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FE9750202EB6D5A600FD36FA /* Products */;
@@ -846,6 +851,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = FeatureFlags;
 		};
+		FEC0B95E2EE3A35E000E7DB1 /* XCLocalSwiftPackageReference "OraBetaAdminSDK" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = OraBetaAdminSDK;
+		};
 		FECADC8E2EC67A7000ECAA59 /* XCLocalSwiftPackageReference "../Boomerang" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Boomerang;
@@ -853,10 +862,6 @@
 		FEDDDFD42ECBDD5B00C0B4C6 /* XCLocalSwiftPackageReference "../Packages/MasonryStack-main" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "../Packages/MasonryStack-main";
-		};
-		FEDFA8B52ED8D64800A5BEED /* XCLocalSwiftPackageReference "OraBetaAdminSDK" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = OraBetaAdminSDK;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -915,6 +920,14 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 0.1.0;
+			};
+		};
+		FEC0B95B2EE38FC4000E7DB1 /* XCRemoteSwiftPackageReference "swiftui-toasts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sunghyun-k/swiftui-toasts";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.1;
 			};
 		};
 		FEC517B92EBD2558006FED6A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
@@ -999,6 +1012,15 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FEB5E64A2EBE9D420016E80D /* XCRemoteSwiftPackageReference "MasonryStack" */;
 			productName = MasonryStack;
+		};
+		FEC0B95C2EE38FC4000E7DB1 /* Toasts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEC0B95B2EE38FC4000E7DB1 /* XCRemoteSwiftPackageReference "swiftui-toasts" */;
+			productName = Toasts;
+		};
+		FEC0B95F2EE3A35E000E7DB1 /* OraBetaAdmin */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OraBetaAdmin;
 		};
 		FEC517BC2EBD2558006FED6A /* FirebaseAuthCombine-Community */ = {
 			isa = XCSwiftPackageProductDependency;

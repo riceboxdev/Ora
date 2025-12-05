@@ -187,18 +187,16 @@ class AlgoliaSearchService {
         return allPosts
     }
     
-    /// Search posts by topic (tag, label, or category)
+    /// Search posts by interest ID
     /// - Parameters:
-    ///   - topicName: Name of the topic to search for
-    ///   - topicType: Type of topic (tag, label, category)
+    ///   - interestId: ID of the interest to search for
     ///   - limit: Maximum number of results (default: 20)
-    /// - Returns: Array of Post objects matching the topic
-    func searchPostsByTopic(
-        topicName: String,
-        topicType: TrendingTopic.TopicType,
+    /// - Returns: Array of Post objects matching the interest
+    func searchPostsByInterest(
+        interestId: String,
         limit: Int = 20
     ) async throws -> [Post] {
-        guard !topicName.isEmpty else {
+        guard !interestId.isEmpty else {
             return []
         }
         
@@ -219,19 +217,8 @@ class AlgoliaSearchService {
             throw AlgoliaSearchError.invalidURL
         }
         
-        // Build query based on topic type
-        // For tags: search in tags array
-        // For labels: search in labels array
-        // For categories: search in category field
-        let query: String
-        switch topicType {
-        case .tag:
-            query = "tags:\"\(topicName)\""
-        case .label:
-            query = "labels:\"\(topicName)\""
-        case .category:
-            query = "category:\"\(topicName)\""
-        }
+        // Build query to search in interestIds array
+        let query = "interestIds:\"\(interestId)\""
         
         // Build request body
         let requestBody: [String: Any] = [
@@ -277,12 +264,26 @@ class AlgoliaSearchService {
         // Extract objectIDs from hits
         let objectIDs = hits.compactMap { $0["objectID"] as? String }
         
-        print("✅ AlgoliaSearchService: Found \(objectIDs.count) results for topic '\(topicName)' (type: \(topicType.rawValue))")
+        print("✅ AlgoliaSearchService: Found \(objectIDs.count) results for interest '\(interestId)'")
         
         // Fetch full post data from Firestore using the objectIDs
         return try await fetchPostsFromFirestore(objectIDs: objectIDs)
     }
+    
+    /// Search posts by topic (DEPRECATED - use searchPostsByInterest instead)
+    /// Kept for backwards compatibility but should be migrated to interest-based search
+    @available(*, deprecated, message: "Use searchPostsByInterest instead")
+    func searchPostsByTopic(
+        topicName: String,
+        topicType: TrendingTopic.TopicType,
+        limit: Int = 20
+    ) async throws -> [Post] {
+        // For backwards compatibility, search by interestId
+        // Assuming topic name maps to interest ID (lowercase)
+        return try await searchPostsByInterest(interestId: topicName.lowercased(), limit: limit)
+    }
 }
+
 
 /// Search result containing posts and metadata
 struct SearchResult {
