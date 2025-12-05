@@ -140,6 +140,15 @@ struct Interest: Identifiable, Codable, Equatable, Hashable {
         guard var data = document.data() else { return nil }
         data["id"] = document.documentID
         
+        // Convert Firestore Timestamps to milliseconds for JSON serialization
+        // This prevents "Invalid type in JSON write (FIRTimestamp)" error
+        if let createdAtTimestamp = data["createdAt"] as? Timestamp {
+            data["createdAt"] = Int(createdAtTimestamp.dateValue().timeIntervalSince1970 * 1000)
+        }
+        if let updatedAtTimestamp = data["updatedAt"] as? Timestamp {
+            data["updatedAt"] = Int(updatedAtTimestamp.dateValue().timeIntervalSince1970 * 1000)
+        }
+        
         let jsonData = try JSONSerialization.data(withJSONObject: data)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .millisecondsSince1970

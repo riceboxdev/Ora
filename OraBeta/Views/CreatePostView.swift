@@ -14,7 +14,7 @@ struct ImagePostData: Identifiable {
     let id = UUID()
     var image: UIImage
     var caption: String = ""
-    var tags: Set<String> = []
+    var interests: Set<String> = [] // Interest IDs
 }
 
 struct CreatePostView: View {
@@ -32,7 +32,7 @@ struct CreatePostView: View {
     @State private var errorMessage: String?
     @State private var showErrorAlert = false
     @State private var selectedPostIndex: Int = 0
-    @State private var showTagSheet = false
+    @State private var showInterestSheet = false
     
     // Processing progress
     @State private var isProcessing = false
@@ -43,26 +43,9 @@ struct CreatePostView: View {
     @State private var showProgress = false
     @State private var enqueuedCount: Int = 0
     
-    // Interests system (replaces hardcoded tags)
+    // Interests system
     @State private var availableInterests: [Interest] = []
     @State private var loadingInterests = false
-    
-    // MARK: - Data Models
-    
-    /// Represents a top-level interest from the interests taxonomy API
-    /// Used as selectable tags for posts (replaces hardcoded tag list)
-    struct Interest: Identifiable, Hashable {
-        let id: String
-        let displayName: String
-        
-        func hash(into hasher: inout Hasher) {
-            hasher.combine(id)
-        }
-        
-        static func == (lhs: Interest, rhs: Interest) -> Bool {
-            lhs.id == rhs.id
-        }
-    }
     
     init() {
         print("🏗️ CreatePostView: View initialized")
@@ -110,7 +93,7 @@ struct CreatePostView: View {
                             await uploadImages()
                         }
                     }
-                    .disabled(imagePosts.isEmpty || isLoading || !allImagesHaveTags)
+                    .disabled(imagePosts.isEmpty || isLoading || !allImagesHaveInterests)
                 }
             }
             .task(id: photoPickerItems) {
@@ -118,8 +101,6 @@ struct CreatePostView: View {
             }
             .task {
                 // Load interests taxonomy on view appear
-                // Fetches top-level interests from interests API
-                // Used as selectable interests/tags for posts
                 await loadAvailableInterests()
             }
             .alert("Post Failed", isPresented: $showErrorAlert) {
@@ -266,20 +247,20 @@ struct CreatePostView: View {
                     .lineLimit(3...6)
             }
             
-            // Tags section
+            // Interests section
             Section(
-                header: Text("Tags (Required: 1-5)")
+                header: Text("Interests (Required: 1-5)")
                     .font(.creatoDisplayCaption(.medium))
                     .foregroundColor(.secondary)
                     .textCase(nil)
             ) {
-                if imagePosts[selectedPostIndex].tags.isEmpty {
+                if imagePosts[selectedPostIndex].interests.isEmpty {
                     Button {
-                        showTagSheet = true
+                        showInterestSheet = true
                     } label: {
                         HStack {
                             Image(systemName: "plus.circle.fill")
-                            Text("Add Tags")
+                            Text("Add Interests")
                         }
                         .font(.creatoDisplayBody())
                         .foregroundColor(.accentColor)
@@ -287,14 +268,14 @@ struct CreatePostView: View {
                 } else {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            ForEach(Array(imagePosts[selectedPostIndex].tags), id: \.self) { tag in
-                                TagChip(tag: tag, isSelected: true) {
-                                    imagePosts[selectedPostIndex].tags.remove(tag)
+                            ForEach(Array(imagePosts[selectedPostIndex].interests), id: \.self) { interestId in
+                                InterestChipWrapper(interestId: interestId) {
+                                    imagePosts[selectedPostIndex].interests.remove(interestId)
                                 }
                             }
                             
                             Button {
-                                showTagSheet = true
+                                showInterestSheet = true
                             } label: {
                                 Image(systemName: "plus.circle.fill")
                                     .font(.title2)
@@ -308,25 +289,23 @@ struct CreatePostView: View {
             }
         }
         .settingsListStyle()
-        .sheet(isPresented: $showTagSheet) {
+        .sheet(isPresented: $showInterestSheet) {
             NavigationView {
                 VStack {
-                    TagAutocompleteView(
-                        selectedTags: $imagePosts[selectedPostIndex].tags,
-                        semanticLabels: nil,
-                        postId: nil,
-                        minTags: 1,
-                        maxTags: 5
+                    InterestAutocompleteView(
+                        selectedInterests: $imagePosts[selectedPostIndex].interests,
+                        minInterests: 1,
+                        maxInterests: 5
                     )
                     .padding()
                     Spacer()
                 }
-                .navigationTitle("Edit Tags")
+                .navigationTitle("Edit Interests")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button("Done") {
-                            showTagSheet = false
+                            showInterestSheet = false
                         }
                     }
                 }
@@ -410,9 +389,9 @@ struct CreatePostView: View {
         
     }
     
-    // Helper to check if all images have required tags
-    private var allImagesHaveTags: Bool {
-        imagePosts.allSatisfy { $0.tags.count >= 1 && $0.tags.count <= 5 }
+    // Helper to check if all images have required interests
+    private var allImagesHaveInterests: Bool {
+        imagePosts.allSatisfy { $0.interests.count >= 1 && $0.interests.count <= 5 }
     }
     
     // MARK: - Image Loading
@@ -439,73 +418,19 @@ struct CreatePostView: View {
     
     // MARK: - Interests System
     
-    /// Load available interests from API (replaces hardcoded tags)
-    /// Fetches top-level root interests from interests taxonomy
-    /// Used as selectable interests/tags for posts
-    /// Falls back to empty list if API unavailable
+    /// Load available interests from InterestTaxonomyService
+    /// Preloads the interest cache for better performance
     private func loadAvailableInterests() async {
         loadingInterests = true
         defer { loadingInterests = false }
         
         do {
-            // Call interests API: GET /api/admin/interests
-            // Returns root interests (parentId == null, level == 0)
-            guard let url = URL(string: "https://api.example.com/api/admin/interests") else {
-                print("⚠️ Invalid interests API URL")
-                return
-            }
-            
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            
-            // Add auth token if available
-            if let user = authViewModel.currentUser,
-               let token = try? await user.getIDToken() {
-                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            }
-            
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
-                print("⚠️ Interests API returned non-200 status")
-                return
-            }
-            
-            // Parse interests response
-            // Expected format: { "interests": [{ "id": "...", "displayName": "..." }], "count": N }
-            let decoder = JSONDecoder()
-            let interestsResponse = try decoder.decode(InterestsResponse.self, from: data)
-            
-            // Filter to only root interests (parentId == null)
-            let rootInterests = interestsResponse.interests.filter { $0.parentId == nil }
-            
-            // Convert to view model (just keep id and displayName)
-            availableInterests = rootInterests.map { interest in
-                Interest(id: interest.id, displayName: interest.displayName)
-            }
-            
-            print("✅ Loaded \(availableInterests.count) interests for post creation")
+            // Preload interests into the service's cache
+            let interests = try await InterestTaxonomyService.shared.getTopLevelInterests()
+            print("✅ Loaded \(interests.count) top-level interests for post creation")
         } catch {
             print("⚠️ Failed to load interests: \(error.localizedDescription)")
-            // Graceful fallback: keep empty list
-            // Tag selection will still work but with no pre-populated interests
         }
-    }
-    
-    /// Response model for interests API
-    /// See docs/architecture/INTERESTS_SYSTEM.md for full schema
-    private struct InterestsResponse: Codable {
-        let interests: [InterestItem]
-        let count: Int
-    }
-    
-    /// Individual interest from API response
-    private struct InterestItem: Codable {
-        let id: String
-        let displayName: String
-        let parentId: String?
     }
     
     // MARK: - Multi-Image Upload
@@ -527,9 +452,9 @@ struct CreatePostView: View {
             return
         }
         
-        // Validate all images have tags
-        guard allImagesHaveTags else {
-            errorMessage = "Please add 1-5 tags to each image"
+        // Validate all images have interests
+        guard allImagesHaveInterests else {
+            errorMessage = "Please add 1-5 interests to each image"
             showErrorAlert = true
             return
         }
@@ -557,7 +482,7 @@ struct CreatePostView: View {
             
             print("✅ CreatePostView: Image \(index + 1) processed successfully")
             
-            // Create payload with per-image caption and tags
+            // Create payload with per-image caption and interests
             let payload = UploadPayload(
                 imageData: processed.fullImageData,
                 thumbnailData: processed.thumbnailData,
@@ -565,8 +490,8 @@ struct CreatePostView: View {
                 imageHeight: processed.height,
                 title: postData.caption.isEmpty ? nil : postData.caption,
                 description: postData.caption.isEmpty ? nil : postData.caption,
-                tags: Array(postData.tags),
-                categories: Array(postData.tags)
+                tags: Array(postData.interests), // Interest IDs stored as tags for now
+                categories: Array(postData.interests)
             )
             
             payloads.append(payload)
@@ -607,11 +532,55 @@ struct CreatePostView: View {
 
 // MARK: - Image Edit Sheet
 
+// MARK: - Interest Chip Wrapper
+
+/// Helper view to display an interest chip by fetching the interest details
+struct InterestChipWrapper: View {
+    let interestId: String
+    let onRemove: () -> Void
+    
+    @State private var interestName: String = ""
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(interestName.isEmpty ? "Loading..." : interestName)
+                .font(.creatoDisplayCallout())
+            
+            Button(action: onRemove) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.caption2)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .glassEffect(.regular.interactive())
+        .tint(Color.accent.opacity(0.2))
+        .foregroundColor(.accent)
+        .task {
+            await loadInterestName()
+        }
+    }
+    
+    private func loadInterestName() async {
+        do {
+            let interest = try await InterestTaxonomyService.shared.getInterest(id: interestId)
+            await MainActor.run {
+                interestName = interest.displayName
+            }
+        } catch {
+            await MainActor.run {
+                interestName = "Unknown"
+            }
+        }
+    }
+}
+
+// MARK: - Image Edit Sheet (Legacy - not currently used)
+
 struct ImageEditSheet: View {
     @Binding var post: ImagePostData
     @Environment(\.dismiss) var dismiss
-    
-    let availableTags = ["Nature", "Abstract", "Space", "Animals", "Architecture", "Food", "Travel", "Art", "Minimalist", "Vintage", "Modern", "Classic", "Colorful", "Black & White", "Landscape", "Portrait"]
     
     var body: some View {
         NavigationView {
@@ -640,18 +609,16 @@ struct ImageEditSheet: View {
                     }
                     .padding(.horizontal)
                     
-                    // Tags
+                    // Interests
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Tags (Required: 1-5)")
+                        Text("Interests (Required: 1-5)")
                             .font(.headline)
                             .foregroundColor(.primary)
                         
-                        TagAutocompleteView(
-                            selectedTags: $post.tags,
-                            semanticLabels: nil,
-                            postId: nil,
-                            minTags: 1,
-                            maxTags: 5
+                        InterestAutocompleteView(
+                            selectedInterests: $post.interests,
+                            minInterests: 1,
+                            maxInterests: 5
                         )
                     }
                     .padding(.horizontal)
@@ -666,7 +633,7 @@ struct ImageEditSheet: View {
                     Button("Done") {
                         dismiss()
                     }
-                    .disabled(post.tags.count < 1 || post.tags.count > 5)
+                    .disabled(post.interests.count < 1 || post.interests.count > 5)
                 }
             }
         }

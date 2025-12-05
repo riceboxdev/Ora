@@ -68,7 +68,7 @@ class ModerationService: ModerationServiceProtocol {
         return finalStatus
     }
     
-    func evaluateContent(imageUrl: String, caption: String?, tags: [String]?) async throws -> ModerationStatus {
+    func evaluateContent(imageUrl: String, caption: String?, interestIds: [String]?) async throws -> ModerationStatus {
         Logger.info("Evaluating content before post creation", service: "ModerationService")
         
         // Create a temporary post for evaluation
@@ -77,7 +77,7 @@ class ModerationService: ModerationServiceProtocol {
             userId: "temp",
             imageUrl: imageUrl,
             caption: caption,
-            tags: tags
+            interestIds: interestIds
         )
         
         return try await evaluatePost(tempPost)

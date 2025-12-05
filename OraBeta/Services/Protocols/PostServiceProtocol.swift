@@ -19,8 +19,7 @@ protocol PostServiceProtocol {
         imageWidth: Int?,
         imageHeight: Int?,
         caption: String?,
-        tags: [String]?,
-        categories: [String]?
+        interestIds: [String]?
     ) async throws -> String
     
     /// Edit a post - updates Firestore via Firebase Function
@@ -28,8 +27,7 @@ protocol PostServiceProtocol {
     func editPost(
         postId: String,
         caption: String?,
-        tags: [String]?,
-        categories: [String]?
+        interestIds: [String]?
     ) async throws
     
     /// Get posts from Firestore
@@ -47,11 +45,5 @@ protocol PostServiceProtocol {
     /// Delete a post - removes from Firestore via Firebase Function
     /// Only the post owner can delete their posts
     func deletePost(postId: String) async throws
-    
-    /// Remove a specific tag from all posts (admin function)
-    func removeTagFromAllPosts(_ tagToRemove: String) async throws -> (updatedCount: Int, errorCount: Int)
-    
-    /// Delete all posts without tags (admin function)
-    func deletePostsWithoutTags() async throws -> (deletedCount: Int, errorCount: Int)
 }
 

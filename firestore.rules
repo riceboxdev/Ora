@@ -294,6 +294,31 @@ service cloud.firestore {
       allow write: if false; // Server-side only via Cloud Functions
     }
     
+    // Interests collection - hierarchical interest taxonomy
+    match /interests/{interestId} {
+      // Anyone authenticated can read interests (for searching and post tagging)
+      allow read: if request.auth != null;
+      
+      // Only admins can create/update/delete interests
+      allow write: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true;
+    }
+    
+    // Post classifications collection - stores interest classifications for posts
+    match /post_classifications/{postId} {
+      // Anyone authenticated can read classifications
+      allow read: if request.auth != null;
+      
+      // Only post owner or server-side functions can write classifications
+      allow create, update: if request.auth != null && (
+        request.resource.data.postId == postId ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true
+      );
+      
+      // Only post owner can delete classifications
+      allow delete: if request.auth != null;
+    }
+    
     // Trending topics collection - cached trending topics
     match /trending_topics/{topicDocId} {
       // Anyone authenticated can read trending topics
@@ -301,6 +326,25 @@ service cloud.firestore {
       
       // Only server-side functions can create/update trending topics
       allow write: if false; // Server-side only via Cloud Functions
+    }
+    
+    // Topic follows collection - track topic subscriptions
+    match /topic_follows/{followId} {
+      // Users can read their own topic follows
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Users can create topic follows for themselves
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.topicName is string &&
+        request.resource.data.topicType is string;
+      
+      // Users can delete their own topic follows
+      allow delete: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+        
+      // No updates allowed (delete and recreate instead)
+      allow update: if false;
     }
   }
 }

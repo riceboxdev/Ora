@@ -202,14 +202,14 @@ struct PostThumbnailView: View {
             return nil
         }
         
-        // Find the first matching topic from the post's tags
-        guard let tags = post.tags else {
+        // Find the first matching topic from the post's interests
+        guard let interests = post.interestIds else {
             return nil
         }
         
-        for tag in tags {
-            if followedTopicNames.contains(tag.lowercased()) {
-                return tag // Return the original case tag name
+        for interestId in interests {
+            if followedTopicNames.contains(interestId.lowercased()) {
+                return interestId // Return the original case interest ID
             }
         }
         

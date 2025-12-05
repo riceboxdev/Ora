@@ -16,15 +16,14 @@ struct BulkEditPostView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     
     @StateObject private var viewModel = BulkEditPostViewModel()
-    @State private var selectedOperation: BulkOperation = .addTags
+    @State private var selectedOperation: BulkOperation = .addInterests
     @State private var showConfirmation = false
     
     enum BulkOperation: String, CaseIterable {
-        case addTags = "Add Tags"
-        case removeTags = "Remove Tags"
+        case addInterests = "Add Interests"
+        case removeInterests = "Remove Interests"
         case reassignPosts = "Reassign Posts"
         case deletePosts = "Delete Posts"
-        case updateCategories = "Update Categories"
     }
     
     var body: some View {
@@ -43,14 +42,12 @@ struct BulkEditPostView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         switch selectedOperation {
-                        case .addTags, .removeTags:
-                            tagBulkEditView
+                        case .addInterests, .removeInterests:
+                            interestBulkEditView
                         case .reassignPosts:
                             reassignPostsView
                         case .deletePosts:
                             deletePostsView
-                        case .updateCategories:
-                            updateCategoriesView
                         }
                     }
                     .padding()
@@ -97,25 +94,23 @@ struct BulkEditPostView: View {
         }
     }
     
-    // MARK: - Tag Bulk Edit View
+    // MARK: - Interest Bulk Edit View
     
-    private var tagBulkEditView: some View {
+    private var interestBulkEditView: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Select posts and tags to \(selectedOperation == .addTags ? "add" : "remove")")
+            Text("Select posts and interests to \(selectedOperation == .addInterests ? "add" : "remove")")
                 .font(.headline)
             
-            // Tag input
+            // Interest input
             VStack(alignment: .leading, spacing: 8) {
-                Text("Tags to \(selectedOperation == .addTags ? "Add" : "Remove")")
+                Text("Interests to \(selectedOperation == .addInterests ? "Add" : "Remove")")
                     .font(.subheadline)
                     .fontWeight(.medium)
                 
-                TagAutocompleteView(
-                    selectedTags: $viewModel.selectedBulkTags,
-                    semanticLabels: nil,
-                    postId: nil,
-                    minTags: 1,
-                    maxTags: 10
+                InterestAutocompleteView(
+                    selectedInterests: $viewModel.selectedBulkInterests,
+                    minInterests: 1,
+                    maxInterests: 10
                 )
             }
             
@@ -168,28 +163,7 @@ struct BulkEditPostView: View {
         }
     }
     
-    // MARK: - Update Categories View
-    
-    private var updateCategoriesView: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Update categories for selected posts")
-                .font(.headline)
-            
-            // Category input (simple for now)
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Categories (comma-separated)")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                
-                TextField("e.g., art, photography, nature", text: $viewModel.newCategories)
-                    .textFieldStyle(.roundedBorder)
-            }
-            
-            Divider()
-            
-            postSelectionView
-        }
-    }
+
     
     // MARK: - Post Selection View
     
@@ -206,7 +180,7 @@ struct BulkEditPostView: View {
             }
             
             // Search bar
-            TextField("Search posts by caption, tags, or user...", text: $viewModel.searchQuery)
+            TextField("Search posts by caption, interests, or user...", text: $viewModel.searchQuery)
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: viewModel.searchQuery) { oldValue, newValue in
                     viewModel.filterPosts()
@@ -297,8 +271,8 @@ struct BulkEditPostRow: View {
                             .foregroundColor(.secondary)
                     }
                     
-                    if let tags = post.tags, !tags.isEmpty {
-                        Text(tags.prefix(3).joined(separator: ", "))
+                    if let interests = post.interestIds, !interests.isEmpty {
+                        Text(interests.prefix(3).joined(separator: ", "))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .lineLimit(1)
@@ -330,9 +304,8 @@ class BulkEditPostViewModel: ObservableObject {
     @Published var posts: [Post] = []
     @Published var filteredPosts: [Post] = []
     @Published var selectedPostIds: Set<String> = []
-    @Published var selectedBulkTags: Set<String> = []
+    @Published var selectedBulkInterests: Set<String> = []
     @Published var newUserId: String = ""
-    @Published var newCategories: String = ""
     @Published var searchQuery: String = ""
     @Published var isLoading = false
     @Published var isProcessing = false
@@ -352,18 +325,16 @@ class BulkEditPostViewModel: ObservableObject {
     func getConfirmationMessage(for operation: BulkEditPostView.BulkOperation) -> String {
         let count = selectedPostIds.count
         switch operation {
-        case .addTags:
-            let tags = selectedBulkTags.joined(separator: ", ")
-            return "Add tags [\(tags)] to \(count) selected post\(count == 1 ? "" : "s")?"
-        case .removeTags:
-            let tags = selectedBulkTags.joined(separator: ", ")
-            return "Remove tags [\(tags)] from \(count) selected post\(count == 1 ? "" : "s")?"
+        case .addInterests:
+            let interests = selectedBulkInterests.joined(separator: ", ")
+            return "Add interests [\(interests)] to \(count) selected post\(count == 1 ? "" : "s")?"
+        case .removeInterests:
+            let interests = selectedBulkInterests.joined(separator: ", ")
+            return "Remove interests [\(interests)] from \(count) selected post\(count == 1 ? "" : "s")?"
         case .reassignPosts:
             return "Reassign \(count) selected post\(count == 1 ? "" : "s") to user ID: \(newUserId)?"
         case .deletePosts:
             return "⚠️ Permanently delete \(count) selected post\(count == 1 ? "" : "s")? This cannot be undone!"
-        case .updateCategories:
-            return "Update categories to [\(newCategories)] for \(count) selected post\(count == 1 ? "" : "s")?"
         }
     }
     
@@ -393,8 +364,8 @@ class BulkEditPostViewModel: ObservableObject {
                 if let caption = post.caption?.lowercased(), caption.contains(query) {
                     return true
                 }
-                // Search in tags
-                if let tags = post.tags, tags.contains(where: { $0.lowercased().contains(query) }) {
+                // Search in interests
+                if let interests = post.interestIds, interests.contains(where: { $0.lowercased().contains(query) }) {
                     return true
                 }
                 // Search in username
@@ -439,52 +410,52 @@ class BulkEditPostViewModel: ObservableObject {
             var errorCount = 0
             
             switch operation {
-            case .addTags:
-                guard !selectedBulkTags.isEmpty else {
-                    errorMessage = "Please select tags to add"
+            case .addInterests:
+                guard !selectedBulkInterests.isEmpty else {
+                    errorMessage = "Please select interests to add"
                     showError = true
                     isProcessing = false
                     return
                 }
                 
-                let tagsToAdd = Array(selectedBulkTags)
+                let interestsToAdd = Array(selectedBulkInterests)
                 for post in selectedPosts {
                     do {
-                        let currentTags = Set(post.tags ?? [])
-                        let updatedTags = currentTags.union(tagsToAdd)
+                        let currentInterests = Set(post.interestIds ?? [])
+                        let updatedInterests = currentInterests.union(interestsToAdd)
+                        // Limit to 5 interests max
+                        let finalInterests = Array(updatedInterests.prefix(5))
                         try await postService.editPost(
                             postId: post.id,
                             caption: nil,
-                            tags: Array(updatedTags),
-                            categories: nil
+                            interestIds: finalInterests
                         )
                         successCount += 1
                     } catch {
                         errorCount += 1
                     }
                 }
-                successMessage = "Added tags to \(successCount) posts. \(errorCount) failed."
+                successMessage = "Added interests to \(successCount) posts. \(errorCount) failed."
                 
-            case .removeTags:
-                guard !selectedBulkTags.isEmpty else {
-                    errorMessage = "Please select tags to remove"
+            case .removeInterests:
+                guard !selectedBulkInterests.isEmpty else {
+                    errorMessage = "Please select interests to remove"
                     showError = true
                     isProcessing = false
                     return
                 }
                 
-                let tagsToRemove = Array(selectedBulkTags)
+                let interestsToRemove = Array(selectedBulkInterests)
                 for post in selectedPosts {
                     do {
-                        let currentTags = Set(post.tags ?? [])
-                        let updatedTags = currentTags.subtracting(tagsToRemove)
-                        // Ensure at least 1 tag remains
-                        if !updatedTags.isEmpty {
+                        let currentInterests = Set(post.interestIds ?? [])
+                        let updatedInterests = currentInterests.subtracting(interestsToRemove)
+                        // Ensure at least 1 interest remains
+                        if !updatedInterests.isEmpty {
                             try await postService.editPost(
                                 postId: post.id,
                                 caption: nil,
-                                tags: Array(updatedTags),
-                                categories: nil
+                                interestIds: Array(updatedInterests)
                             )
                             successCount += 1
                         } else {
@@ -494,7 +465,7 @@ class BulkEditPostViewModel: ObservableObject {
                         errorCount += 1
                     }
                 }
-                successMessage = "Removed tags from \(successCount) posts. \(errorCount) failed."
+                successMessage = "Removed interests from \(successCount) posts. \(errorCount) failed."
                 
             case .reassignPosts:
                 guard !newUserId.isEmpty else {
@@ -536,23 +507,6 @@ class BulkEditPostViewModel: ObservableObject {
                     }
                 }
                 successMessage = "Deleted \(successCount) posts. \(errorCount) failed."
-                
-            case .updateCategories:
-                let categories = newCategories.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
-                for post in selectedPosts {
-                    do {
-                        try await postService.editPost(
-                            postId: post.id,
-                            caption: nil,
-                            tags: nil,
-                            categories: categories.isEmpty ? [] : categories
-                        )
-                        successCount += 1
-                    } catch {
-                        errorCount += 1
-                    }
-                }
-                successMessage = "Updated categories for \(successCount) posts. \(errorCount) failed."
             }
             
             // Reload posts to reflect changes

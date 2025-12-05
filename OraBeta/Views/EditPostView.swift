@@ -15,19 +15,18 @@ struct EditPostView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     
     @State private var caption: String
-    @State private var selectedTags: Set<String>
-    @State private var categories: [String]
+    @State private var selectedInterests: Set<String>
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var showErrorAlert = false
+    @State private var showInterestSheet = false
     
     private let postService = PostService(profileService: ProfileService())
     
     init(post: Post) {
         self.post = post
         _caption = State(initialValue: post.caption ?? "")
-        _selectedTags = State(initialValue: Set(post.tags ?? []))
-        _categories = State(initialValue: post.categories ?? [])
+        _selectedInterests = State(initialValue: Set(post.interestIds ?? []))
     }
     
     var body: some View {
@@ -47,23 +46,51 @@ struct EditPostView: View {
                         .lineLimit(3...6)
                 }
                 
-                // Tags
-                Section(header: Text("Tags (Required: 1-5)")) {
-                    TagAutocompleteView(
-                        selectedTags: $selectedTags,
-                        semanticLabels: nil,
-                        postId: post.id,
-                        minTags: 1,
-                        maxTags: 5
-                    )
-                }
-                
-                // Categories (optional)
-                Section(header: Text("Categories (Optional)")) {
-                    // Simple text field for categories - can be enhanced later
-                    Text("Categories editing coming soon")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                // Interests
+                Section(header: Text("Interests (Required: 1-5)")) {
+                    if selectedInterests.isEmpty {
+                        Button {
+                            showInterestSheet = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "plus.circle.fill")
+                                Text("Add Interests")
+                            }
+                            .foregroundColor(.accentColor)
+                        }
+                    } else {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(Array(selectedInterests), id: \.self) { interestId in
+                                    Button {
+                                        selectedInterests.remove(interestId)
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Text(interestId)
+                                            Image(systemName: "xmark.circle.fill")
+                                                .font(.caption2)
+                                        }
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(Color.accentColor.opacity(0.2))
+                                        .foregroundColor(.accentColor)
+                                        .cornerRadius(8)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 4)
+                        }
+                        Button {
+                            showInterestSheet = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "plus.circle")
+                                Text("Add More")
+                            }
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        }
+                    }
                 }
             }
             .navigationTitle("Edit Post")
@@ -81,8 +108,31 @@ struct EditPostView: View {
                             await saveChanges()
                         }
                     }
-                    .disabled(isSaving || selectedTags.isEmpty)
+                    .disabled(isSaving || selectedInterests.isEmpty)
                 }
+            }
+            .sheet(isPresented: $showInterestSheet) {
+                NavigationView {
+                    VStack {
+                        InterestAutocompleteView(
+                            selectedInterests: $selectedInterests,
+                            minInterests: 1,
+                            maxInterests: 5
+                        )
+                        .padding()
+                        Spacer()
+                    }
+                    .navigationTitle("Select Interests")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") {
+                                showInterestSheet = false
+                            }
+                        }
+                    }
+                }
+                .presentationDetents([.medium, .large])
             }
             .alert("Error", isPresented: $showErrorAlert) {
                 Button("OK") { }
@@ -92,8 +142,8 @@ struct EditPostView: View {
     }
     
     private func saveChanges() async {
-        guard !selectedTags.isEmpty else {
-            errorMessage = "Please add at least 1 tag"
+        guard !selectedInterests.isEmpty else {
+            errorMessage = "Please add at least 1 interest"
             showErrorAlert = true
             return
         }
@@ -105,14 +155,13 @@ struct EditPostView: View {
             // Prepare updated values
             let updatedCaption = caption.trimmingCharacters(in: .whitespacesAndNewlines)
             let finalCaption = updatedCaption.isEmpty ? nil : updatedCaption
-            let tagsArray = Array(selectedTags)
+            let interests = Array(selectedInterests)
             
             // Call PostService to edit the post
             try await postService.editPost(
                 postId: post.id,
                 caption: finalCaption,
-                tags: tagsArray,
-                categories: categories.isEmpty ? nil : categories
+                interestIds: interests
             )
             
             // Success - dismiss the view
@@ -135,7 +184,7 @@ struct EditPostView: View {
             username: "testuser",
             imageUrl: "https://picsum.photos/400/600",
             caption: "Test caption",
-            tags: ["nature", "landscape"]
+            interestIds: ["fashion", "photography"]
         )
     )
     .environmentObject(AuthViewModel())

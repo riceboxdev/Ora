@@ -37,8 +37,7 @@ class PostService: PostServiceProtocol {
         imageWidth: Int?,
         imageHeight: Int?,
         caption: String?,
-        tags: [String]?,
-        categories: [String]?
+        interestIds: [String]?
     ) async throws -> String {
         print("📝 PostService: Creating post via Firebase Function")
         print("   User ID: \(userId)")
@@ -51,8 +50,7 @@ class PostService: PostServiceProtocol {
         Logger.debug("   Thumbnail URL: \(thumbnailUrl ?? "none")", service: "PostService")
         Logger.debug("   Image dimensions: \(imageWidth ?? 0)x\(imageHeight ?? 0)", service: "PostService")
         Logger.debug("   Caption: \(caption ?? "none")", service: "PostService")
-        Logger.debug("   Tags: \(tags?.joined(separator: ", ") ?? "none")", service: "PostService")
-        Logger.debug("   Categories: \(categories?.joined(separator: ", ") ?? "none")", service: "PostService")
+        Logger.debug("   Interests: \(interestIds?.joined(separator: ", ") ?? "none")", service: "PostService")
 
         let startTime = Date()
         
@@ -79,12 +77,8 @@ class PostService: PostServiceProtocol {
             requestData["caption"] = caption
         }
         
-        if let tags = tags {
-            requestData["tags"] = tags
-        }
-        
-        if let categories = categories {
-            requestData["categories"] = categories
+        if let interestIds = interestIds {
+            requestData["interestIds"] = interestIds
         }
         
         // Check authentication before calling function
@@ -165,14 +159,12 @@ class PostService: PostServiceProtocol {
     func editPost(
         postId: String,
         caption: String?,
-        tags: [String]?,
-        categories: [String]?
+        interestIds: [String]?
     ) async throws {
         Logger.info("Editing post", service: "PostService")
         Logger.debug("   Post ID: \(postId)", service: "PostService")
         Logger.debug("   Caption: \(caption ?? "none")", service: "PostService")
-        Logger.debug("   Tags: \(tags?.joined(separator: ", ") ?? "none")", service: "PostService")
-        Logger.debug("   Categories: \(categories?.joined(separator: ", ") ?? "none")", service: "PostService")
+        Logger.debug("   Interests: \(interestIds?.joined(separator: ", ") ?? "none")", service: "PostService")
         
         let function = functions.httpsCallable("editPost")
         var requestData: [String: Any] = [
@@ -183,12 +175,8 @@ class PostService: PostServiceProtocol {
             requestData["caption"] = caption
         }
         
-        if let tags = tags {
-            requestData["tags"] = tags
-        }
-        
-        if let categories = categories {
-            requestData["categories"] = categories
+        if let interestIds = interestIds {
+            requestData["interestIds"] = interestIds
         }
         
         let result = try await function.call(requestData)
@@ -521,14 +509,14 @@ class PostService: PostServiceProtocol {
         }
     }
     
-    /// Suggest interests for a post during creation
+    /// Suggest  interests for a post during creation
     func suggestInterestsForPost(
         caption: String? = nil,
-        tags: [String]? = nil
+        interestIds: [String]? = nil
     ) async throws -> [PostInterestClassification.Classification] {
         return try await classificationService.suggestInterestsForPost(
             caption: caption,
-            tags: tags,
+            tags: interestIds,  // Pass interests as tags to classification service for now
             boardId: nil
         )
     }

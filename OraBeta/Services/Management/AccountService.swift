@@ -242,8 +242,41 @@ class AccountService {
             "version": "1.0"
         ]
         
+        // Sanitize data for JSON export (convert Timestamps to Strings)
+        let sanitizedAny = sanitizeForJSON(exportData)
+        let sanitizedData = sanitizedAny as? [String: Any] ?? exportData
+        
         print("✅ AccountService: Exported data for user \(userId)")
-        return exportData
+        return sanitizedData
+    }
+    
+    /// Recursively sanitize data for JSON serialization
+    /// Converts Firestore Timestamps to ISO8601 strings
+    private func sanitizeForJSON(_ value: Any) -> Any {
+        if let timestamp = value as? Timestamp {
+            return ISO8601DateFormatter().string(from: timestamp.dateValue())
+        } else if let date = value as? Date {
+            return ISO8601DateFormatter().string(from: date)
+        } else if let dict = value as? [String: Any] {
+            var newDict: [String: Any] = [:]
+            for (key, val) in dict {
+                newDict[key] = sanitizeForJSON(val)
+            }
+            return newDict
+        } else if let array = value as? [Any] {
+            return array.map { sanitizeForJSON($0) }
+        } else {
+            return value
+        }
+    }
+    
+    /// Convenience overload: sanitize a dictionary and return a dictionary
+    private func sanitizeForJSON(_ dict: [String: Any]) -> [String: Any] {
+        var newDict: [String: Any] = [:]
+        for (key, val) in dict {
+            newDict[key] = sanitizeForJSON(val)
+        }
+        return newDict
     }
 }
 

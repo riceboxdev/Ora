@@ -20,8 +20,6 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
     let imageWidth: Int?
     let imageHeight: Int?
     let caption: String?
-    let tags: [String]?
-    let categories: [String]?
     let likeCount: Int
     let commentCount: Int
     let viewCount: Int
@@ -44,8 +42,6 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         case imageWidth
         case imageHeight
         case caption
-        case tags
-        case categories
         case likeCount
         case commentCount
         case viewCount
@@ -67,8 +63,6 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         imageWidth: Int? = nil,
         imageHeight: Int? = nil,
         caption: String? = nil,
-        tags: [String]? = nil,
-        categories: [String]? = nil,
         likeCount: Int = 0,
         commentCount: Int = 0,
         viewCount: Int = 0,
@@ -89,8 +83,6 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         self.imageWidth = imageWidth
         self.imageHeight = imageHeight
         self.caption = caption
-        self.tags = tags
-        self.categories = categories
         self.likeCount = likeCount
         self.commentCount = commentCount
         self.viewCount = viewCount
@@ -115,8 +107,6 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         imageWidth = try container.decodeIfPresent(Int.self, forKey: .imageWidth)
         imageHeight = try container.decodeIfPresent(Int.self, forKey: .imageHeight)
         caption = try container.decodeIfPresent(String.self, forKey: .caption)
-        tags = try container.decodeIfPresent([String].self, forKey: .tags)
-        categories = try container.decodeIfPresent([String].self, forKey: .categories)
         likeCount = try container.decodeIfPresent(Int.self, forKey: .likeCount) ?? 0
         commentCount = try container.decodeIfPresent(Int.self, forKey: .commentCount) ?? 0
         viewCount = try container.decodeIfPresent(Int.self, forKey: .viewCount) ?? 0
@@ -150,8 +140,6 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         try container.encodeIfPresent(imageWidth, forKey: .imageWidth)
         try container.encodeIfPresent(imageHeight, forKey: .imageHeight)
         try container.encodeIfPresent(caption, forKey: .caption)
-        try container.encodeIfPresent(tags, forKey: .tags)
-        try container.encodeIfPresent(categories, forKey: .categories)
         try container.encode(likeCount, forKey: .likeCount)
         try container.encode(commentCount, forKey: .commentCount)
         try container.encode(viewCount, forKey: .viewCount)
@@ -253,8 +241,6 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         let imageWidth = custom?["imageWidth"] as? Int ?? custom?["width"] as? Int
         let imageHeight = custom?["imageHeight"] as? Int ?? custom?["height"] as? Int
         let caption = custom?["text"] as? String ?? custom?["caption"] as? String
-        let tags = custom?["tags"] as? [String]
-        let categories = custom?["categories"] as? [String]
         
         var username: String?
         var userProfilePhotoUrl: String?
@@ -284,8 +270,6 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
             imageWidth: imageWidth,
             imageHeight: imageHeight,
             caption: caption,
-            tags: tags,
-            categories: categories,
             likeCount: 0,
             commentCount: 0,
             viewCount: 0,
@@ -315,8 +299,6 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
         let imageWidth = firestoreData["imageWidth"] as? Int
         let imageHeight = firestoreData["imageHeight"] as? Int
         let caption = firestoreData["caption"] as? String
-        let tags = firestoreData["tags"] as? [String]
-        let categories = firestoreData["categories"] as? [String]
         let likeCount = firestoreData["likeCount"] as? Int ?? 0
         let commentCount = firestoreData["commentCount"] as? Int ?? 0
         let viewCount = firestoreData["viewCount"] as? Int ?? 0
@@ -360,8 +342,6 @@ struct Post: Identifiable, Codable, Equatable, Hashable {
             imageWidth: imageWidth,
             imageHeight: imageHeight,
             caption: caption,
-            tags: tags,
-            categories: categories,
             likeCount: likeCount,
             commentCount: commentCount,
             viewCount: viewCount,

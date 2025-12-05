@@ -90,6 +90,12 @@ struct PostInterestClassification: Identifiable, Codable, Equatable {
         guard var data = document.data() else { return nil }
         data["postId"] = document.documentID
         
+        // Convert Firestore Timestamps to milliseconds for JSON serialization
+        // This prevents "Invalid type in JSON write (FIRTimestamp)" error
+        if let classifiedAtTimestamp = data["classifiedAt"] as? Timestamp {
+            data["classifiedAt"] = Int(classifiedAtTimestamp.dateValue().timeIntervalSince1970 * 1000)
+        }
+        
         let jsonData = try JSONSerialization.data(withJSONObject: data)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .millisecondsSince1970

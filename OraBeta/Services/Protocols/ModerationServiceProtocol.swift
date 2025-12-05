@@ -27,9 +27,9 @@ protocol ModerationServiceProtocol {
     /// - Parameters:
     ///   - imageUrl: URL of the image
     ///   - caption: Optional caption
-    ///   - tags: Optional tags
+    ///   - interestIds: Optional interest IDs
     /// - Returns: The moderation status
-    func evaluateContent(imageUrl: String, caption: String?, tags: [String]?) async throws -> ModerationStatus
+    func evaluateContent(imageUrl: String, caption: String?, interestIds: [String]?) async throws -> ModerationStatus
     
     // MARK: - Admin Actions
     

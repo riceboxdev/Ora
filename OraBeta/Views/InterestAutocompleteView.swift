@@ -1,42 +1,42 @@
 //
-//  TagAutocompleteView.swift
+//  InterestAutocompleteView.swift
 //  OraBeta
 //
-//  Created by Nick Rogers on 11/1/25.
+//  Created for interest-based post tagging
 //
 
 import SwiftUI
 
-struct TagAutocompleteView: View {
-    @Binding var selectedTags: Set<String>
-    let semanticLabels: [String]?
-    let postId: String?
-    let minTags: Int
-    let maxTags: Int
+struct InterestAutocompleteView: View {
+    @Binding var selectedInterests: Set<String>
+    let minInterests: Int
+    let maxInterests: Int
     var isFocused: Binding<Bool>? = nil
     
     @State private var query: String = ""
-    @State private var suggestions: [TagSuggestion] = []
+    @State private var suggestions: [InterestSuggestion] = []
     @State private var isLoadingSuggestions = false
     @State private var showSuggestions = false
     @State private var validationError: String?
     
     @FocusState private var isTextFieldFocused: Bool
     
-    private let tagService = TagService.shared
+    private let interestService = InterestTaxonomyService.shared
     private let debounceDelay: TimeInterval = 0.3
     @State private var debounceTask: Task<Void, Never>?
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Selected tags display
-            if !selectedTags.isEmpty {
+            // Selected interests display
+            if !selectedInterests.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(Array(selectedTags), id: \.self) { tag in
-                            TagChip(tag: tag, isSelected: true) {
-                                selectedTags.remove(tag)
-                                validateTags()
+                        ForEach(Array(selectedInterests), id: \.self) { interestId in
+                            if let suggestion = suggestions.first(where: { $0.id == interestId }) {
+                                InterestChip(interest: suggestion, isSelected: true) {
+                                    selectedInterests.remove(interestId)
+                                    validateInterests()
+                                }
                             }
                         }
                     }
@@ -44,20 +44,19 @@ struct TagAutocompleteView: View {
                 }
             }
             
-            // Tag input field
+            // Interest input field
             HStack {
-                TextField("Add Tags...", text: $query)
+                TextField("Search interests...", text: $query)
                     .frame(height: 45)
                     .padding(.horizontal)
                     .background(.quaternary, in: .capsule)
-//                TextField("Add tags...", text: $query)
                     .focused($isTextFieldFocused)
-//                    .glassEffect(.regular.interactive())
                     .onChange(of: query) { oldValue, newValue in
                         debounceSearch(query: newValue)
                     }
                     .onSubmit {
-                        addTagFromQuery()
+                        // For interests, we don't allow free-form entry
+                        // User must select from suggestions
                     }
                     .onChange(of: isTextFieldFocused) { oldValue, newValue in
                         // Sync with parent focus state if binding is provided
@@ -90,10 +89,10 @@ struct TagAutocompleteView: View {
                     .font(.caption)
                     .foregroundColor(.red)
             } else {
-                // Tag count indicator
-                Text("\(selectedTags.count)/\(maxTags) tags")
+                // Interest count indicator
+                Text("\(selectedInterests.count)/\(maxInterests) interests")
                     .font(.caption)
-                    .foregroundColor(selectedTags.count >= minTags ? .secondary : .orange)
+                    .foregroundColor(selectedInterests.count >= minInterests ? .secondary : .orange)
             }
             
             // Suggestions list - show when focused and typing
@@ -101,8 +100,8 @@ struct TagAutocompleteView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 8) {
                         ForEach(suggestions) { suggestion in
-                            TagSuggestionRow(suggestion: suggestion) {
-                                addTag(suggestion.tag)
+                            InterestSuggestionRow(suggestion: suggestion) {
+                                addInterest(suggestion.id)
                             }
                         }
                     }
@@ -115,11 +114,11 @@ struct TagAutocompleteView: View {
             }
         }
         .onAppear {
-            validateTags()
+            validateInterests()
             loadInitialSuggestions()
         }
-        .onChange(of: selectedTags) { oldValue, newValue in
-            validateTags()
+        .onChange(of: selectedInterests) { oldValue, newValue in
+            validateInterests()
         }
     }
     
@@ -140,7 +139,7 @@ struct TagAutocompleteView: View {
     }
     
     private func loadSuggestions(query: String) async {
-        guard selectedTags.count < maxTags else {
+        guard selectedInterests.count < maxInterests else {
             suggestions = []
             showSuggestions = false
             return
@@ -150,23 +149,36 @@ struct TagAutocompleteView: View {
         showSuggestions = true
         
         do {
-            let semanticLabelsArray = semanticLabels ?? []
-            let fetchedSuggestions = try await tagService.getTagSuggestions(
-                query: query,
-                postId: postId,
-                semanticLabels: semanticLabelsArray,
-                limit: 20
-            )
+            let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
             
-            // Filter out already selected tags
-            let filtered = fetchedSuggestions.filter { !selectedTags.contains($0.tag) }
+            let interests: [Interest]
+            if trimmedQuery.isEmpty {
+                // Show top-level interests by default
+                interests = try await interestService.getTopLevelInterests()
+            } else {
+                // Search interests
+                interests = try await interestService.searchInterests(query: trimmedQuery, limit: 20)
+            }
+            
+            // Convert to suggestions and filter out already selected
+            let allSuggestions = interests.map { interest in
+                InterestSuggestion(
+                    id: interest.id,
+                    name: interest.name,
+                    displayName: interest.displayName,
+                    level: interest.level,
+                    path: interest.path
+                )
+            }
+            
+            let filtered = allSuggestions.filter { !selectedInterests.contains($0.id) }
             
             await MainActor.run {
                 suggestions = filtered
                 isLoadingSuggestions = false
             }
         } catch {
-            print("⚠️ TagAutocompleteView: Failed to load suggestions: \(error.localizedDescription)")
+            print("⚠️ InterestAutocompleteView: Failed to load suggestions: \(error.localizedDescription)")
             await MainActor.run {
                 suggestions = []
                 isLoadingSuggestions = false
@@ -174,56 +186,51 @@ struct TagAutocompleteView: View {
         }
     }
     
-    private func addTag(_ tag: String) {
-        guard selectedTags.count < maxTags else {
-            validationError = "Maximum \(maxTags) tags allowed"
+    private func addInterest(_ interestId: String) {
+        guard selectedInterests.count < maxInterests else {
+            validationError = "Maximum \(maxInterests) interests allowed"
             return
         }
         
-        let normalized = tagService.normalizeTag(tag)
-        guard !normalized.isEmpty else { return }
-        
-        selectedTags.insert(normalized)
+        selectedInterests.insert(interestId)
         query = ""
-        // Keep suggestions visible after adding a tag
-        // isTextFieldFocused = false
-        // isFocused = false
-        validateTags()
+        validateInterests()
         
-        // Reload suggestions after adding tag
+        // Reload suggestions after adding interest
         Task {
             await loadSuggestions(query: "")
         }
     }
     
-    private func addTagFromQuery() {
-        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+    private func validateInterests() {
+        let count = selectedInterests.count
         
-        addTag(trimmed)
-    }
-    
-    private func validateTags() {
-        let count = selectedTags.count
-        
-        if count < minTags {
-            validationError = "At least \(minTags) tag required"
-        } else if count > maxTags {
-            validationError = "Maximum \(maxTags) tags allowed"
+        if count < minInterests {
+            validationError = "At least \(minInterests) interest required"
+        } else if count > maxInterests {
+            validationError = "Maximum \(maxInterests) interests allowed"
         } else {
             validationError = nil
         }
     }
 }
 
-struct TagChip: View {
-    let tag: String
+struct InterestSuggestion: Identifiable {
+    let id: String
+    let name: String
+    let displayName: String
+    let level: Int
+    let path: [String]
+}
+
+struct InterestChip: View {
+    let interest: InterestSuggestion
     let isSelected: Bool
     let onRemove: () -> Void
     
     var body: some View {
         HStack(spacing: 4) {
-            Text(tag)
+            Text(interest.displayName)
                 .font(.creatoDisplayCallout())
             
             Button(action: onRemove) {
@@ -240,8 +247,8 @@ struct TagChip: View {
     }
 }
 
-struct TagSuggestionRow: View {
-    let suggestion: TagSuggestion
+struct InterestSuggestionRow: View {
+    let suggestion: InterestSuggestion
     let onSelect: () -> Void
     
     var body: some View {
@@ -252,72 +259,39 @@ struct TagSuggestionRow: View {
                         .font(.creatoDisplayBody())
                         .foregroundColor(.primary)
                     
-                    // Show source indicator
-                    HStack(spacing: 4) {
-                        Image(sourceIcon)
-                            .font(.caption2)
-                        Text(sourceLabel)
-                            .font(.creatoDisplayCaption2())
+                    // Show hierarchy path if not root
+                    if !suggestion.path.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "folder.fill")
+                                .font(.caption2)
+                            Text(suggestion.path.joined(separator: " › "))
+                                .font(.creatoDisplayCaption2())
+                        }
+                        .foregroundColor(.secondary)
                     }
-                    .foregroundColor(sourceColor)
                 }
                 
                 Spacer()
             }
-            .padding(.horizontal,20)
+            .padding(.horizontal, 20)
             .padding(.vertical, 8)
         }
         .buttonStyle(.plain)
         .background(Color(.systemGray6), in: .capsule)
     }
-    
-    private var sourceIcon: String {
-        switch suggestion.source {
-        case .context:
-            return "sparkles"
-        case .user:
-            return "person.icon"
-        case .popular:
-            return "arrow.trend.up"
-        }
-    }
-    
-    private var sourceLabel: String {
-        switch suggestion.source {
-        case .context:
-            return "Context-aware"
-        case .user:
-            return "Your tags"
-        case .popular:
-            return "Popular"
-        }
-    }
-    
-    private var sourceColor: Color {
-        switch suggestion.source {
-        case .context:
-            return .purple
-        case .user:
-            return .blue
-        case .popular:
-            return .red
-        }
-    }
 }
 
 #Preview {
     struct PreviewWrapper: View {
-        @State private var selectedTags: Set<String> = ["nature", "photography"]
+        @State private var selectedInterests: Set<String> = []
         @State private var isFocused: Bool = false
         
         var body: some View {
             VStack {
-                TagAutocompleteView(
-                    selectedTags: $selectedTags,
-                    semanticLabels: ["landscape", "outdoor", "scenery"],
-                    postId: nil,
-                    minTags: 1,
-                    maxTags: 10,
+                InterestAutocompleteView(
+                    selectedInterests: $selectedInterests,
+                    minInterests: 1,
+                    maxInterests: 5,
                     isFocused: $isFocused
                 )
                 .padding()
@@ -326,10 +300,10 @@ struct TagSuggestionRow: View {
                 
                 // Debug info
                 VStack(alignment: .leading) {
-                    Text("Selected Tags:")
+                    Text("Selected Interests:")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Text(selectedTags.isEmpty ? "None" : Array(selectedTags).joined(separator: ", "))
+                    Text(selectedInterests.isEmpty ? "None" : Array(selectedInterests).joined(separator: ", "))
                         .font(.caption)
                 }
                 .padding()

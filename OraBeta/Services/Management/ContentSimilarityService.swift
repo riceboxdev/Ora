@@ -47,10 +47,10 @@ class ContentSimilarityService {
                     }
                 }
             }
-        } else if let tags = post.tags, !tags.isEmpty {
-            // Fallback to tags
+        } else if let interestIds = post.interestIds, !interestIds.isEmpty {
+            // Fallback: use any interest from interestIds array
             let snapshot = try await db.collection("posts")
-                .whereField("tags", arrayContainsAny: Array(tags.prefix(10)))
+                .whereField("interestIds", arrayContainsAny: Array(interestIds.prefix(10)))
                 .limit(to: limit * 2)
                 .getDocuments()
             
@@ -113,20 +113,16 @@ class ContentSimilarityService {
     ///   - post2: Second post
     /// - Returns: Similarity score (0.0 to 1.0)
     func calculateSimilarity(post1: Post, post2: Post) async -> Double {
-        // 1. Interest Overlap (50%)
+        // 1. Interest Overlap (80%)
         let interestScore = calculateInterestOverlap(post1: post1, post2: post2)
         
-        // 2. Tag Overlap (30%)
-        let tagScore = calculateTagOverlap(post1: post1, post2: post2)
-        
-        // 3. Visual Similarity (10%) - Placeholder
+        // 2. Visual Similarity (10%) - Placeholder
         let visualScore = 0.0
         
-        // 4. User Overlap (10%) - Placeholder (saved by same users)
+        // 3. User Overlap (10%) - Placeholder (saved by same users)
         let userScore = 0.0
         
-        return (interestScore * 0.50) +
-               (tagScore * 0.30) +
+        return (interestScore * 0.80) +
                (visualScore * 0.10) +
                (userScore * 0.10)
     }
@@ -145,20 +141,6 @@ class ContentSimilarityService {
         if intersection.isEmpty { return 0.0 }
         
         // Jaccard index
-        return Double(intersection.count) / Double(set1.union(set2).count)
-    }
-    
-    private func calculateTagOverlap(post1: Post, post2: Post) -> Double {
-        guard let tags1 = post1.tags, let tags2 = post2.tags else {
-            return 0.0
-        }
-        
-        let set1 = Set(tags1.map { $0.lowercased() })
-        let set2 = Set(tags2.map { $0.lowercased() })
-        let intersection = set1.intersection(set2)
-        
-        if intersection.isEmpty { return 0.0 }
-        
         return Double(intersection.count) / Double(set1.union(set2).count)
     }
     

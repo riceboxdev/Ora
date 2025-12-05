@@ -53,7 +53,6 @@ class PostClassificationService {
     ) async throws -> [PostInterestClassification.Classification] {
         let candidates = try await generateCandidatesFromInput(
             caption: caption,
-            tags: tags,
             boardId: boardId
         )
         
@@ -72,7 +71,6 @@ class PostClassificationService {
     private func generateCandidates(post: Post) async throws -> [InterestCandidate] {
         return try await generateCandidatesFromInput(
             caption: post.caption,
-            tags: post.tags,
             boardId: nil
         )
     }
@@ -80,7 +78,6 @@ class PostClassificationService {
     /// Generate candidates from input data (shared logic)
     private func generateCandidatesFromInput(
         caption: String?,
-        tags: [String]?,
         boardId: String?
     ) async throws -> [InterestCandidate] {
         var candidates: [String: InterestCandidate] = [:]
@@ -94,10 +91,7 @@ class PostClassificationService {
             sources["caption"] = keywords
         }
         
-        // 2. Use user-provided tags
-        if let tags = tags, !tags.isEmpty {
-            sources["tags"] = tags
-        }
+       
         
         // 3. Match keywords to interest keywords/synonyms (lexical expansion)
         for interest in allInterests {

@@ -635,12 +635,21 @@ class MigrationService {
    */
   async getValidInterests() {
     try {
+      console.log('Fetching valid interests from database...');
       const interestsSnapshot = await this.db.collection('interests').get();
-      return interestsSnapshot.docs.map(doc => doc.data().name);
+      const interests = interestsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('Interest document:', data);
+        return data.name || data.id; // Handle both name and id fields
+      });
+      console.log('Fetched interests:', interests);
+      return interests;
     } catch (error) {
       console.error('Error fetching valid interests:', error);
       // Fallback to basic interests if database query fails
-      return ['fashion', 'beauty', 'food', 'fitness', 'home', 'travel', 'photography', 'entertainment', 'technology', 'pets'];
+      const fallbackInterests = ['fashion', 'beauty', 'food', 'fitness', 'home', 'travel', 'photography', 'entertainment', 'technology', 'pets'];
+      console.log('Using fallback interests:', fallbackInterests);
+      return fallbackInterests;
     }
   }
 }

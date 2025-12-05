@@ -107,12 +107,6 @@ class TasteGraphService {
                 )
             }
         }
-        // Fallback to tags if no classification
-        else if let tags = post.tags {
-            // Try to match tags to interests (simplified)
-            // In a real system, we'd use the taxonomy service to map tags to IDs
-            // For now, we skip this to avoid complex tag matching logic here
-        }
     }
     
     /// Update affinity from view action

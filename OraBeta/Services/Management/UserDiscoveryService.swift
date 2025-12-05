@@ -212,49 +212,29 @@ class UserDiscoveryService {
         // Get users the current user already follows
         let followedUserIds = try await getFollowedUserIds(for: currentUserId)
         
-        // Get tags and categories from the post
-        let postTags = post.tags ?? []
-        let postCategories = post.categories ?? []
+        // Get interests from the post
+        let postInterests = post.interestIds ?? []
         
-        // If no tags or categories, return empty
-        guard !postTags.isEmpty || !postCategories.isEmpty else {
+        // If no interests, return empty
+        guard !postInterests.isEmpty else {
             return []
         }
         
         var candidateUserIds: Set<String> = []
         let thirtyDaysAgo = Timestamp(date: Date().addingTimeInterval(-30 * 24 * 60 * 60))
         
-        // Find users who have posts with similar tags
-        for tag in postTags.prefix(3) {
-            let tagQuery = db.collection(postsCollection)
-                .whereField("tags", arrayContains: tag)
+        // Find users who have posts with similar interests
+        for interest in postInterests.prefix(5) {
+            let interestQuery = db.collection(postsCollection)
+                .whereField("interestIds", arrayContains: interest)
                 .whereField("createdAt", isGreaterThan: thirtyDaysAgo)
                 .limit(to: 30)
             
-            if let snapshot = try? await tagQuery.getDocuments() {
+            if let snapshot = try? await interestQuery.getDocuments() {
                 for doc in snapshot.documents {
                     if let userId = doc.data()["userId"] as? String,
                        userId != currentUserId,
                        userId != post.userId, // Exclude the post author
-                       !followedUserIds.contains(userId) {
-                        candidateUserIds.insert(userId)
-                    }
-                }
-            }
-        }
-        
-        // Find users who have posts with similar categories
-        for category in postCategories.prefix(2) {
-            let categoryQuery = db.collection(postsCollection)
-                .whereField("categories", arrayContains: category)
-                .whereField("createdAt", isGreaterThan: thirtyDaysAgo)
-                .limit(to: 30)
-            
-            if let snapshot = try? await categoryQuery.getDocuments() {
-                for doc in snapshot.documents {
-                    if let userId = doc.data()["userId"] as? String,
-                       userId != currentUserId,
-                       userId != post.userId,
                        !followedUserIds.contains(userId) {
                         candidateUserIds.insert(userId)
                     }

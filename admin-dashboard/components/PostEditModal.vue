@@ -63,6 +63,13 @@
               <p class="mt-1 text-xs text-gray-500">Separate categories with commas</p>
             </div>
 
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Interests
+              </label>
+              <InterestSelector v-model="formData.interestIds" />
+            </div>
+
             <div v-if="canModerate">
               <label for="moderationStatus" class="block text-sm font-medium text-gray-700 mb-1">
                 Moderation Status
@@ -116,6 +123,8 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import InterestSelector from './InterestSelector.vue';
+
 
 const props = defineProps({
   isOpen: {
@@ -136,6 +145,7 @@ const formData = ref({
   caption: '',
   tags: [],
   categories: [],
+  interestIds: [],
   moderationStatus: 'pending'
 });
 
@@ -155,6 +165,7 @@ watch(() => props.post, (newPost) => {
       caption: newPost.caption || '',
       tags: newPost.tags || [],
       categories: newPost.categories || [],
+      interestIds: newPost.interestIds || [],
       moderationStatus: newPost.moderationStatus || 'pending'
     };
     tagsInput.value = (newPost.tags || []).join(', ');
@@ -169,6 +180,7 @@ watch(() => props.isOpen, (isOpen) => {
       caption: props.post.caption || '',
       tags: props.post.tags || [],
       categories: props.post.categories || [],
+      interestIds: props.post.interestIds || [],
       moderationStatus: props.post.moderationStatus || 'pending'
     };
     tagsInput.value = (props.post.tags || []).join(', ');
@@ -198,7 +210,8 @@ const handleSubmit = async () => {
     const updateData = {
       caption: formData.value.caption,
       tags: tags,
-      categories: categories
+      categories: categories,
+      interestIds: formData.value.interestIds
     };
 
     if (canModerate.value) {

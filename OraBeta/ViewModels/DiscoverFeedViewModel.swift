@@ -457,14 +457,9 @@ class DiscoverFeedViewModel: ObservableObject, PaginatableViewModel {
         let name = topic.name.lowercased()
         
         let matchingPosts: [Post] = posts.filter { post in
-            switch topic.type {
-            case .tag, .label:
-                let tags = (post.tags ?? []).map { $0.lowercased() }
-                return tags.contains(name)
-            case .category:
-                let categories = (post.categories ?? []).map { $0.lowercased() }
-                return categories.contains(name)
-            }
+            // Match on interest IDs instead of tags/categories
+            let interests = (post.interestIds ?? []).map { $0.lowercased() }
+            return interests.contains(name)
         }
         
         return Array(matchingPosts.prefix(limit))

@@ -112,26 +112,16 @@ struct TopicRankingStrategy: RankingStrategy {
     }
     
     /// Calculate topic relevance score for a post
-    /// Checks if post's labels, tags, or categories match trending topics
+    /// Checks if post's interests match trending topics
     private func calculateTopicRelevance(_ post: Post, topicScoreMap: [String: Double]) -> Double {
         var totalScore: Double = 0.0
         
-        // Check tags
-        if let tags = post.tags {
-            for tag in tags {
-                let normalized = tag.lowercased().trimmingCharacters(in: .whitespaces)
+        // Check interests
+        if let interests = post.interestIds {
+            for interestId in interests {
+                let normalized = interestId.lowercased().trimmingCharacters(in: .whitespaces)
                 if let score = topicScoreMap[normalized] {
                     totalScore += score * 2.0
-                }
-            }
-        }
-        
-        // Check categories
-        if let categories = post.categories {
-            for category in categories {
-                let normalized = category.lowercased().trimmingCharacters(in: .whitespaces)
-                if let score = topicScoreMap[normalized] {
-                    totalScore += score * 1.5
                 }
             }
         }

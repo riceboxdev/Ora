@@ -105,9 +105,6 @@ final class DIContainer: ObservableObject {
     // MARK: - Singleton Services
     
     /// Tag service (singleton)
-    var tagService: TagService {
-        TagService.shared
-    }
     
     /// Algolia search service (singleton)
     var algoliaSearchService: AlgoliaSearchService {

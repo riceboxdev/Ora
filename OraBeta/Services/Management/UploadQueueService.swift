@@ -426,6 +426,11 @@ class UploadQueueService: ObservableObject {
                 }
             }
             
+            // Convert tags to interests for the post creation
+            // Note: UploadPayload still uses tags/categories internally for backward compatibility
+            // but we send them as interests to PostService
+            let allInterests = Set(item.payload.tags + item.payload.categories)
+            
             _ = try await postService.createPost(
                 userId: userId,
                 imageUrl: imageUrl,
@@ -433,8 +438,7 @@ class UploadQueueService: ObservableObject {
                 imageWidth: item.payload.imageWidth,
                 imageHeight: item.payload.imageHeight,
                 caption: item.payload.description ?? item.payload.title,
-                tags: item.payload.tags,
-                categories: item.payload.categories
+                interestIds: Array(allInterests)
             )
             
             Logger.info("Post created successfully for item \(itemId)", service: "UploadQueueService")

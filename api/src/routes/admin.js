@@ -1116,6 +1116,13 @@ router.put('/posts/:id', requireRole('super_admin', 'moderator'), async (req, re
       updateData.categories = Array.isArray(categories) ? categories : categories.split(',').map(c => c.trim()).filter(c => c);
     }
 
+    if (req.body.interestIds !== undefined) {
+      const { interestIds } = req.body;
+      if (Array.isArray(interestIds)) {
+        updateData.interestIds = interestIds.filter(id => typeof id === 'string');
+      }
+    }
+
     if (moderationStatus !== undefined) {
       updateData.moderationStatus = moderationStatus;
       updateData.moderatedAt = admin.firestore.FieldValue.serverTimestamp();

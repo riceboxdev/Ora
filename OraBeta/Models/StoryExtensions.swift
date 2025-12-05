@@ -31,8 +31,7 @@ extension StoryItem {
             userId: "user2",
             username: "jordan",
             imageUrl: "https://res.cloudinary.com/ddlpzt0qn/image/upload/v1762805411/users/qSLYaj3G7EPQ9YkOYJ7lHUOf8jj1/zm899dpw8praxbm8unbn.jpg",
-            caption: "Another angle from the same adventure.",
-            tags: ["travel", "city", "night"]
+            caption: "Another angle from the same adventure."
         )
         let user = FakeUsers.users.count > 1 ? FakeUsers.users[1] : FakeUsers.users[0]
         
@@ -53,8 +52,7 @@ extension Post {
             userId: "user1",
             username: "alexj",
             imageUrl: "https://res.cloudinary.com/ddlpzt0qn/image/upload/v1762830367/users/ChXrUkIGqsS1TMVi6avPKAhIlxn1/jxotu1llhwxn2swukk1l.jpg",
-            caption: "Check out this amazing view! 🌅",
-            tags: ["nature", "sunset", "photography"]
+            caption: "Check out this amazing view! 🌅"
         )
     }
 }

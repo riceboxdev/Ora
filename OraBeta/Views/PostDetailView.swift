@@ -150,12 +150,12 @@ struct PostDetailView: View {
     
     @ViewBuilder
     private var tagsSection: some View {
-        if let tags = post.tags, !tags.isEmpty {
+        if let interests = post.interestIds, !interests.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(tags, id: \.self) { tag in
-                        NavigationLink(destination: SearchView(initialQuery: tag, isTopicContext: true)) {
-                            Text("#\(tag)")
+                    ForEach(interests, id: \.self) { interestId in
+                        NavigationLink(destination: SearchView(initialQuery: interestId, isTopicContext: true)) {
+                            Text("#\(interestId)")
                                 .font(.creatoDisplayBody())
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
@@ -893,7 +893,7 @@ struct RecommendedPostsSection: View {
                 username: "Nick",
                 imageUrl: "https://res.cloudinary.com/ddlpzt0qn/image/upload/v1762550962/users/ChXrUkIGqsS1TMVi6avPKAhIlxn1/thumbnails/ekc8zxcxkg51rqb21hcb.jpg",
                 caption: "Test caption",
-                tags: ["flowers", "nature", "retro"]
+                interestIds: ["flowers", "nature", "photography"]
             )
         )
     }
@@ -911,7 +911,7 @@ struct RecommendedPostsSection: View {
                 username: "Nick",
                 imageUrl: "https://res.cloudinary.com/ddlpzt0qn/image/upload/v1762550962/users/ChXrUkIGqsS1TMVi6avPKAhIlxn1/thumbnails/ekc8zxcxkg51rqb21hcb.jpg",
                 caption: "Test caption",
-                tags: ["flowers", "nature", "retro"]
+                interestIds: ["flowers", "nature", "photography"]
             )
         )
     }

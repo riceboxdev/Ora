@@ -352,8 +352,6 @@ class BoardService {
                 imageWidth: imageWidth,
                 imageHeight: imageHeight,
                 caption: caption,
-                tags: tags,
-                categories: categories,
                 likeCount: 0, // Will be loaded separately if needed
                 commentCount: 0, // Will be loaded separately if needed
                 viewCount: 0,

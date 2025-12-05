@@ -128,10 +128,10 @@ struct PersonalizedTopicStrategy: RankingStrategy {
     private func calculatePersonalizedTopicRelevance(_ post: Post, topicScoreMap: [String: Double]) -> Double {
         var totalScore: Double = 0.0
         
-        // Check tags
-        if let tags = post.tags {
-            for tag in tags {
-                let normalized = tag.lowercased().trimmingCharacters(in: .whitespaces)
+        // Check interests
+        if let interests = post.interestIds {
+            for interestId in interests {
+                let normalized = interestId.lowercased().trimmingCharacters(in: .whitespaces)
                 var score: Double = 0.0
                 
                 // Base score from trending topics
@@ -139,34 +139,13 @@ struct PersonalizedTopicStrategy: RankingStrategy {
                     score = topicScore
                 }
                 
-                // Boost if in user preferences
+                // Boost if in user preferences (using preferredTags as interest preferences for now)
                 if let prefs = userPreferences, prefs.preferredTags.contains(normalized) {
                     let preferenceWeight = prefs.tagWeights[normalized] ?? 1.0
                     score *= (1.0 + preferenceWeight * 0.5)
                 }
                 
                 totalScore += score * 2.0
-            }
-        }
-        
-        // Check categories
-        if let categories = post.categories {
-            for category in categories {
-                let normalized = category.lowercased().trimmingCharacters(in: .whitespaces)
-                var score: Double = 0.0
-                
-                // Base score from trending topics
-                if let topicScore = topicScoreMap[normalized] {
-                    score = topicScore
-                }
-                
-                // Boost if in user preferences
-                if let prefs = userPreferences, prefs.preferredCategories.contains(normalized) {
-                    let preferenceWeight = prefs.categoryWeights[normalized] ?? 1.0
-                    score *= (1.0 + preferenceWeight * 0.5)
-                }
-                
-                totalScore += score * 1.5
             }
         }
         
