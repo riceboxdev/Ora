@@ -196,11 +196,11 @@ async function fetchQueue() {
   }
 }
 
-async function handleApprove(post) {
+async function handleApprove(postId) {
   try {
-    await api.post('/api/admin/moderation/approve', { postId: post.id });
+    await api.post('/api/admin/moderation/approve', { postId });
     // Remove from queue
-    posts.value = posts.value.filter(p => p.id !== post.id);
+    posts.value = posts.value.filter(p => p.id !== postId);
     alert('Post approved');
   } catch (err) {
     console.error('Error approving post:', err);
@@ -208,14 +208,14 @@ async function handleApprove(post) {
   }
 }
 
-async function handleReject(post) {
+async function handleReject(postId) {
   if (!confirm('Are you sure you want to reject this post?')) {
     return;
   }
   try {
-    await api.post('/api/admin/moderation/reject', { postId: post.id });
+    await api.post('/api/admin/moderation/reject', { postId });
     // Remove from queue
-    posts.value = posts.value.filter(p => p.id !== post.id);
+    posts.value = posts.value.filter(p => p.id !== postId);
     alert('Post rejected');
   } catch (err) {
     console.error('Error rejecting post:', err);
