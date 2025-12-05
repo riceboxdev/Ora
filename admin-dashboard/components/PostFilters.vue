@@ -2,143 +2,99 @@
   <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-sm font-medium text-gray-900">Filters & Sorting</h3>
-      <button
+      <Button
         v-if="hasActiveFilters"
         @click="clearFilters"
-        class="text-sm text-indigo-600 hover:text-indigo-700"
+        variant="ghost"
+        size="sm"
+        class="h-auto p-0 text-indigo-600 hover:text-indigo-700"
       >
         Clear All
-      </button>
+      </Button>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <!-- Status Filter -->
-      <div>
-        <label for="status" class="block text-xs font-medium text-gray-700 mb-1">
-          Status
-        </label>
-        <select
-          id="status"
-          v-model="filters.status"
-          @change="$emit('update:filters', filters)"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-        >
-          <option value="all">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="flagged">Flagged</option>
-        </select>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-gray-700">Status</label>
+        <Select :model-value="filters.status" @update:model-value="(v) => updateFilter('status', v)">
+          <SelectItem value="all">All Statuses</SelectItem>
+          <SelectItem value="pending">Pending</SelectItem>
+          <SelectItem value="approved">Approved</SelectItem>
+          <SelectItem value="rejected">Rejected</SelectItem>
+          <SelectItem value="flagged">Flagged</SelectItem>
+        </Select>
       </div>
 
       <!-- Sort By -->
-      <div>
-        <label for="sortBy" class="block text-xs font-medium text-gray-700 mb-1">
-          Sort By
-        </label>
-        <select
-          id="sortBy"
-          v-model="filters.sortBy"
-          @change="$emit('update:filters', filters)"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-        >
-          <option value="createdAt">Date</option>
-          <option value="likeCount">Likes</option>
-          <option value="commentCount">Comments</option>
-          <option value="viewCount">Views</option>
-        </select>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-gray-700">Sort By</label>
+        <Select :model-value="filters.sortBy" @update:model-value="(v) => updateFilter('sortBy', v)">
+          <SelectItem value="createdAt">Date</SelectItem>
+          <SelectItem value="likeCount">Likes</SelectItem>
+          <SelectItem value="commentCount">Comments</SelectItem>
+          <SelectItem value="viewCount">Views</SelectItem>
+        </Select>
       </div>
 
       <!-- Sort Order -->
-      <div>
-        <label for="sortOrder" class="block text-xs font-medium text-gray-700 mb-1">
-          Order
-        </label>
-        <select
-          id="sortOrder"
-          v-model="filters.sortOrder"
-          @change="$emit('update:filters', filters)"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-        >
-          <option value="desc">Descending</option>
-          <option value="asc">Ascending</option>
-        </select>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-gray-700">Order</label>
+        <Select :model-value="filters.sortOrder" @update:model-value="(v) => updateFilter('sortOrder', v)">
+          <SelectItem value="desc">Descending</SelectItem>
+          <SelectItem value="asc">Ascending</SelectItem>
+        </Select>
       </div>
 
       <!-- Date Range -->
-      <div>
-        <label for="dateRange" class="block text-xs font-medium text-gray-700 mb-1">
-          Date Range
-        </label>
-        <select
-          id="dateRange"
-          v-model="dateRangePreset"
-          @change="handleDateRangeChange"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-        >
-          <option value="all">All Time</option>
-          <option value="today">Today</option>
-          <option value="week">Last 7 Days</option>
-          <option value="month">Last 30 Days</option>
-          <option value="custom">Custom Range</option>
-        </select>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-gray-700">Date Range</label>
+        <Select :model-value="dateRangePreset" @update:model-value="handleDateRangeChange">
+          <SelectItem value="all">All Time</SelectItem>
+          <SelectItem value="today">Today</SelectItem>
+          <SelectItem value="week">Last 7 Days</SelectItem>
+          <SelectItem value="month">Last 30 Days</SelectItem>
+          <SelectItem value="custom">Custom Range</SelectItem>
+        </Select>
       </div>
     </div>
 
     <!-- Custom Date Range -->
     <div v-if="dateRangePreset === 'custom'" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-      <div>
-        <label for="startDate" class="block text-xs font-medium text-gray-700 mb-1">
-          Start Date
-        </label>
-        <input
-          id="startDate"
-          v-model="filters.startDate"
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-gray-700">Start Date</label>
+        <Input
           type="date"
-          @change="$emit('update:filters', filters)"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+          :model-value="filters.startDate"
+          @update:model-value="(v) => updateFilter('startDate', v)"
         />
       </div>
-      <div>
-        <label for="endDate" class="block text-xs font-medium text-gray-700 mb-1">
-          End Date
-        </label>
-        <input
-          id="endDate"
-          v-model="filters.endDate"
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-gray-700">End Date</label>
+        <Input
           type="date"
-          @change="$emit('update:filters', filters)"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+          :model-value="filters.endDate"
+          @update:model-value="(v) => updateFilter('endDate', v)"
         />
       </div>
     </div>
 
     <!-- User and Tag Filters -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-      <div>
-        <label for="userId" class="block text-xs font-medium text-gray-700 mb-1">
-          User ID
-        </label>
-        <input
-          id="userId"
-          v-model="filters.userId"
-          type="text"
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-gray-700">User ID</label>
+        <Input
+          :model-value="filters.userId"
           placeholder="Filter by user ID..."
-          @input="$emit('update:filters', filters)"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+          @update:model-value="(v) => updateFilter('userId', v)"
         />
       </div>
-      <div>
-        <label for="tag" class="block text-xs font-medium text-gray-700 mb-1">
-          Tag
-        </label>
-        <input
-          id="tag"
-          v-model="filters.tag"
-          type="text"
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-gray-700">Tag</label>
+        <Input
+          :model-value="filters.tag"
           placeholder="Filter by tag..."
-          @input="$emit('update:filters', filters)"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+          @update:model-value="(v) => updateFilter('tag', v)"
         />
       </div>
     </div>
@@ -147,6 +103,10 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import Button from '@/components/ui/Button.vue';
+import Select from '@/components/ui/Select.vue';
+import SelectItem from '@/components/ui/SelectItem.vue';
+import Input from '@/components/ui/Input.vue';
 
 const props = defineProps({
   modelValue: {
@@ -190,11 +150,32 @@ const updateDateRangePreset = () => {
   }
 };
 
-const handleDateRangeChange = () => {
+const clearFilters = () => {
+  filters.value = {
+    status: 'all',
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+    startDate: null,
+    endDate: null,
+    userId: '',
+    tag: ''
+  };
+  dateRangePreset.value = 'all';
+  emit('update:filters', filters.value);
+};
+
+const updateFilter = (key, value) => {
+  filters.value[key] = value;
+  emit('update:filters', filters.value);
+};
+
+const handleDateRangeChange = (value) => {
+  dateRangePreset.value = value;
+  
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   
-  switch (dateRangePreset.value) {
+  switch (value) {
     case 'today':
       filters.value.startDate = today.toISOString().split('T')[0];
       filters.value.endDate = today.toISOString().split('T')[0];
@@ -216,7 +197,6 @@ const handleDateRangeChange = () => {
       filters.value.endDate = null;
       break;
     case 'custom':
-      // Keep existing dates or set to null
       if (!filters.value.startDate && !filters.value.endDate) {
         filters.value.startDate = null;
         filters.value.endDate = null;
@@ -224,20 +204,6 @@ const handleDateRangeChange = () => {
       break;
   }
   
-  emit('update:filters', filters.value);
-};
-
-const clearFilters = () => {
-  filters.value = {
-    status: 'all',
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-    startDate: null,
-    endDate: null,
-    userId: '',
-    tag: ''
-  };
-  dateRangePreset.value = 'all';
   emit('update:filters', filters.value);
 };
 </script>

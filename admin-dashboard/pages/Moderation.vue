@@ -37,15 +37,13 @@
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold text-gray-900">Moderation Queue</h2>
             <div class="flex items-center space-x-4">
-              <select
-                v-model="statusFilter"
-                @change="fetchQueue"
-                class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="pending">Pending</option>
-                <option value="flagged">Flagged</option>
-                <option value="all">All</option>
-              </select>
+              <div class="w-48">
+                <Select :model-value="statusFilter" @update:model-value="(v) => { statusFilter = v; fetchQueue(); }">
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="flagged">Flagged</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                </Select>
+              </div>
             </div>
           </div>
           
@@ -74,16 +72,14 @@
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold text-gray-900">Ban Appeals</h2>
             <div class="flex items-center space-x-4">
-              <select
-                v-model="appealStatusFilter"
-                @change="fetchAppeals"
-                class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">All</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
+              <div class="w-48">
+                <Select :model-value="appealStatusFilter" @update:model-value="(v) => { appealStatusFilter = v; fetchAppeals(); }">
+                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </Select>
+              </div>
             </div>
           </div>
           
@@ -169,6 +165,8 @@ import { ref, onMounted } from 'vue';
 import api from '../services/api';
 import AppHeader from '../components/AppHeader.vue';
 import PostModerationCard from '../components/PostModerationCard.vue';
+import Select from '@/components/ui/Select.vue';
+import SelectItem from '@/components/ui/SelectItem.vue';
 
 const posts = ref([]);
 const loading = ref(true);
