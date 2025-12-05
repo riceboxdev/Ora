@@ -2791,7 +2791,6 @@ router.get('/interests/tree', requireRole('super_admin'), async (req, res) => {
     // Fetch all active interests ordered by name for consistent results
     const snapshot = await db.collection('interests')
       .where('isActive', '==', true)
-      .orderBy('name')
       .get();
 
     const allInterests = [];
@@ -2809,6 +2808,9 @@ router.get('/interests/tree', requireRole('super_admin'), async (req, res) => {
       interestMap[doc.id] = data;  // Create lookup map for fast parent-child linking
       allInterests.push(data);
     });
+
+    // Sort by name (replacing DB orderBy to avoid index requirement)
+    allInterests.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
     // Build tree structure by linking parents to children
     const tree = [];

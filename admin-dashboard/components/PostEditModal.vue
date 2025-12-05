@@ -35,33 +35,7 @@
               ></textarea>
             </div>
 
-            <div>
-              <label for="tags" class="block text-sm font-medium text-gray-700 mb-1">
-                Tags (comma-separated)
-              </label>
-              <input
-                id="tags"
-                v-model="tagsInput"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="tag1, tag2, tag3"
-              />
-              <p class="mt-1 text-xs text-gray-500">Separate tags with commas</p>
-            </div>
 
-            <div>
-              <label for="categories" class="block text-sm font-medium text-gray-700 mb-1">
-                Categories (comma-separated)
-              </label>
-              <input
-                id="categories"
-                v-model="categoriesInput"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="category1, category2"
-              />
-              <p class="mt-1 text-xs text-gray-500">Separate categories with commas</p>
-            </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -143,14 +117,10 @@ const authStore = useAuthStore();
 
 const formData = ref({
   caption: '',
-  tags: [],
-  categories: [],
   interestIds: [],
   moderationStatus: 'pending'
 });
 
-const tagsInput = ref('');
-const categoriesInput = ref('');
 const saving = ref(false);
 const error = ref(null);
 
@@ -163,13 +133,9 @@ watch(() => props.post, (newPost) => {
   if (newPost) {
     formData.value = {
       caption: newPost.caption || '',
-      tags: newPost.tags || [],
-      categories: newPost.categories || [],
       interestIds: newPost.interestIds || [],
       moderationStatus: newPost.moderationStatus || 'pending'
     };
-    tagsInput.value = (newPost.tags || []).join(', ');
-    categoriesInput.value = (newPost.categories || []).join(', ');
     error.value = null;
   }
 }, { immediate: true });
@@ -178,13 +144,9 @@ watch(() => props.isOpen, (isOpen) => {
   if (isOpen && props.post) {
     formData.value = {
       caption: props.post.caption || '',
-      tags: props.post.tags || [],
-      categories: props.post.categories || [],
       interestIds: props.post.interestIds || [],
       moderationStatus: props.post.moderationStatus || 'pending'
     };
-    tagsInput.value = (props.post.tags || []).join(', ');
-    categoriesInput.value = (props.post.categories || []).join(', ');
     error.value = null;
   }
 });
@@ -196,21 +158,8 @@ const handleSubmit = async () => {
   error.value = null;
 
   try {
-    // Parse tags and categories from comma-separated strings
-    const tags = tagsInput.value
-      .split(',')
-      .map(t => t.trim())
-      .filter(t => t);
-    
-    const categories = categoriesInput.value
-      .split(',')
-      .map(c => c.trim())
-      .filter(c => c);
-
     const updateData = {
       caption: formData.value.caption,
-      tags: tags,
-      categories: categories,
       interestIds: formData.value.interestIds
     };
 

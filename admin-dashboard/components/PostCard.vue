@@ -39,18 +39,7 @@
             <p class="text-sm text-gray-900 font-medium mb-2 line-clamp-2">
               {{ post.caption || 'No caption' }}
             </p>
-            <div class="flex flex-wrap gap-2 mb-2">
-              <span
-                v-for="tag in (post.tags || []).slice(0, 5)"
-                :key="tag"
-                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
-              >
-                {{ tag }}
-              </span>
-              <span v-if="(post.tags || []).length > 5" class="text-xs text-gray-500">
-                +{{ (post.tags || []).length - 5 }} more
-              </span>
-            </div>
+
             <div class="flex items-center space-x-4 text-xs text-gray-500 mb-2">
               <span class="flex items-center">
                 <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

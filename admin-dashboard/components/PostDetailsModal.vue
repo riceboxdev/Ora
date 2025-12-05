@@ -67,35 +67,7 @@
               <p class="text-sm text-gray-900 whitespace-pre-wrap">{{ post.caption || 'No caption' }}</p>
             </div>
 
-            <!-- Tags and Categories -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h4 class="text-sm font-medium text-gray-500 mb-2">Tags</h4>
-                <div class="flex flex-wrap gap-2">
-                  <span
-                    v-for="tag in (post.tags || [])"
-                    :key="tag"
-                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
-                  >
-                    {{ tag }}
-                  </span>
-                  <span v-if="!post.tags || post.tags.length === 0" class="text-xs text-gray-400">No tags</span>
-                </div>
-              </div>
-              <div>
-                <h4 class="text-sm font-medium text-gray-500 mb-2">Categories</h4>
-                <div class="flex flex-wrap gap-2">
-                  <span
-                    v-for="category in (post.categories || [])"
-                    :key="category"
-                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                  >
-                    {{ category }}
-                  </span>
-                  <span v-if="!post.categories || post.categories.length === 0" class="text-xs text-gray-400">No categories</span>
-                </div>
-              </div>
-            </div>
+
 
             <!-- Engagement Metrics -->
             <div>
