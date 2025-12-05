@@ -3089,6 +3089,124 @@ router.delete('/interests/:id', requireRole('super_admin'), async (req, res) => 
   }
 });
 
+// @route   POST /api/admin/interests/sync-post-counts
+// @desc    Recalculate and update post counts for all interests
+// @access  Private (super_admin+)
+// @returns {object} Sync results with details for each interest
+//
+// Synchronizes interest postCount fields with actual post data:
+//   - Queries all interests and active posts
+//   - Counts posts with each interest ID in their interestIds array
+//   - Updates postCount and lastPostAt for changed interests
+//   - Returns detailed results with before/after counts
+router.post('/interests/sync-post-counts', requireRole('super_admin'), async (req, res) => {
+  try {
+    const db = admin.firestore();
+
+    const results = {
+      processed: 0,
+      updated: 0,
+      errors: [],
+      details: []
+    };
+
+    // Get all interests
+    const interestsSnapshot = await db.collection('interests').get();
+    const interests = [];
+
+    interestsSnapshot.forEach(doc => {
+      interests.push({ id: doc.id, ...doc.data() });
+    });
+
+    console.log(`📊 Found ${interests.length} interests to process`);
+
+    // Get all active posts
+    const postsSnapshot = await db.collection('posts')
+      .where('isDeleted', '==', false)
+      .get();
+    const posts = [];
+
+    postsSnapshot.forEach(doc => {
+      const data = doc.data();
+      posts.push({ id: doc.id, ...data });
+    });
+
+    console.log(`📝 Found ${posts.length} active posts`);
+
+    // Calculate counts for each interest
+    for (const interest of interests) {
+      try {
+        const oldCount = interest.postCount || 0;
+
+        // Count posts that have this interest ID
+        const interestPosts = posts.filter(post => {
+          const interestIds = post.interestIds || [];
+          return interestIds.includes(interest.id);
+        });
+
+        const actualCount = interestPosts.length;
+
+        // Find most recent post for this interest
+        let lastPostAt = null;
+        if (interestPosts.length > 0) {
+          const sortedPosts = interestPosts.sort((a, b) => {
+            const aTime = a.createdAt?.toMillis?.() || a.createdAt?._seconds * 1000 || 0;
+            const bTime = b.createdAt?.toMillis?.() || b.createdAt?._seconds * 1000 || 0;
+            return bTime - aTime;
+          });
+          lastPostAt = sortedPosts[0].createdAt;
+        }
+
+        // Update interest if count changed
+        if (oldCount !== actualCount) {
+          const interestRef = db.collection('interests').doc(interest.id);
+          const updateData = {
+            postCount: actualCount,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          };
+
+          if (lastPostAt) {
+            updateData.lastPostAt = lastPostAt;
+          }
+
+          await interestRef.update(updateData);
+          results.updated++;
+
+          results.details.push({
+            id: interest.id,
+            name: interest.displayName || interest.name,
+            oldCount,
+            newCount: actualCount,
+            updated: true
+          });
+        } else {
+          results.details.push({
+            id: interest.id,
+            name: interest.displayName || interest.name,
+            oldCount,
+            newCount: actualCount,
+            updated: false
+          });
+        }
+
+        results.processed++;
+      } catch (error) {
+        console.error(`❌ Error processing interest ${interest.id}:`, error);
+        results.errors.push({
+          interestId: interest.id,
+          error: error.message
+        });
+      }
+    }
+
+    console.log(`✅ Sync complete: ${results.updated}/${results.processed} interests updated`);
+    res.json(results);
+  } catch (error) {
+    console.error('❌ Fatal error during sync:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // ============================================
 // POST MIGRATION: Tags → Interests
 // ============================================
