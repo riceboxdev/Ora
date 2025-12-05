@@ -25,7 +25,7 @@
         No interests found.
       </div>
       
-      <div v-for="interest in flattenedInterests" :key="interest.id" 
+      <div v-for="interest in flattenedInterests.list" :key="interest.id" 
            class="flex items-center group hover:bg-gray-50 p-1 rounded justify-between">
         <div :style="{ paddingLeft: `${interest.level * 20}px` }" class="flex items-center flex-1 min-w-0">
           <input 
@@ -110,37 +110,44 @@ async function handleInterestCreated(newInterest) {
 // Flatten the tree for easier rendering in a single list while preserving order
 const flattenedInterests = computed(() => {
   const result = [];
-  
-  const traverse = (nodes, parentName = null) => {
-    for (const node of nodes) {
-      result.push({
-        id: node.id,
-        displayName: node.displayName,
-        level: node.level,
-        parentName: parentName
-      });
+  const map = new Map(); // Helper map for parent lookups
+
+  const flatten = (items, level = 0, parentName = '') => {
+    for (const item of items) {
+      // Ensure parentId is available
+      const flatItem = { ...item, level, parentName };
+      result.push(flatItem);
+      map.set(item.id, flatItem);
       
-      if (node.children && node.children.length > 0) {
-        traverse(node.children, node.displayName);
+      if (item.children && item.children.length > 0) {
+        flatten(item.children, level + 1, item.displayName);
       }
     }
   };
   
-  traverse(interests.value);
-  return result;
+  if (interests.value) {
+    flatten(interests.value);
+  }
+  return { list: result, map };
 });
 
-const toggleInterest = (interestId) => {
-  const newSelection = [...props.modelValue];
-  const index = newSelection.indexOf(interestId);
+function toggleInterest(id) {
+  const newSelection = new Set(props.modelValue);
   
-  if (index === -1) {
-    newSelection.push(interestId);
+  if (newSelection.has(id)) {
+    newSelection.delete(id);
   } else {
-    newSelection.splice(index, 1);
+    newSelection.add(id);
+    
+    // Auto-select parents
+    let current = flattenedInterests.value.map.get(id);
+    while (current && current.parentId) {
+      newSelection.add(current.parentId);
+      current = flattenedInterests.value.map.get(current.parentId);
+    }
   }
   
-  emit('update:modelValue', newSelection);
+  emit('update:modelValue', Array.from(newSelection));
 };
 
 onMounted(async () => {

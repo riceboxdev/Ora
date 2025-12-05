@@ -1121,7 +1121,30 @@ router.put('/posts/:id', requireRole('super_admin', 'moderator'), async (req, re
     if (req.body.interestIds !== undefined) {
       const { interestIds } = req.body;
       if (Array.isArray(interestIds)) {
-        updateData.interestIds = interestIds.filter(id => typeof id === 'string');
+        const rawIds = interestIds.filter(id => typeof id === 'string');
+
+        // Fetch all interests to resolve hierarchy (ensures ancestors are included)
+        const interestsSnap = await db.collection('interests').where('isActive', '==', true).get();
+        const interestMap = new Map();
+        interestsSnap.forEach(doc => {
+          interestMap.set(doc.id, doc.data());
+        });
+
+        const expandedIds = new Set(rawIds); // Start with explicitly selected IDs
+
+        // Walk up the tree for each selected interest
+        for (const id of rawIds) {
+          let curr = interestMap.get(id);
+          // Safety check: avoid infinite loops if cycle exists (though rare in tree)
+          let depth = 0;
+          while (curr && curr.parentId && depth < 20) {
+            expandedIds.add(curr.parentId);
+            curr = interestMap.get(curr.parentId);
+            depth++;
+          }
+        }
+
+        updateData.interestIds = Array.from(expandedIds);
       }
     }
 
