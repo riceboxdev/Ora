@@ -134,22 +134,22 @@
 
           <div class="space-y-4">
             <div
-              v-for="post in filteredPosts"
+              v-for="post in posts"
               :key="post.id"
               class="w-full"
             >
               <PostCard
-                :post="post"
-                :selectable="true"
-                :selected="selectedPosts.includes(post.id)"
-                @select="handlePostSelect"
-                @view-details="handleViewDetails"
-                @edit="handleEdit"
-                @delete="handleDelete"
-                @approve="handleApprove"
-                @reject="handleReject"
-                @flag="handleFlag"
-              />
+              :post="post"
+              :selected="selectedPosts.includes(post.id)"
+              :interest-map="interestMap"
+              @toggle-selection="handlePostSelect"
+              @view="handleViewDetails"
+              @edit="handleEdit"
+              @approve="handleApprove"
+              @reject="handleReject"
+              @flag="handleFlag"
+              @delete="handleDelete"
+            />
             </div>
           </div>
         </div>
@@ -204,7 +204,9 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import api from '../services/api';
+import { useInterestService } from '../composables/interestService';
 import AppHeader from '../components/AppHeader.vue';
 import PostCard from '../components/PostCard.vue';
 import PostEditModal from '../components/PostEditModal.vue';
@@ -216,6 +218,10 @@ import Input from '@/components/ui/Input.vue';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
 import { useAuthStore } from '../stores/auth';
+
+const route = useRoute();
+const router = useRouter();
+const { getInterestTree } = useInterestService();
 
 const authStore = useAuthStore();
 
@@ -250,6 +256,19 @@ const detailsModalOpen = ref(false);
 const bulkUploadModalOpen = ref(false);
 const postToEdit = ref(null);
 const postIdToView = ref(null);
+
+const interests = ref([]);
+const interestMap = computed(() => {
+  const map = {};
+  const flatten = (items) => {
+    for (const item of items) {
+      map[item.id] = item.displayName;
+      if (item.children) flatten(item.children);
+    }
+  };
+  flatten(interests.value);
+  return map;
+});
 
 const canModerate = computed(() => {
   const role = authStore.admin?.role;

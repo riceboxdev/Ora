@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+  <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
     <div class="flex space-x-4">
       <div class="flex-shrink-0">
         <div class="relative">
@@ -7,10 +7,10 @@
             v-if="post.thumbnailUrl || post.imageUrl"
             :src="post.thumbnailUrl || post.imageUrl"
             :alt="post.caption || 'Post image'"
-            class="h-32 w-32 object-cover rounded-lg"
+            class="h-24 w-24 object-cover rounded-lg"
             @click="$emit('view-details', post.id)"
           />
-          <div v-else class="h-32 w-32 bg-gray-200 rounded-lg flex items-center justify-center">
+          <div v-else class="h-24 w-24 bg-gray-200 rounded-lg flex items-center justify-center">
             <span class="text-gray-400 text-sm">No image</span>
           </div>
           <input
@@ -36,9 +36,22 @@
                 Edited
               </span>
             </div>
-            <p class="text-sm text-gray-900 font-medium mb-2 line-clamp-2">
+            <p class="text-sm text-gray-900 font-medium mb-1 line-clamp-2">
               {{ post.caption || 'No caption' }}
             </p>
+
+            <div class="flex flex-wrap gap-1 mb-2">
+              <span
+                v-for="interestId in (post.interestIds || []).slice(0, 3)"
+                :key="interestId"
+                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100"
+              >
+                {{ interestMap[interestId] || interestId }}
+              </span>
+              <span v-if="(post.interestIds || []).length > 3" class="text-[10px] text-gray-400 self-center">
+                +{{ post.interestIds.length - 3 }}
+              </span>
+            </div>
 
             <div class="flex items-center space-x-4 text-xs text-gray-500 mb-2">
               <span class="flex items-center">
@@ -132,6 +145,10 @@ const props = defineProps({
   selected: {
     type: Boolean,
     default: false
+  },
+  interestMap: {
+    type: Object,
+    default: () => ({})
   }
 });
 
