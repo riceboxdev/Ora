@@ -69,6 +69,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/interests-sync',
+    name: 'InterestsSync',
+    component: () => import('../../pages/InterestsSync.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/posts-migration',
     name: 'PostsMigration',
     component: () => import('../../pages/PostsMigration.vue'),
