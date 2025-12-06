@@ -34,6 +34,7 @@ struct AdminDashboardView: View {
                     analyticsSection
                     moderationSection
                     userManagementSection
+                    interestSyncSection
                     webDashboardSection
                     adminInfoSection
                 }
@@ -139,6 +140,69 @@ struct AdminDashboardView: View {
                     Image(systemName: "arrow.up.right.square")
                         .foregroundColor(.secondary)
                 }
+            }
+        }
+    }
+    
+    private var interestSyncSection: some View {
+        Section(header: Text("Interest Management")) {
+            Button(action: {
+                Task {
+                    await viewModel.syncInterestCounts()
+                }
+            }) {
+                HStack {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .foregroundColor(.blue)
+                    Text("Sync Interest Post Counts")
+                    Spacer()
+                    if viewModel.isSyncing {
+                        ProgressView()
+                    }
+                }
+            }
+            .disabled(viewModel.isSyncing)
+            
+            if let syncResult = viewModel.syncResult {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("✅ Sync Complete")
+                            .font(.headline)
+                            .foregroundColor(.green)
+                        Spacer()
+                    }
+                    
+                    HStack {
+                        Text("Processed:")
+                        Spacer()
+                        Text("\(syncResult.processed)")
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack {
+                        Text("Updated:")
+                        Spacer()
+                        Text("\(syncResult.updated)")
+                            .foregroundColor(.blue)
+                    }
+                    
+                    if syncResult.errors.count > 0 {
+                        HStack {
+                            Text("Errors:")
+                            Spacer()
+                            Text("\(syncResult.errors.count)")
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
+                .font(.caption)
+                .padding(.vertical, 4)
+            }
+            
+            if let syncError = viewModel.syncError {
+                Text(syncError)
+                    .font(.caption)
+                    .foregroundColor(.red)
             }
         }
     }
@@ -250,6 +314,9 @@ class AdminDashboardViewModel: ObservableObject {
     @Published var moderationQueue: ModerationQueueResponse?
     @Published var users: UsersResponse?
     @Published var currentAdmin: AdminUser?
+    @Published var isSyncing = false
+    @Published var syncResult: InterestSyncService.SyncResult?
+    @Published var syncError: String?
     
     private var client: AdminClient?
     
@@ -321,6 +388,23 @@ class AdminDashboardViewModel: ObservableObject {
         }
         
         isLoading = false
+    }
+    
+    func syncInterestCounts() async {
+        isSyncing = true
+        syncError = nil
+        syncResult = nil
+        
+        do {
+            let result = try await InterestSyncService.shared.syncAllInterestPostCounts()
+            syncResult = result
+            Logger.log("✅ Interest sync completed: \(result.updated) interests updated", service: "AdminDashboard")
+        } catch {
+            syncError = error.localizedDescription
+            Logger.error("❌ Interest sync failed: \(error.localizedDescription)", service: "AdminDashboard")
+        }
+        
+        isSyncing = false
     }
 }
 
