@@ -32,20 +32,7 @@ class InterestSyncService {
         
         Logger.log("📊 Found \(interests.count) interests to process", service: "InterestSync")
         
-        // Fetch all active posts
-        let postsSnapshot = try await db.collection("posts")
-            .whereField("isDeleted", isEqualTo: false)
-            .getDocuments()
-        
-        let posts = postsSnapshot.documents.map { doc -> [String: Any] in
-            var data = doc.data()
-            data["id"] = doc.documentID
-            return data
-        }
-        
-        Logger.log("📝 Found \(posts.count) active posts", service: "InterestSync")
-        
-        // Process each interest
+        // Process each interest using direct Firestore queries
         for interest in interests {
             do {
                 let interestId = interest.id
@@ -53,25 +40,29 @@ class InterestSyncService {
                 let oldCount = interestData["postCount"] as? Int ?? 0
                 let displayName = interestData["displayName"] as? String ?? interestData["name"] as? String ?? interestId
                 
-                // Count posts that have this interest ID
-                let interestPosts = posts.filter { post in
-                    guard let interestIds = post["interestIds"] as? [String] else { return false }
-                    return interestIds.contains(interestId)
-                }
+                // IMPROVED: Query Firestore directly for this interest's posts
+                // This is much more efficient than loading all posts
+                let postsQuery = db.collection("posts")
+                    .whereField("isDeleted", isEqualTo: false)
+                    .whereField("interestIds", arrayContains: interestId)
                 
-                let actualCount = interestPosts.count
+                let postsSnapshot = try await postsQuery.getDocuments()
+                let actualCount = postsSnapshot.documents.count
+                
+                Logger.log("Interest '\(interestId)': oldCount=\(oldCount), actualCount=\(actualCount)", service: "InterestSync")
                 
                 // Find most recent post for this interest
                 var lastPostAt: Timestamp?
-                if !interestPosts.isEmpty {
-                    let sortedPosts = interestPosts.sorted { post1, post2 in
-                        guard let t1 = post1["createdAt"] as? Timestamp,
-                              let t2 = post2["createdAt"] as? Timestamp else {
+                if !postsSnapshot.documents.isEmpty {
+                    // Sort by createdAt to find most recent
+                    let sortedDocs = postsSnapshot.documents.sorted { doc1, doc2 in
+                        guard let t1 = doc1.data()["createdAt"] as? Timestamp,
+                              let t2 = doc2.data()["createdAt"] as? Timestamp else {
                             return false
                         }
                         return t1.seconds > t2.seconds
                     }
-                    lastPostAt = sortedPosts.first?["createdAt"] as? Timestamp
+                    lastPostAt = sortedDocs.first?.data()["createdAt"] as? Timestamp
                 }
                 
                 // Update interest if count changed
@@ -92,6 +83,7 @@ class InterestSyncService {
                     
                     details.append((interestId, displayName, oldCount, actualCount, true))
                 } else {
+                    Logger.log("➡️ Unchanged \(interestId): \(actualCount)", service: "InterestSync")
                     details.append((interestId, displayName, oldCount, actualCount, false))
                 }
                 
